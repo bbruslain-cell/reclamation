@@ -1,0 +1,193 @@
+<?php
+
+namespace App\Http\Controllers\Web;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+
+class PublicDemandController extends Controller
+{
+    public function create(): View
+    {
+        $types = DB::table('parametres')
+            ->where('famille', 'type_demande')
+            ->where('actif', true)
+            ->orderBy('ordre_affichage')
+            ->get(['code', 'libelle']);
+
+        return view('public.create-demand', ['types' => $types]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $payload = $request->validate([
+            'nom' => ['required', 'string', 'max:255'],
+            'prenom' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'telephone' => ['nullable', 'string', 'max:30'],
+            'qualite' => ['nullable', 'string', 'max:255'],
+            'type_demande_code' => ['required', 'string', 'in:demande_information,reclamation'],
+            'categorie' => ['nullable', 'string', 'max:255'],
+            'objet' => ['required', 'string', 'max:255'],
+            'message' => ['required', 'string', 'min:10'],
+            'piece_jointe' => ['nullable', 'file', 'max:2048', 'mimes:pdf,jpg,jpeg,png'],
+            'consentement' => ['accepted'],
+        ]);
+
+        $configSlaId = DB::table('config_sla')->where('actif', true)->value('id_config_sla');
+        if (!$configSlaId) {
+            throw ValidationException::withMessages([
+                'type_demande_code' => 'Configuration SLA absente.',
+            ]);
+        }
+
+        $typeId = DB::table('parametres')
+            ->where('famille', 'type_demande')
+            ->where('code', $payload['type_demande_code'])
+            ->where('actif', true)
+            ->value('id_parametre');
+        if (!$typeId) {
+            throw ValidationException::withMessages([
+                'type_demande_code' => 'Type de demande invalide.',
+            ]);
+        }
+
+        $statusId = DB::table('parametres')
+            ->where('famille', 'statut_demande')
+            ->where('code', 'nouvelle')
+            ->value('id_parametre');
+
+        $usagerId = $this->upsertUsager($payload);
+        $tracking = $this->nextTrackingNumber();
+
+        DB::transaction(function () use ($request, $payload, $tracking, $usagerId, $typeId, $statusId, $configSlaId): void {
+            $now = now();
+
+            $demandId = DB::table('demandes')->insertGetId([
+                'numero_suivi' => $tracking,
+                'id_usager' => $usagerId,
+                'id_type_demande' => $typeId,
+                'id_statut' => $statusId,
+                'id_config_sla' => $configSlaId,
+                'objet' => trim($payload['objet']),
+                'categorie' => !empty($payload['categorie']) ? trim($payload['categorie']) : null,
+                'message' => trim($payload['message']),
+                'date_soumission' => $now,
+                'alerte_accueil' => 'vert',
+                'delai_alerte' => 'dans_les_delais',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], 'id_demande');
+
+            if (!empty($payload['categorie'])) {
+                DB::table('historique_actions')->insert([
+                    'id_demande' => $demandId,
+                    'id_utilisateur' => null,
+                    'type_action' => 'categorie_usager',
+                    'ancien_statut_id' => null,
+                    'nouveau_statut_id' => $statusId,
+                    'id_service_associe' => null,
+                    'date_action' => $now,
+                    'commentaire' => 'Categorie choisie: '.$payload['categorie'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            DB::table('historique_actions')->insert([
+                'id_demande' => $demandId,
+                'id_utilisateur' => null,
+                'type_action' => 'soumission_usager',
+                'ancien_statut_id' => null,
+                'nouveau_statut_id' => $statusId,
+                'id_service_associe' => null,
+                'date_action' => $now,
+                'commentaire' => 'Soumission publique',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            $file = $request->file('piece_jointe');
+            if ($file) {
+                $path = $file->store('pieces_jointes', 'public');
+                $pieceId = DB::table('pieces_jointes')->insertGetId([
+                    'nom_fichier' => $file->getClientOriginalName(),
+                    'chemin_fichier' => $path,
+                    'taille_octets' => $file->getSize(),
+                    'type_mime' => $file->getMimeType() ?: 'application/octet-stream',
+                    'id_uploadeur' => null,
+                    'source' => 'usager',
+                    'date_upload' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ], 'id_piece_jointe');
+
+                DB::table('demande_piece_jointe')->insert([
+                    'id_demande' => $demandId,
+                    'id_piece_jointe' => $pieceId,
+                ]);
+            }
+        });
+
+        return redirect('/reclamations/nouvelle')
+            ->with('success', "Demande enregistree avec succes. Numero de suivi: {$tracking}");
+    }
+
+    private function upsertUsager(array $payload): int
+    {
+        $email = $payload['email'] ?? null;
+        $base = [
+            'nom' => trim($payload['nom']),
+            'prenom' => trim((string) ($payload['prenom'] ?? '')),
+            'telephone' => $payload['telephone'] ?? null,
+            'qualite' => $payload['qualite'] ?? null,
+            'consentement_rgpd' => isset($payload['consentement']) ? (bool) $payload['consentement'] : false,
+            'updated_at' => now(),
+            'created_at' => now(),
+        ];
+
+        if ($email) {
+            DB::table('usagers')->updateOrInsert(
+                ['email' => trim($email)],
+                $base
+            );
+
+            return (int) DB::table('usagers')->where('email', trim($email))->value('id_usager');
+        }
+
+        return (int) DB::table('usagers')->insertGetId(array_merge($base, [
+            'email' => null,
+        ]), 'id_usager');
+    }
+
+    private function nextTrackingNumber(): string
+    {
+        $year = now()->format('Y');
+
+        if (DB::getDriverName() === 'pgsql') {
+            $next = DB::selectOne("SELECT nextval('demandes_numero_seq') AS val")->val;
+
+            return sprintf('ANBG-%s-%03d', $year, $next);
+        }
+
+        $prefix = "ANBG-{$year}-";
+        $currentMax = DB::table('demandes')
+            ->where('numero_suivi', 'like', $prefix.'%')
+            ->pluck('numero_suivi')
+            ->map(function ($tracking) use ($year) {
+                if (!is_string($tracking) || !preg_match('/^ANBG-'.$year.'-(\d+)$/', $tracking, $matches)) {
+                    return 0;
+                }
+
+                return (int) $matches[1];
+            })
+            ->max();
+
+        return sprintf('ANBG-%s-%03d', $year, ((int) $currentMax) + 1);
+    }
+}

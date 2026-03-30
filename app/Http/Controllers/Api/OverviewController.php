@@ -1,0 +1,1593 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Services\AccessControlService;
+use App\Services\StepAlertService;
+use App\Services\WorkingHoursSlaService;
+use Carbon\Carbon;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class OverviewController extends Controller
+{
+    public function __construct(
+        private readonly WorkingHoursSlaService $slaService,
+        private readonly StepAlertService $stepAlerts
+    )
+    {
+    }
+
+    public function index(Request $request, AccessControlService $access): JsonResponse
+    {
+        $serviceScopeIds = null;
+
+        try {
+            $actor = $access->requireActor($request);
+            $userId = (int) $actor->id_utilisateur;
+            if (!$access->hasPermission($userId, 'dashboard.view')) {
+                throw new AuthorizationException('Acces tableau de bord refuse.');
+            }
+
+            $canViewAll = $access->hasPermission($userId, 'demande.view.all');
+            $serviceScopeIds = $canViewAll ? null : $access->scopedServiceIds($userId);
+        } catch (AuthorizationException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
+        }
+
+        $this->stepAlerts->refreshOpenDemandAlerts($serviceScopeIds);
+
+        $filters = $request->validate([
+            'periode' => ['nullable', 'in:all,today,week,month,quarter,year,custom'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date'],
+            'direction_id' => ['nullable', 'integer', 'exists:directions,id_direction'],
+            'service_id' => ['nullable', 'integer', 'exists:services,id_service'],
+            'statut_code' => ['nullable', 'string', 'max:80'],
+            'type_code' => ['nullable', 'string', 'max:80'],
+            'application_state' => ['nullable', 'in:appliquee,non_appliquee'],
+        ]);
+
+        $periodCode = (string) ($filters['periode'] ?? 'month');
+        $directionId = isset($filters['direction_id']) ? (int) $filters['direction_id'] : null;
+        $serviceId = isset($filters['service_id']) ? (int) $filters['service_id'] : null;
+        $statusCode = isset($filters['statut_code']) && $filters['statut_code'] !== ''
+            ? (string) $filters['statut_code']
+            : null;
+        $typeCode = isset($filters['type_code']) && $filters['type_code'] !== ''
+            ? (string) $filters['type_code']
+            : null;
+        $applicationState = isset($filters['application_state']) && $filters['application_state'] !== ''
+            ? (string) $filters['application_state']
+            : null;
+
+        [$resolvedPeriod, $startAt, $endAt] = $this->resolvePeriodBounds(
+            $periodCode,
+            isset($filters['date_from']) ? (string) $filters['date_from'] : null,
+            isset($filters['date_to']) ? (string) $filters['date_to'] : null,
+        );
+
+        $baseDemands = DB::table('demandes as d')
+            ->join('parametres as st', 'st.id_parametre', '=', 'd.id_statut')
+            ->join('parametres as td', 'td.id_parametre', '=', 'd.id_type_demande')
+            ->leftJoin('services as s', 's.id_service', '=', 'd.id_service_courant')
+            ->leftJoin('directions as dir', 'dir.id_direction', '=', 's.id_direction')
+            ->leftJoin('usagers as u', 'u.id_usager', '=', 'd.id_usager');
+
+        $this->applyScope($baseDemands, $serviceScopeIds);
+        $this->applyDemandFilters(
+            $baseDemands,
+            $startAt,
+            $endAt,
+            $directionId,
+            $serviceId,
+            $statusCode,
+            $typeCode,
+            $applicationState,
+            'd.date_soumission'
+        );
+
+        $activeSla = DB::table('config_sla')
+            ->where('actif', true)
+            ->orderByDesc('id_config_sla')
+            ->first();
+
+        $accueilAlerts = $this->alertCounts($baseDemands, 'd.alerte_accueil');
+        $chefAlerts = $this->alertCounts($baseDemands, 'd.alerte_chef');
+        $agentAlerts = $this->alertCounts($baseDemands, 'd.alerte_agent');
+
+        $totalDemandes = (clone $baseDemands)->count('d.id_demande');
+        $totalCloturees = (clone $baseDemands)
+            ->where('st.code', 'cloturee')
+            ->count('d.id_demande');
+        $totalOuvertes = (clone $baseDemands)
+            ->where('st.code', '!=', 'cloturee')
+            ->count('d.id_demande');
+        $totalGlobalDansDelais = (clone $baseDemands)
+            ->where('d.delai_alerte', 'dans_les_delais')
+            ->count('d.id_demande');
+        $totalGlobalARisque = (clone $baseDemands)
+            ->where('d.delai_alerte', 'a_risque')
+            ->count('d.id_demande');
+        $totalRetard = (clone $baseDemands)
+            ->where('d.delai_alerte', 'en_retard')
+            ->count('d.id_demande');
+        $totalClotureesDansDelai = (clone $baseDemands)
+            ->where('st.code', 'cloturee')
+            ->where('d.delai_alerte', 'dans_les_delais')
+            ->count('d.id_demande');
+        $delaiMoyenTraitement = (clone $baseDemands)
+            ->where('st.code', 'cloturee')
+            ->avg('d.heures_ouvrees_cloture');
+
+        $tauxTraitementDelai = $totalCloturees > 0
+            ? round(($totalClotureesDansDelai / $totalCloturees) * 100, 2)
+            : 0.0;
+
+        $statusRows = (clone $baseDemands)
+            ->select('st.code', 'st.libelle', DB::raw('COUNT(*) as total'))
+            ->groupBy('st.code', 'st.libelle')
+            ->orderBy('st.libelle')
+            ->get();
+
+        $byDirection = (clone $baseDemands)
+            ->select(DB::raw("COALESCE(dir.libelle, 'Non affecte') as direction"), DB::raw('COUNT(*) as total'))
+            ->groupBy(DB::raw("COALESCE(dir.libelle, 'Non affecte')"))
+            ->orderByDesc('total')
+            ->get();
+
+        $directionPerfRaw = (clone $baseDemands)
+            ->whereNotNull('dir.id_direction')
+            ->select(
+                'dir.id_direction',
+                'dir.libelle as direction',
+                DB::raw('COUNT(*) as total_demandes'),
+                DB::raw("SUM(CASE WHEN st.code = 'cloturee' THEN 1 ELSE 0 END) as total_cloturees"),
+                DB::raw("SUM(CASE WHEN st.code = 'cloturee' AND d.delai_alerte = 'dans_les_delais' THEN 1 ELSE 0 END) as total_cloturees_delai"),
+                DB::raw("AVG(CASE WHEN st.code = 'cloturee' THEN d.heures_ouvrees_cloture END) as delai_moyen_heures"),
+                DB::raw("SUM(CASE WHEN d.alerte_chef = 'rouge' THEN 1 ELSE 0 END) as total_retards_chef"),
+                DB::raw("SUM(CASE WHEN d.alerte_agent = 'rouge' THEN 1 ELSE 0 END) as total_retards_agent"),
+                DB::raw("SUM(CASE WHEN d.alerte_chef = 'rouge' OR d.alerte_agent = 'rouge' THEN 1 ELSE 0 END) as total_retards")
+            )
+            ->groupBy('dir.id_direction', 'dir.libelle')
+            ->get()
+            ->map(function ($row) {
+                $cloturees = (int) $row->total_cloturees;
+                $dansDelai = (int) $row->total_cloturees_delai;
+
+                return [
+                    'direction' => (string) $row->direction,
+                    'total_demandes' => (int) $row->total_demandes,
+                    'total_cloturees' => $cloturees,
+                    'total_cloturees_delai' => $dansDelai,
+                    'total_cloturees_hors_delai' => max(0, $cloturees - $dansDelai),
+                    'taux_reponse_dans_delais' => $cloturees > 0
+                        ? round(($dansDelai / $cloturees) * 100, 2)
+                        : 0.0,
+                    'delai_moyen_heures' => $row->delai_moyen_heures !== null
+                        ? round((float) $row->delai_moyen_heures, 2)
+                        : null,
+                    'retards_chef' => (int) $row->total_retards_chef,
+                    'retards_agent' => (int) $row->total_retards_agent,
+                    'retards_total' => (int) $row->total_retards,
+                ];
+            })
+            ->sortByDesc('taux_reponse_dans_delais')
+            ->values();
+
+        $directionPerformance = $directionPerfRaw
+            ->values()
+            ->map(function (array $row, int $index) {
+                $row['rang'] = $index + 1;
+                return $row;
+            });
+
+        $serviceKpis = (clone $baseDemands)
+            ->whereNotNull('s.id_service')
+            ->select(
+                's.id_service',
+                's.code as service_code',
+                's.libelle as service',
+                'dir.libelle as direction',
+                DB::raw('COUNT(*) as total_demandes'),
+                DB::raw("SUM(CASE WHEN st.code = 'cloturee' THEN 1 ELSE 0 END) as total_cloturees"),
+                DB::raw("SUM(CASE WHEN st.code = 'cloturee' AND d.delai_alerte = 'dans_les_delais' THEN 1 ELSE 0 END) as total_cloturees_delai"),
+                DB::raw("AVG(CASE WHEN st.code = 'cloturee' THEN d.heures_ouvrees_cloture END) as delai_moyen_heures"),
+                DB::raw("SUM(CASE WHEN d.alerte_chef = 'rouge' THEN 1 ELSE 0 END) as retards_chef"),
+                DB::raw("SUM(CASE WHEN d.alerte_agent = 'rouge' THEN 1 ELSE 0 END) as retards_agent"),
+                DB::raw("SUM(CASE WHEN d.alerte_chef = 'rouge' OR d.alerte_agent = 'rouge' THEN 1 ELSE 0 END) as retards_total")
+            )
+            ->groupBy('s.id_service', 's.code', 's.libelle', 'dir.libelle')
+            ->orderByDesc('total_demandes')
+            ->get()
+            ->map(function ($row) {
+                $cloturees = (int) $row->total_cloturees;
+                $dansDelai = (int) $row->total_cloturees_delai;
+
+                return [
+                    'service_code' => (string) ($row->service_code ?? ''),
+                    'service' => (string) $row->service,
+                    'direction' => (string) $row->direction,
+                    'total_demandes' => (int) $row->total_demandes,
+                    'total_cloturees' => $cloturees,
+                    'total_cloturees_delai' => $dansDelai,
+                    'total_cloturees_hors_delai' => max(0, $cloturees - $dansDelai),
+                    'taux_reponse_dans_delais' => $cloturees > 0
+                        ? round(($dansDelai / $cloturees) * 100, 2)
+                        : 0.0,
+                    'delai_moyen_heures' => $row->delai_moyen_heures !== null
+                        ? round((float) $row->delai_moyen_heures, 2)
+                        : null,
+                    'retards_chef' => (int) $row->retards_chef,
+                    'retards_agent' => (int) $row->retards_agent,
+                    'retards_total' => (int) $row->retards_total,
+                ];
+            });
+
+        $agentKpis = (clone $baseDemands)
+            ->whereNotNull('d.id_agent_traitant')
+            ->leftJoin('utilisateurs as ag', 'ag.id_utilisateur', '=', 'd.id_agent_traitant')
+            ->select(
+                'ag.id_utilisateur',
+                'ag.nom',
+                'ag.prenom',
+                's.libelle as service',
+                DB::raw('COUNT(*) as total_demandes'),
+                DB::raw("SUM(CASE WHEN d.alerte_agent = 'vert' THEN 1 ELSE 0 END) as verts"),
+                DB::raw("SUM(CASE WHEN d.alerte_agent = 'orange' THEN 1 ELSE 0 END) as oranges"),
+                DB::raw("SUM(CASE WHEN d.alerte_agent = 'rouge' THEN 1 ELSE 0 END) as rouges")
+            )
+            ->groupBy('ag.id_utilisateur', 'ag.nom', 'ag.prenom', 's.libelle')
+            ->orderByDesc('total_demandes')
+            ->limit(200)
+            ->get()
+            ->map(fn ($row) => [
+                'agent' => trim(((string) ($row->prenom ?? '')).' '.((string) ($row->nom ?? ''))),
+                'service' => (string) ($row->service ?? '-'),
+                'total_demandes' => (int) $row->total_demandes,
+                'verts' => (int) $row->verts,
+                'oranges' => (int) $row->oranges,
+                'rouges' => (int) $row->rouges,
+            ]);
+
+        $byType = (clone $baseDemands)
+            ->select('td.code', 'td.libelle', DB::raw('COUNT(*) as total'))
+            ->groupBy('td.code', 'td.libelle')
+            ->orderBy('td.libelle')
+            ->get()
+            ->map(fn ($row) => [
+                'code' => (string) $row->code,
+                'libelle' => (string) $row->libelle,
+                'total' => (int) $row->total,
+            ]);
+
+        $typePerformance = (clone $baseDemands)
+            ->select(
+                'td.code',
+                'td.libelle',
+                DB::raw('COUNT(*) as total_demandes'),
+                DB::raw("SUM(CASE WHEN st.code = 'cloturee' THEN 1 ELSE 0 END) as total_cloturees"),
+                DB::raw("SUM(CASE WHEN st.code = 'cloturee' AND d.delai_alerte = 'dans_les_delais' THEN 1 ELSE 0 END) as total_cloturees_delai"),
+                DB::raw("SUM(CASE WHEN d.delai_alerte = 'en_retard' THEN 1 ELSE 0 END) as total_retards")
+            )
+            ->groupBy('td.code', 'td.libelle')
+            ->orderByDesc('total_demandes')
+            ->get()
+            ->map(function ($row) {
+                $cloturees = (int) $row->total_cloturees;
+                $dansDelai = (int) $row->total_cloturees_delai;
+
+                return [
+                    'code' => (string) $row->code,
+                    'libelle' => (string) $row->libelle,
+                    'total_demandes' => (int) $row->total_demandes,
+                    'taux_reponse_dans_delais' => $cloturees > 0
+                        ? round(($dansDelai / $cloturees) * 100, 2)
+                        : 0.0,
+                    'total_retards' => (int) $row->total_retards,
+                ];
+            });
+
+        $receivedEvolutionRows = (clone $baseDemands)
+            ->select('d.date_soumission', 'td.code', 'td.libelle')
+            ->orderBy('d.date_soumission')
+            ->get();
+
+        $closureEvolutionBase = DB::table('demandes as d')
+            ->join('parametres as st', 'st.id_parametre', '=', 'd.id_statut')
+            ->join('parametres as td', 'td.id_parametre', '=', 'd.id_type_demande')
+            ->leftJoin('services as s', 's.id_service', '=', 'd.id_service_courant')
+            ->leftJoin('directions as dir', 'dir.id_direction', '=', 's.id_direction')
+            ->leftJoin('usagers as u', 'u.id_usager', '=', 'd.id_usager');
+
+        $this->applyScope($closureEvolutionBase, $serviceScopeIds);
+        $this->applyDemandFilters(
+            $closureEvolutionBase,
+            $startAt,
+            $endAt,
+            $directionId,
+            $serviceId,
+            $statusCode,
+            $typeCode,
+            $applicationState,
+            'd.date_envoi_usager'
+        );
+
+        $closureEvolutionRows = (clone $closureEvolutionBase)
+            ->where('st.code', 'cloturee')
+            ->whereNotNull('d.date_envoi_usager')
+            ->select('d.date_envoi_usager')
+            ->orderBy('d.date_envoi_usager')
+            ->get();
+
+        $evolutionGranularity = $this->resolveEvolutionGranularity($resolvedPeriod, $startAt, $endAt);
+        $bucketMetadata = $this->buildEvolutionBuckets($startAt, $endAt, $evolutionGranularity, $receivedEvolutionRows, $closureEvolutionRows);
+
+        $typeLabels = [];
+        $receivedByType = [];
+        $receivedReclamations = [];
+        $receivedInformations = [];
+        $cloturees = [];
+
+        foreach ($bucketMetadata as $bucketKey => $label) {
+            $receivedByType[$bucketKey] = [];
+            $receivedReclamations[$bucketKey] = 0;
+            $receivedInformations[$bucketKey] = 0;
+            $cloturees[$bucketKey] = 0;
+        }
+
+        foreach ($receivedEvolutionRows as $row) {
+            if (!$row->date_soumission) {
+                continue;
+            }
+
+            $typeCodeKey = (string) $row->code;
+            $typeLabels[$typeCodeKey] = (string) $row->libelle;
+            $bucketKey = $this->evolutionBucketKey(Carbon::parse($row->date_soumission), $evolutionGranularity);
+
+            if (!array_key_exists($bucketKey, $bucketMetadata)) {
+                $bucketMetadata[$bucketKey] = $this->evolutionBucketLabel(Carbon::parse($row->date_soumission), $evolutionGranularity);
+                $receivedByType[$bucketKey] = [];
+                $receivedReclamations[$bucketKey] = 0;
+                $receivedInformations[$bucketKey] = 0;
+                $cloturees[$bucketKey] = 0;
+            }
+
+            $receivedByType[$bucketKey][$typeCodeKey] = ($receivedByType[$bucketKey][$typeCodeKey] ?? 0) + 1;
+
+            if ($typeCodeKey === 'reclamation') {
+                $receivedReclamations[$bucketKey]++;
+            }
+
+            if ($typeCodeKey === 'demande_information') {
+                $receivedInformations[$bucketKey]++;
+            }
+        }
+
+        foreach ($closureEvolutionRows as $row) {
+            if (!$row->date_envoi_usager) {
+                continue;
+            }
+
+            $bucketKey = $this->evolutionBucketKey(Carbon::parse($row->date_envoi_usager), $evolutionGranularity);
+
+            if (!array_key_exists($bucketKey, $bucketMetadata)) {
+                $bucketMetadata[$bucketKey] = $this->evolutionBucketLabel(Carbon::parse($row->date_envoi_usager), $evolutionGranularity);
+                $receivedByType[$bucketKey] = [];
+                $receivedReclamations[$bucketKey] = 0;
+                $receivedInformations[$bucketKey] = 0;
+                $cloturees[$bucketKey] = 0;
+            }
+
+            $cloturees[$bucketKey]++;
+        }
+
+        ksort($bucketMetadata);
+        ksort($receivedByType);
+        ksort($receivedReclamations);
+        ksort($receivedInformations);
+        ksort($cloturees);
+
+        ksort($typeLabels);
+        $evolutionByType = collect(array_keys($bucketMetadata))->map(function (string $bucketKey) use ($bucketMetadata, $receivedByType, $typeLabels) {
+            $types = [];
+            foreach ($typeLabels as $code => $label) {
+                $types[] = [
+                    'code' => $code,
+                    'libelle' => $label,
+                    'total' => (int) ($receivedByType[$bucketKey][$code] ?? 0),
+                ];
+            }
+
+            return [
+                'periode' => $bucketMetadata[$bucketKey],
+                'types' => $types,
+            ];
+        })->values();
+
+        $evolutionTemporelle = [
+            'granularite' => $evolutionGranularity,
+            'labels' => array_values($bucketMetadata),
+            'series' => [
+                'reclamations_recues' => collect(array_keys($bucketMetadata))->map(fn (string $key) => (int) ($receivedReclamations[$key] ?? 0))->values(),
+                'informations_recues' => collect(array_keys($bucketMetadata))->map(fn (string $key) => (int) ($receivedInformations[$key] ?? 0))->values(),
+                'demandes_cloturees' => collect(array_keys($bucketMetadata))->map(fn (string $key) => (int) ($cloturees[$key] ?? 0))->values(),
+            ],
+        ];
+
+        $usagersPlusActifs = (clone $baseDemands)
+            ->whereNotNull('u.id_usager')
+            ->select(
+                'u.id_usager',
+                'u.nom',
+                'u.prenom',
+                'u.email',
+                DB::raw('COUNT(*) as total_demandes'),
+                DB::raw("SUM(CASE WHEN td.code = 'reclamation' THEN 1 ELSE 0 END) as total_reclamations")
+            )
+            ->groupBy('u.id_usager', 'u.nom', 'u.prenom', 'u.email')
+            ->orderByDesc('total_demandes')
+            ->limit(20)
+            ->get()
+            ->map(function ($row) {
+                $total = (int) $row->total_demandes;
+                $reclamations = (int) $row->total_reclamations;
+
+                return [
+                    'usager' => trim(((string) $row->prenom).' '.((string) $row->nom)),
+                    'email' => $row->email,
+                    'total_demandes' => $total,
+                    'total_reclamations' => $reclamations,
+                    'taux_reclamation' => $total > 0 ? round(($reclamations / $total) * 100, 2) : 0.0,
+                ];
+            });
+
+        $historiqueUsagers = (clone $baseDemands)
+            ->whereNotNull('u.id_usager')
+            ->select(
+                'd.numero_suivi',
+                'd.date_soumission',
+                'd.objet',
+                'td.libelle as type_demande',
+                'st.libelle as statut_demande',
+                'u.nom',
+                'u.prenom',
+                'u.email'
+            )
+            ->orderByDesc('d.date_soumission')
+            ->limit(200)
+            ->get()
+            ->map(fn ($row) => [
+                'date_soumission' => $row->date_soumission,
+                'numero_suivi' => $row->numero_suivi,
+                'usager' => trim(((string) $row->prenom).' '.((string) $row->nom)),
+                'email' => $row->email,
+                'type_demande' => $row->type_demande,
+                'statut_demande' => $row->statut_demande,
+                'objet' => $row->objet,
+            ]);
+
+        $registreMails = (clone $baseDemands)
+            ->whereNotNull('u.id_usager')
+            ->select(
+                'd.numero_suivi',
+                'd.date_soumission',
+                'd.objet',
+                'd.message',
+                'td.libelle as type_demande',
+                'st.code as statut_code',
+                'st.libelle as statut_demande',
+                'dir.libelle as direction',
+                's.libelle as service',
+                'u.nom',
+                'u.prenom',
+                'u.email'
+            )
+            ->orderByDesc('d.date_soumission')
+            ->limit(250)
+            ->get()
+            ->map(fn ($row) => [
+                'numero_suivi' => $row->numero_suivi,
+                'date_reception' => $row->date_soumission,
+                'usager' => trim(((string) $row->prenom).' '.((string) $row->nom)),
+                'email' => $row->email,
+                'objet' => $row->objet,
+                'message' => (string) ($row->message ?? ''),
+                'type_demande' => $row->type_demande,
+                'statut_demande' => $row->statut_demande,
+                'statut_application' => $row->statut_code === 'cloturee' ? 'Appliquee' : 'Non appliquee',
+                'direction' => $row->direction ?: '-',
+                'service' => $row->service ?: '-',
+            ]);
+
+        $annexeBaseRows = (clone $baseDemands)
+            ->leftJoin('utilisateurs as ua', 'ua.id_utilisateur', '=', 'd.id_agent_accueil')
+            ->select(
+                'd.id_demande',
+                'd.numero_suivi',
+                'd.id_config_sla',
+                'd.date_soumission',
+                'd.date_affectation_accueil',
+                'd.date_affectation_agent',
+                'd.id_agent_direction',
+                'd.id_agent_traitant',
+                'd.date_envoi_usager',
+                'd.date_cloture',
+                'd.objet',
+                'd.categorie',
+                'd.delai_alerte',
+                'st.code as statut_code',
+                'st.libelle as statut_traitement',
+                'td.libelle as type_demande',
+                's.id_service as service_id',
+                's.code as service_code',
+                's.libelle as service_libelle',
+                'dir.code as direction_code',
+                'dir.libelle as direction_libelle',
+                'u.nom as usager_nom',
+                'u.prenom as usager_prenom',
+                'ua.nom as accueil_nom',
+                'ua.prenom as accueil_prenom',
+                'ua.id_service as accueil_service_id'
+            )
+            ->orderByDesc('d.date_soumission')
+            ->limit(500)
+            ->get();
+
+        $annexeChefByDemand = collect();
+        $annexeDirectAccueilByDemand = collect();
+        $annexeDemandIds = $annexeBaseRows->pluck('id_demande')->filter()->values()->all();
+        if (!empty($annexeDemandIds)) {
+            $annexeChefByDemand = DB::table('historique_actions as ha')
+                ->leftJoin('utilisateurs as uc', 'uc.id_utilisateur', '=', 'ha.id_utilisateur')
+                ->whereIn('ha.id_demande', $annexeDemandIds)
+                ->whereIn('ha.type_action', ['affectation_agent', 'reponse_directe_chef'])
+                ->orderByDesc('ha.date_action')
+                ->get([
+                    'ha.id_demande',
+                    'uc.nom as chef_nom',
+                    'uc.prenom as chef_prenom',
+                ])
+                ->groupBy('id_demande')
+                ->map(function ($rows) {
+                    $first = $rows->first();
+
+                    return trim(((string) ($first->chef_prenom ?? '')).' '.((string) ($first->chef_nom ?? '')));
+                });
+
+            $annexeDirectAccueilByDemand = DB::table('historique_actions as ha')
+                ->whereIn('ha.id_demande', $annexeDemandIds)
+                ->where('ha.type_action', 'reponse_directe_accueil')
+                ->orderByDesc('ha.date_action')
+                ->get([
+                    'ha.id_demande',
+                    'ha.id_service_associe',
+                ])
+                ->groupBy('id_demande')
+                ->map(fn ($rows) => (int) (($rows->first()->id_service_associe ?? 0) ?: 0));
+
+            $annexeResponseServiceByDemand = DB::table('reponses as r')
+                ->leftJoin('utilisateurs as ue', 'ue.id_utilisateur', '=', 'r.id_envoyeur')
+                ->leftJoin('utilisateurs as ur', 'ur.id_utilisateur', '=', 'r.id_redacteur')
+                ->whereIn('r.id_demande', $annexeDemandIds)
+                ->orderByDesc('r.numero_version')
+                ->orderByDesc('r.date_envoi_usager')
+                ->get([
+                    'r.id_demande',
+                    'ue.id_service as envoyeur_service_id',
+                    'ur.id_service as redacteur_service_id',
+                ])
+                ->groupBy('id_demande')
+                ->map(function ($rows) {
+                    $first = $rows->first();
+                    $serviceId = (int) (($first->envoyeur_service_id ?? $first->redacteur_service_id ?? 0) ?: 0);
+
+                    return $serviceId > 0 ? $serviceId : null;
+                });
+        }
+
+        $serviceMetaById = DB::table('services')
+            ->get(['id_service', 'code', 'libelle'])
+            ->keyBy('id_service');
+
+        $serviceChefByServiceId = DB::table('utilisateurs as u')
+            ->join('utilisateur_role as ur', 'ur.id_utilisateur', '=', 'u.id_utilisateur')
+            ->join('roles as r', 'r.id_role', '=', 'ur.id_role')
+            ->where('r.code', 'chef_service')
+            ->whereNotNull('u.id_service')
+            ->orderBy('u.prenom')
+            ->orderBy('u.nom')
+            ->get([
+                'u.id_service',
+                'u.nom',
+                'u.prenom',
+            ])
+            ->groupBy('id_service')
+            ->map(function ($rows) {
+                $first = $rows->first();
+
+                return trim(((string) ($first->prenom ?? '')).' '.((string) ($first->nom ?? '')));
+            });
+
+        $annexeRows = $annexeBaseRows
+            ->values()
+            ->map(function ($row, int $index) use ($annexeChefByDemand, $annexeDirectAccueilByDemand, $annexeResponseServiceByDemand, $serviceChefByServiceId, $serviceMetaById) {
+                $dispatching = $row->date_affectation_accueil ? Carbon::parse($row->date_affectation_accueil) : null;
+                $reception = $row->date_soumission ? Carbon::parse($row->date_soumission) : null;
+
+                $transmissionOk = false;
+                if ($dispatching && $reception) {
+                    $transmissionOk = $this->slaService->calculateElapsedHours(
+                        $reception,
+                        $dispatching,
+                        (int) $row->id_config_sla
+                    ) <= 24;
+                }
+
+                $realisationDate = $row->date_envoi_usager ?: $row->date_cloture;
+                $respectDelais = ($row->delai_alerte ?? null) === 'en_retard' ? 'NON' : 'OUI';
+
+                $serviceId = $row->service_id ? (int) $row->service_id : null;
+                if ($serviceId === null) {
+                    $serviceId = (int) ($annexeResponseServiceByDemand->get($row->id_demande, 0) ?: 0) ?: null;
+                }
+                if ($serviceId === null && !empty($row->accueil_service_id)) {
+                    $serviceId = (int) $row->accueil_service_id;
+                }
+                $directAccueilServiceId = (int) $annexeDirectAccueilByDemand->get($row->id_demande, 0);
+                $isDirectAccueil = $directAccueilServiceId > 0
+                    || (
+                        ($row->statut_code === 'cloturee')
+                        && $row->id_agent_direction === null
+                        && $row->id_agent_traitant === null
+                        && (($row->service_code ?? null) === null)
+                    );
+
+                if ($serviceId === null && $directAccueilServiceId > 0) {
+                    $serviceId = $directAccueilServiceId;
+                }
+
+                if ($serviceId === null && $isDirectAccueil) {
+                    $serviceId = (int) $serviceMetaById->firstWhere('code', 'UCAS')?->id_service;
+                }
+
+                $serviceMeta = $serviceId !== null ? $serviceMetaById->get($serviceId) : null;
+                $serviceLabel = trim((string) ($serviceMeta->code ?? $row->service_code ?? $row->service_libelle ?? '-'));
+
+                if ($isDirectAccueil) {
+                    $serviceLabel = trim((string) ($serviceMeta->code ?? 'UCAS'));
+                }
+
+                $qcs = $annexeChefByDemand->get($row->id_demande, '');
+                if ($qcs === '' && $serviceId !== null) {
+                    $qcs = (string) $serviceChefByServiceId->get($serviceId, '');
+                }
+
+                return [
+                    'rang' => $index + 1,
+                    'numero_suivi' => $row->numero_suivi,
+                    'date_reception' => $row->date_soumission,
+                    'expediteur' => trim(((string) ($row->usager_prenom ?? '')).' '.((string) ($row->usager_nom ?? ''))),
+                    'objet' => (string) ($row->categorie ?: ($row->objet ?: $row->type_demande ?: '-')),
+                    'date_dispatching' => $row->date_affectation_accueil,
+                    'delai_transmission_oh' => $row->date_affectation_accueil ? ($transmissionOk ? 'OUI' : 'NON') : '-',
+                    'service_direction' => $serviceLabel !== '' ? $serviceLabel : '-',
+                    'realisation' => $realisationDate,
+                    'statut_traitement' => $row->statut_code === 'cloturee' ? 'APPLIQUE' : strtoupper((string) $row->statut_traitement),
+                    'respect_delais' => $respectDelais,
+                    'jours_attente' => $this->formatBusinessDuration(
+                        $row->date_soumission,
+                        $realisationDate,
+                        (int) $row->id_config_sla
+                    ),
+                    'qcs' => $qcs !== '' ? $qcs : '-',
+                ];
+            });
+
+        $registreControleInterne = (clone $baseDemands)
+            ->leftJoin('utilisateurs as ua', 'ua.id_utilisateur', '=', 'd.id_agent_accueil')
+            ->leftJoin('utilisateurs as ut', 'ut.id_utilisateur', '=', 'd.id_agent_traitant')
+            ->leftJoin('utilisateurs as ud', 'ud.id_utilisateur', '=', 'd.id_agent_direction')
+            ->select(
+                'd.numero_suivi',
+                'd.objet',
+                'd.date_soumission',
+                'd.date_affectation_accueil',
+                'd.date_affectation_agent',
+                'd.date_reponse_direction',
+                'd.date_envoi_usager',
+                'd.date_cloture',
+                'd.heures_ouvrees_cloture',
+                'd.delai_alerte',
+                'st.code as statut_code',
+                'st.libelle as statut_traitement',
+                'td.libelle as type_demande',
+                'dir.libelle as direction',
+                's.libelle as service',
+                'u.nom as usager_nom',
+                'u.prenom as usager_prenom',
+                'ua.nom as accueil_nom',
+                'ua.prenom as accueil_prenom',
+                'ut.nom as agent_nom',
+                'ut.prenom as agent_prenom',
+                'ud.nom as chef_nom',
+                'ud.prenom as chef_prenom'
+            )
+            ->orderByDesc('d.date_soumission')
+            ->limit(500)
+            ->get()
+            ->map(function ($row) {
+                $acteurAffectation = trim(((string) ($row->accueil_prenom ?? '')).' '.((string) ($row->accueil_nom ?? '')));
+                $acteurReponse = trim(((string) ($row->chef_prenom ?? '')).' '.((string) ($row->chef_nom ?? '')));
+                if ($acteurReponse === '') {
+                    $acteurReponse = trim(((string) ($row->agent_prenom ?? '')).' '.((string) ($row->agent_nom ?? '')));
+                }
+                if ($acteurReponse === '' && $row->date_envoi_usager) {
+                    $acteurReponse = $acteurAffectation;
+                }
+
+                return [
+                    'numero_suivi' => $row->numero_suivi,
+                    'objet' => $row->objet,
+                    'type_demande' => $row->type_demande,
+                    'usager' => trim(((string) ($row->usager_prenom ?? '')).' '.((string) ($row->usager_nom ?? ''))),
+                    'date_reception' => $row->date_soumission,
+                    'date_affectation_direction' => $row->date_affectation_accueil,
+                    'acteur_affectation' => $acteurAffectation !== '' ? $acteurAffectation : '-',
+                    'direction_affectee' => $row->direction ?: '-',
+                    'service_affecte' => $row->service ?: '-',
+                    'date_affectation_agent' => $row->date_affectation_agent,
+                    'date_reponse' => $row->date_envoi_usager ?: ($row->date_reponse_direction ?: $row->date_cloture),
+                    'acteur_reponse' => $acteurReponse !== '' ? $acteurReponse : '-',
+                    'statut_traitement' => $row->statut_traitement,
+                    'statut_application' => $row->statut_code === 'cloturee' ? 'Appliquee' : 'Non appliquee',
+                    'delai_global' => $this->humanAlertLabel((string) ($row->delai_alerte ?? '')),
+                    'delai_moyen_heures' => $row->heures_ouvrees_cloture !== null
+                        ? round((float) $row->heures_ouvrees_cloture, 2)
+                        : null,
+                ];
+            });
+
+        $categoryExpression = "COALESCE(NULLIF(TRIM(d.categorie), ''), d.objet)";
+
+        $annexeInfoRaw = (clone $baseDemands)
+            ->where('td.code', 'demande_information')
+            ->select(DB::raw($categoryExpression.' as categorie'), DB::raw('COUNT(*) as total'))
+            ->groupBy(DB::raw($categoryExpression))
+            ->orderByDesc('total')
+            ->orderBy(DB::raw($categoryExpression))
+            ->get();
+
+        $totalAnnexeInfos = (int) $annexeInfoRaw->sum('total');
+        $annexeInformations = $annexeInfoRaw->map(function ($row) use ($totalAnnexeInfos) {
+            $total = (int) $row->total;
+            return [
+                'categorie' => (string) ($row->categorie ?? '-'),
+                'objet' => (string) ($row->categorie ?? '-'),
+                'nombre_mails' => $total,
+                'pourcentage' => $totalAnnexeInfos > 0 ? round(($total / $totalAnnexeInfos) * 100, 2) : 0.0,
+            ];
+        })->values();
+
+        $annexeReclamationsRaw = (clone $baseDemands)
+            ->where('td.code', 'reclamation')
+            ->select(DB::raw($categoryExpression.' as categorie'), DB::raw('COUNT(*) as total'))
+            ->groupBy(DB::raw($categoryExpression))
+            ->orderByDesc('total')
+            ->orderBy(DB::raw($categoryExpression))
+            ->get();
+
+        $totalAnnexeReclamations = (int) $annexeReclamationsRaw->sum('total');
+        $annexeReclamations = $annexeReclamationsRaw->map(function ($row) use ($totalAnnexeReclamations) {
+            $total = (int) $row->total;
+            return [
+                'categorie' => (string) ($row->categorie ?? '-'),
+                'objet' => (string) ($row->categorie ?? '-'),
+                'nombre_mails' => $total,
+                'pourcentage' => $totalAnnexeReclamations > 0 ? round(($total / $totalAnnexeReclamations) * 100, 2) : 0.0,
+            ];
+        })->values();
+
+        $annexeFonctionsGlobal = $this->buildFunctionPerformanceAnnexe(clone $baseDemands);
+        $annexeFonctionsInformations = $this->buildFunctionPerformanceAnnexe(clone $baseDemands, 'demande_information');
+
+        $openDemands = (clone $baseDemands)
+            ->where('st.code', '!=', 'cloturee')
+            ->select(
+                'd.numero_suivi',
+                'd.objet',
+                'd.date_soumission',
+                'd.id_config_sla',
+                'd.delai_alerte',
+                'd.alerte_accueil',
+                'd.alerte_chef',
+                'd.alerte_agent',
+                'st.libelle as statut',
+                's.libelle as service',
+                DB::raw("COALESCE(u.nom, '') as usager_nom"),
+                DB::raw("COALESCE(u.prenom, '') as usager_prenom")
+            )
+            ->orderByDesc('d.date_soumission')
+            ->limit(30)
+            ->get();
+
+        $alertStats = [
+            'vert' => 0,
+            'orange' => 0,
+            'rouge' => 0,
+        ];
+
+        $demandesOverview = $openDemands->map(function ($row) use (&$alertStats) {
+            $elapsedHours = $this->slaService->calculateElapsedHours(
+                Carbon::parse($row->date_soumission),
+                now(),
+                (int) $row->id_config_sla
+            );
+            $globalAlert = (string) ($row->delai_alerte ?? 'dans_les_delais');
+
+            if ($globalAlert === 'dans_les_delais') {
+                $alertStats['vert']++;
+            } elseif ($globalAlert === 'a_risque') {
+                $alertStats['orange']++;
+            } elseif ($globalAlert === 'en_retard') {
+                $alertStats['rouge']++;
+            }
+
+            return [
+                'numero_suivi' => $row->numero_suivi,
+                'objet' => $row->objet,
+                'usager' => trim($row->usager_nom.' '.$row->usager_prenom),
+                'service' => $row->service,
+                'statut' => $row->statut,
+                'heures_ouvrees' => $elapsedHours,
+                'alerte' => $this->humanAlertLabel($globalAlert),
+                'alerte_accueil' => $row->alerte_accueil,
+                'alerte_chef' => $row->alerte_chef,
+                'alerte_agent' => $row->alerte_agent,
+            ];
+        });
+
+        $actionsQuery = DB::table('historique_actions as ha')
+            ->join('demandes as d', 'd.id_demande', '=', 'ha.id_demande')
+            ->join('parametres as st', 'st.id_parametre', '=', 'd.id_statut')
+            ->join('parametres as td', 'td.id_parametre', '=', 'd.id_type_demande')
+            ->leftJoin('services as s', 's.id_service', '=', 'd.id_service_courant')
+            ->leftJoin('directions as dir', 'dir.id_direction', '=', 's.id_direction')
+            ->leftJoin('utilisateurs as u', 'u.id_utilisateur', '=', 'ha.id_utilisateur');
+
+        $this->applyScope($actionsQuery, $serviceScopeIds);
+        $this->applyDemandFilters(
+            $actionsQuery,
+            $startAt,
+            $endAt,
+            $directionId,
+            $serviceId,
+            $statusCode,
+            $typeCode,
+            $applicationState,
+            'ha.date_action'
+        );
+
+        $actionsRecentes = $actionsQuery
+            ->select(
+                'ha.date_action',
+                'ha.type_action',
+                'ha.commentaire',
+                'd.numero_suivi',
+                'dir.libelle as direction',
+                's.libelle as service',
+                'u.nom as acteur_nom',
+                'u.prenom as acteur_prenom'
+            )
+            ->orderByDesc('ha.date_action')
+            ->limit(100)
+            ->get()
+            ->map(fn ($row) => [
+                'date_action' => $row->date_action,
+                'type_action' => $row->type_action,
+                'numero_suivi' => $row->numero_suivi,
+                'acteur' => trim(((string) ($row->acteur_prenom ?? '')).' '.((string) ($row->acteur_nom ?? ''))),
+                'direction' => $row->direction,
+                'service' => $row->service,
+                'commentaire' => $row->commentaire,
+            ]);
+
+        $traceQuery = DB::table('historique_actions as ha')
+            ->join('demandes as d', 'd.id_demande', '=', 'ha.id_demande')
+            ->join('parametres as st', 'st.id_parametre', '=', 'd.id_statut')
+            ->join('parametres as td', 'td.id_parametre', '=', 'd.id_type_demande')
+            ->leftJoin('usagers as us', 'us.id_usager', '=', 'd.id_usager')
+            ->leftJoin('utilisateurs as ua', 'ua.id_utilisateur', '=', 'ha.id_utilisateur')
+            ->leftJoin('parametres as old_st', 'old_st.id_parametre', '=', 'ha.ancien_statut_id')
+            ->leftJoin('parametres as new_st', 'new_st.id_parametre', '=', 'ha.nouveau_statut_id')
+            ->leftJoin('services as s', 's.id_service', '=', 'd.id_service_courant')
+            ->leftJoin('directions as dir', 'dir.id_direction', '=', 's.id_direction');
+
+        $this->applyScope($traceQuery, $serviceScopeIds);
+        $this->applyDemandFilters(
+            $traceQuery,
+            $startAt,
+            $endAt,
+            $directionId,
+            $serviceId,
+            $statusCode,
+            $typeCode,
+            $applicationState,
+            'ha.date_action'
+        );
+
+        $traceRows = $traceQuery
+            ->select(
+                'd.id_demande',
+                'd.numero_suivi',
+                'd.objet',
+                'st.libelle as statut_courant',
+                'td.libelle as type_demande',
+                'us.nom as usager_nom',
+                'us.prenom as usager_prenom',
+                'ha.date_action',
+                'ha.type_action',
+                'ha.commentaire',
+                'old_st.libelle as ancien_statut',
+                'new_st.libelle as nouveau_statut',
+                'ua.nom as acteur_nom',
+                'ua.prenom as acteur_prenom',
+                's.libelle as service',
+                'dir.libelle as direction'
+            )
+            ->orderByDesc('ha.date_action')
+            ->limit(3000)
+            ->get()
+            ->groupBy('id_demande')
+            ->map(function ($rows) {
+                $sortedRows = $rows->sortBy('date_action')->values();
+                $first = $sortedRows->first();
+
+                $actions = $sortedRows->map(function ($row) use ($first) {
+                    $acteur = trim(((string) ($row->acteur_prenom ?? '')).' '.((string) ($row->acteur_nom ?? '')));
+                    if ($acteur === '' && $row->type_action === 'soumission_usager') {
+                        $acteur = trim(((string) ($first->usager_prenom ?? '')).' '.((string) ($first->usager_nom ?? '')));
+                        $acteur = $acteur !== '' ? "{$acteur} (usager)" : 'Usager';
+                    }
+
+                    return [
+                        'date_action' => $row->date_action,
+                        'action' => $this->humanActionLabel((string) $row->type_action),
+                        'acteur' => $acteur !== '' ? $acteur : 'Systeme',
+                        'transition' => $row->ancien_statut || $row->nouveau_statut
+                            ? trim(((string) ($row->ancien_statut ?? '-')).' -> '.((string) ($row->nouveau_statut ?? '-')))
+                            : null,
+                        'commentaire' => $row->commentaire,
+                    ];
+                })->values();
+
+                return [
+                    'numero_suivi' => $first->numero_suivi,
+                    'usager' => trim(((string) ($first->usager_prenom ?? '')).' '.((string) ($first->usager_nom ?? ''))),
+                    'type_demande' => $first->type_demande,
+                    'statut_courant' => $first->statut_courant,
+                    'objet' => $first->objet,
+                    'direction' => $first->direction,
+                    'service' => $first->service,
+                    'actions' => $actions,
+                    'date_dernier_evenement' => $actions->last()['date_action'] ?? null,
+                ];
+            })
+            ->sortByDesc('date_dernier_evenement')
+            ->values();
+
+        $organisation = DB::table('directions')
+            ->where('actif', true)
+            ->when(
+                $serviceScopeIds !== null,
+                fn ($q) => $q->whereIn('id_direction', function ($sq) use ($serviceScopeIds) {
+                    $sq->from('services')
+                        ->select('id_direction')
+                        ->whereIn('id_service', !empty($serviceScopeIds) ? $serviceScopeIds : [-1]);
+                })
+            )
+            ->orderBy('code')
+            ->get()
+            ->map(function ($direction) use ($serviceScopeIds) {
+                $services = DB::table('services')
+                    ->where('id_direction', $direction->id_direction)
+                    ->where('actif', true)
+                    ->when(
+                        $serviceScopeIds !== null,
+                        fn ($q) => $q->whereIn('id_service', !empty($serviceScopeIds) ? $serviceScopeIds : [-1])
+                    )
+                    ->orderBy('code')
+                    ->get(['code', 'libelle']);
+
+                return [
+                    'code' => $direction->code,
+                    'libelle' => $direction->libelle,
+                    'services' => $services,
+                ];
+            });
+
+        $catalogDirections = DB::table('directions as d')
+            ->where('d.actif', true)
+            ->when(
+                $serviceScopeIds !== null,
+                fn ($q) => $q->whereIn('d.id_direction', function ($sq) use ($serviceScopeIds) {
+                    $sq->from('services')
+                        ->select('id_direction')
+                        ->whereIn('id_service', !empty($serviceScopeIds) ? $serviceScopeIds : [-1]);
+                })
+            )
+            ->orderBy('d.code')
+            ->get(['d.id_direction', 'd.code', 'd.libelle']);
+
+        $catalogServices = DB::table('services as s')
+            ->join('directions as d', 'd.id_direction', '=', 's.id_direction')
+            ->where('s.actif', true)
+            ->when(
+                $serviceScopeIds !== null,
+                fn ($q) => $q->whereIn('s.id_service', !empty($serviceScopeIds) ? $serviceScopeIds : [-1])
+            )
+            ->orderBy('d.code')
+            ->orderBy('s.code')
+            ->get([
+                's.id_service',
+                's.id_direction',
+                's.code',
+                's.libelle',
+                'd.code as direction_code',
+                'd.libelle as direction_libelle',
+            ]);
+
+        $catalogStatus = DB::table('parametres')
+            ->where('famille', 'statut_demande')
+            ->where('actif', true)
+            ->orderBy('ordre_affichage')
+            ->get(['code', 'libelle']);
+
+        $catalogTypes = DB::table('parametres')
+            ->where('famille', 'type_demande')
+            ->where('actif', true)
+            ->orderBy('ordre_affichage')
+            ->get(['code', 'libelle']);
+
+        return response()->json([
+            'generated_at' => now()->toIso8601String(),
+            'filters_appliques' => [
+                'periode' => $resolvedPeriod,
+                'date_from' => $startAt,
+                'date_to' => $endAt,
+                'direction_id' => $directionId,
+                'service_id' => $serviceId,
+                'statut_code' => $statusCode,
+                'type_code' => $typeCode,
+                'application_state' => $applicationState,
+            ],
+            'kpis' => [
+                'total_demandes' => $totalDemandes,
+                'total_ouvertes' => $totalOuvertes,
+                'total_traitees' => $totalCloturees,
+                'total_appliquees' => $totalCloturees,
+                'total_non_appliquees' => $totalOuvertes,
+                'global_dans_les_delais' => $totalGlobalDansDelais,
+                'global_a_risque' => $totalGlobalARisque,
+                'global_en_retard' => $totalRetard,
+                'total_en_retard' => $totalRetard,
+                'taux_traitement_dans_delais' => $tauxTraitementDelai,
+                'delai_moyen_traitement_heures' => $delaiMoyenTraitement !== null
+                    ? round((float) $delaiMoyenTraitement, 2)
+                    : null,
+                'accueil_verts' => $accueilAlerts['vert'],
+                'accueil_oranges' => $accueilAlerts['orange'],
+                'accueil_rouges' => $accueilAlerts['rouge'],
+                'chef_rouges' => $chefAlerts['rouge'],
+                'agent_rouges' => $agentAlerts['rouge'],
+                'global_verts' => $alertStats['vert'],
+                'global_oranges' => $alertStats['orange'],
+                'global_rouges' => $alertStats['rouge'],
+            ],
+            'sla_active' => $activeSla,
+            'statuts' => $statusRows,
+            'par_direction' => $byDirection,
+            'performance_directions' => $directionPerformance,
+            'kpi_services' => $serviceKpis,
+            'kpi_agents' => $agentKpis,
+            'par_type' => $byType,
+            'performance_types' => $typePerformance,
+            'evolution_par_type' => $evolutionByType,
+            'evolution_temporelle' => $evolutionTemporelle,
+            'usagers_plus_actifs' => $usagersPlusActifs,
+            'historique_usagers' => $historiqueUsagers,
+            'registre_mails' => $registreMails,
+            'registre_controle_interne' => $registreControleInterne,
+            'tableau_suivi_annexe' => $annexeRows,
+            'annexe_repartition' => [
+                'informations' => $annexeInformations,
+                'total_informations' => $totalAnnexeInfos,
+                'reclamations' => $annexeReclamations,
+                'total_reclamations' => $totalAnnexeReclamations,
+            ],
+            'annexes_fonctions' => [
+                'global' => $annexeFonctionsGlobal,
+                'informations' => $annexeFonctionsInformations,
+            ],
+            'actions_recentes' => $actionsRecentes,
+            'tracabilite_globale' => $traceRows,
+            'demandes_en_cours' => $demandesOverview,
+            'organisation' => $organisation,
+            'catalogues' => [
+                'directions' => $catalogDirections,
+                'services' => $catalogServices,
+                'statuts' => $catalogStatus,
+                'types' => $catalogTypes,
+                'application_states' => [
+                    ['code' => 'appliquee', 'libelle' => 'Appliquee'],
+                    ['code' => 'non_appliquee', 'libelle' => 'Non appliquee'],
+                ],
+            ],
+            'phase4_gantt' => [
+                'intitule' => 'Phase 4 - Developpement',
+                'duree' => '05 semaines',
+                'pilote' => 'CS_SIRS',
+                'blocs' => [
+                    'Interfaces utilisateur',
+                    'Gestion des utilisateurs et des droits',
+                    'Gestion des reclamations',
+                    'Suivi de l execution et statuts',
+                    'SLA 72h + alertes',
+                    'Tracabilite',
+                    'Tableau de bord + exports',
+                ],
+            ],
+        ]);
+    }
+
+    private function applyScope(Builder $query, ?array $serviceScopeIds): void
+    {
+        if ($serviceScopeIds !== null) {
+            $query->whereIn('d.id_service_courant', !empty($serviceScopeIds) ? $serviceScopeIds : [-1]);
+        }
+    }
+
+    private function applyDemandFilters(
+        Builder $query,
+        ?string $startAt,
+        ?string $endAt,
+        ?int $directionId,
+        ?int $serviceId,
+        ?string $statusCode,
+        ?string $typeCode,
+        ?string $applicationState,
+        string $dateField
+    ): void {
+        if ($startAt) {
+            $query->where($dateField, '>=', $startAt);
+        }
+        if ($endAt) {
+            $query->where($dateField, '<=', $endAt);
+        }
+        if ($directionId) {
+            $query->where('s.id_direction', $directionId);
+        }
+        if ($serviceId) {
+            $serviceCode = DB::table('services')
+                ->where('id_service', $serviceId)
+                ->value('code');
+
+            if ($serviceCode === 'UCAS') {
+                $query->where(function (Builder $serviceQuery) use ($serviceId) {
+                    $serviceQuery
+                        ->where('s.id_service', $serviceId)
+                        ->orWhereExists(function ($existsQuery) {
+                            $existsQuery
+                                ->selectRaw('1')
+                                ->from('historique_actions as ha')
+                                ->whereColumn('ha.id_demande', 'd.id_demande')
+                                ->where('ha.type_action', 'reponse_directe_accueil');
+                        });
+                });
+            } else {
+                $query->where('s.id_service', $serviceId);
+            }
+        }
+        if ($statusCode) {
+            $query->where('st.code', $statusCode);
+        }
+        if ($typeCode) {
+            $query->where('td.code', $typeCode);
+        }
+        if ($applicationState === 'appliquee') {
+            $query->where('st.code', 'cloturee');
+        }
+        if ($applicationState === 'non_appliquee') {
+            $query->where('st.code', '!=', 'cloturee');
+        }
+    }
+
+    private function alertCounts(Builder $baseQuery, string $column): array
+    {
+        $row = (clone $baseQuery)
+            ->selectRaw("SUM(CASE WHEN {$column} = 'vert' THEN 1 ELSE 0 END) as vert")
+            ->selectRaw("SUM(CASE WHEN {$column} = 'orange' THEN 1 ELSE 0 END) as orange")
+            ->selectRaw("SUM(CASE WHEN {$column} = 'rouge' THEN 1 ELSE 0 END) as rouge")
+            ->first();
+
+        return [
+            'vert' => (int) ($row->vert ?? 0),
+            'orange' => (int) ($row->orange ?? 0),
+            'rouge' => (int) ($row->rouge ?? 0),
+        ];
+    }
+
+    private function resolvePeriodBounds(string $period, ?string $dateFrom, ?string $dateTo): array
+    {
+        $now = now();
+        $start = null;
+        $end = null;
+        $resolved = $period;
+
+        if ($dateFrom || $dateTo) {
+            $resolved = 'custom';
+            $start = $dateFrom ? Carbon::parse($dateFrom)->startOfDay() : null;
+            $end = $dateTo ? Carbon::parse($dateTo)->endOfDay() : null;
+
+            if ($start && !$end) {
+                $end = $now->copy()->endOfDay();
+            }
+
+            if (!$start && $end) {
+                $start = $end->copy()->startOfDay();
+            }
+
+            if ($start && $end && $start->greaterThan($end)) {
+                [$start, $end] = [$end->copy()->startOfDay(), $start->copy()->endOfDay()];
+            }
+
+            return [
+                $resolved,
+                $start ? $start->toDateTimeString() : null,
+                $end ? $end->toDateTimeString() : null,
+            ];
+        }
+
+        switch ($period) {
+            case 'today':
+                $start = $now->copy()->startOfDay();
+                $end = $now->copy()->endOfDay();
+                break;
+            case 'week':
+                $start = $now->copy()->startOfWeek();
+                $end = $now->copy()->endOfWeek();
+                break;
+            case 'month':
+                $start = $now->copy()->startOfMonth();
+                $end = $now->copy()->endOfMonth();
+                break;
+            case 'quarter':
+                $start = $now->copy()->startOfQuarter();
+                $end = $now->copy()->endOfQuarter();
+                break;
+            case 'year':
+                $start = $now->copy()->startOfYear();
+                $end = $now->copy()->endOfYear();
+                break;
+            case 'custom':
+                $resolved = 'all';
+                break;
+            case 'all':
+                break;
+            default:
+                $resolved = 'month';
+                $start = $now->copy()->startOfMonth();
+                $end = $now->copy()->endOfMonth();
+                break;
+        }
+
+        return [
+            $resolved,
+            $start ? $start->toDateTimeString() : null,
+            $end ? $end->toDateTimeString() : null,
+        ];
+    }
+
+    private function resolveEvolutionGranularity(string $resolvedPeriod, ?string $startAt, ?string $endAt): string
+    {
+        if ($resolvedPeriod === 'today' || $resolvedPeriod === 'week') {
+            return 'day';
+        }
+
+        if ($resolvedPeriod === 'month') {
+            return 'week';
+        }
+
+        if ($resolvedPeriod === 'quarter' || $resolvedPeriod === 'year') {
+            return 'month';
+        }
+
+        if ($startAt && $endAt) {
+            $days = Carbon::parse($startAt)->diffInDays(Carbon::parse($endAt)) + 1;
+
+            if ($days <= 14) {
+                return 'day';
+            }
+
+            if ($days <= 120) {
+                return 'week';
+            }
+
+            return 'month';
+        }
+
+        return 'month';
+    }
+
+    private function buildEvolutionBuckets(
+        ?string $startAt,
+        ?string $endAt,
+        string $granularity,
+        iterable $receivedRows,
+        iterable $closureRows
+    ): array {
+        $buckets = [];
+
+        if ($startAt && $endAt) {
+            $current = $this->normalizeEvolutionBucket(Carbon::parse($startAt), $granularity);
+            $end = $this->normalizeEvolutionBucket(Carbon::parse($endAt), $granularity);
+            $boundedStart = Carbon::parse($startAt);
+            $boundedEnd = Carbon::parse($endAt);
+
+            while ($current->lessThanOrEqualTo($end)) {
+                $key = $this->evolutionBucketKey($current, $granularity);
+                $buckets[$key] = $this->evolutionBucketLabel($current, $granularity, $boundedStart, $boundedEnd);
+                $current = $this->incrementEvolutionBucket($current, $granularity);
+            }
+
+            return $buckets;
+        }
+
+        foreach ($receivedRows as $row) {
+            if (!$row->date_soumission) {
+                continue;
+            }
+
+            $date = Carbon::parse($row->date_soumission);
+            $key = $this->evolutionBucketKey($date, $granularity);
+            $buckets[$key] = $this->evolutionBucketLabel($date, $granularity);
+        }
+
+        foreach ($closureRows as $row) {
+            if (!$row->date_envoi_usager) {
+                continue;
+            }
+
+            $date = Carbon::parse($row->date_envoi_usager);
+            $key = $this->evolutionBucketKey($date, $granularity);
+            $buckets[$key] = $this->evolutionBucketLabel($date, $granularity);
+        }
+
+        return $buckets;
+    }
+
+    private function normalizeEvolutionBucket(Carbon $date, string $granularity): Carbon
+    {
+        return match ($granularity) {
+            'day' => $date->copy()->startOfDay(),
+            'week' => $date->copy()->startOfWeek(),
+            default => $date->copy()->startOfMonth(),
+        };
+    }
+
+    private function incrementEvolutionBucket(Carbon $date, string $granularity): Carbon
+    {
+        return match ($granularity) {
+            'day' => $date->copy()->addDay(),
+            'week' => $date->copy()->addWeek(),
+            default => $date->copy()->addMonth(),
+        };
+    }
+
+    private function evolutionBucketKey(Carbon $date, string $granularity): string
+    {
+        $normalized = $this->normalizeEvolutionBucket($date, $granularity);
+
+        return match ($granularity) {
+            'day' => $normalized->format('Y-m-d'),
+            'week' => $normalized->format('Y-m-d'),
+            default => $normalized->format('Y-m'),
+        };
+    }
+
+    private function evolutionBucketLabel(
+        Carbon $date,
+        string $granularity,
+        ?Carbon $boundedStart = null,
+        ?Carbon $boundedEnd = null
+    ): string
+    {
+        $normalized = $this->normalizeEvolutionBucket($date, $granularity);
+
+        return match ($granularity) {
+            'day' => $normalized->translatedFormat('d M'),
+            'week' => $this->formatWeeklyEvolutionLabel($normalized, $boundedStart, $boundedEnd),
+            default => ucfirst($normalized->translatedFormat('M Y')),
+        };
+    }
+
+    private function formatWeeklyEvolutionLabel(
+        Carbon $weekStart,
+        ?Carbon $boundedStart = null,
+        ?Carbon $boundedEnd = null
+    ): string {
+        $displayStart = $weekStart->copy()->startOfWeek();
+        $displayEnd = $weekStart->copy()->endOfWeek();
+
+        if ($boundedStart && $displayStart->lessThan($boundedStart)) {
+            $displayStart = $boundedStart->copy();
+        }
+
+        if ($boundedEnd && $displayEnd->greaterThan($boundedEnd)) {
+            $displayEnd = $boundedEnd->copy();
+        }
+
+        if ($displayStart->isSameDay($displayEnd)) {
+            return 'Jour du '.$displayStart->translatedFormat('d M');
+        }
+
+        $sameMonth = $displayStart->format('mY') === $displayEnd->format('mY');
+
+        if ($sameMonth) {
+            return $displayStart->translatedFormat('d').' - '.$displayEnd->translatedFormat('d M');
+        }
+
+        return $displayStart->translatedFormat('d M').' - '.$displayEnd->translatedFormat('d M');
+    }
+
+    private function calculateWaitingDays(?string $startDate, ?string $endDate): int
+    {
+        if (!$startDate) {
+            return 0;
+        }
+
+        $start = Carbon::parse($startDate)->startOfDay();
+        $end = $endDate ? Carbon::parse($endDate)->startOfDay() : now()->startOfDay();
+
+        if ($end->lessThan($start)) {
+            return 0;
+        }
+
+        return $start->diffInDays($end);
+    }
+
+    private function formatBusinessDuration(?string $startDate, ?string $endDate, int $configId): string
+    {
+        if (!$startDate || !$endDate || $configId <= 0) {
+            return '-';
+        }
+
+        $elapsedHours = $this->slaService->calculateElapsedHours(
+            Carbon::parse($startDate),
+            Carbon::parse($endDate),
+            $configId
+        );
+
+        $roundedHours = max(0, (int) round($elapsedHours));
+        $days = intdiv($roundedHours, 24);
+        $hours = $roundedHours % 24;
+
+        return "{$days} j {$hours} h";
+    }
+
+    private function humanActionLabel(string $action): string
+    {
+        return match ($action) {
+            'soumission_usager' => 'Soumission usager',
+            'soumission' => 'Soumission',
+            'affectation_service' => 'Affectation service',
+            'affectation_agent' => 'Affectation agent',
+            'annulation_affectation_agent' => 'Annulation affectation agent',
+            'reponse_redigee' => 'Reponse redigee',
+            'envoi_reponse' => 'Reponse finale envoyee',
+            'reponse_directe_accueil' => 'Reponse directe accueil',
+            'reponse_directe_chef' => 'Reponse directe chef',
+            'reouverture' => 'Reouverture',
+            default => ucfirst(str_replace('_', ' ', $action)),
+        };
+    }
+
+    private function buildFunctionPerformanceAnnexe(Builder $baseDemands, ?string $typeCode = null): array
+    {
+        $functionDefinitions = [
+            'DS' => 'Direction de la Scolarite',
+            'DSIC' => 'Direction des Systemes d Information',
+            'DAF' => 'Direction Administrative et Financiere',
+            'UCAS' => 'Unite Courrier, Accueil et Securite',
+        ];
+
+        $directAccueilExistsExpression = "EXISTS (SELECT 1 FROM historique_actions ha WHERE ha.id_demande = d.id_demande AND ha.type_action = 'reponse_directe_accueil')";
+        $functionCodeExpression = "CASE WHEN {$directAccueilExistsExpression} OR s.code = 'UCAS' THEN 'UCAS' WHEN dir.code IN ('DS', 'DSIC', 'DAF') THEN dir.code ELSE NULL END";
+        $functionLabelExpression = "CASE WHEN {$directAccueilExistsExpression} OR s.code = 'UCAS' THEN COALESCE(s.libelle, 'Unite Courrier, Accueil et Securite') WHEN dir.code IN ('DS', 'DSIC', 'DAF') THEN dir.libelle ELSE NULL END";
+
+        $filteredDemands = (clone $baseDemands)
+            ->when($typeCode !== null, fn (Builder $query) => $query->where('td.code', $typeCode));
+
+        $metrics = (clone $filteredDemands)
+            ->whereRaw($functionCodeExpression.' IS NOT NULL')
+            ->select(
+                DB::raw($functionCodeExpression.' as fonction_code'),
+                DB::raw($functionLabelExpression.' as fonction_label'),
+                DB::raw('COUNT(*) as total_demandes'),
+                DB::raw("SUM(CASE WHEN st.code = 'cloturee' THEN 1 ELSE 0 END) as total_traitees"),
+                DB::raw("SUM(CASE WHEN st.code = 'cloturee' AND d.delai_alerte = 'dans_les_delais' THEN 1 ELSE 0 END) as total_traitees_delai")
+            )
+            ->groupBy(DB::raw($functionCodeExpression), DB::raw($functionLabelExpression))
+            ->get()
+            ->keyBy('fonction_code');
+
+        $ucasMetrics = (clone $filteredDemands)
+            ->where(function (Builder $query) use ($directAccueilExistsExpression) {
+                $query
+                    ->where('s.code', 'UCAS')
+                    ->orWhereRaw($directAccueilExistsExpression);
+            })
+            ->selectRaw('COUNT(*) as total_demandes')
+            ->selectRaw("SUM(CASE WHEN st.code = 'cloturee' AND {$directAccueilExistsExpression} THEN 1 ELSE 0 END) as total_traitees")
+            ->selectRaw("SUM(CASE WHEN st.code = 'cloturee' AND d.delai_alerte = 'dans_les_delais' AND {$directAccueilExistsExpression} THEN 1 ELSE 0 END) as total_traitees_delai")
+            ->first();
+
+        $rows = collect($functionDefinitions)
+            ->map(function (string $defaultLabel, string $code) use ($metrics, $ucasMetrics) {
+                $metric = $code === 'UCAS'
+                    ? $ucasMetrics
+                    : $metrics->get($code);
+                $totalDemandes = (int) ($metric->total_demandes ?? 0);
+                $totalTraitees = (int) ($metric->total_traitees ?? 0);
+                $totalTraiteesDelai = (int) ($metric->total_traitees_delai ?? 0);
+                $tauxExecution = $totalDemandes > 0 ? round(($totalTraitees / $totalDemandes) * 100, 1) : 0.0;
+                $tauxConformite = $totalTraitees > 0 ? round(($totalTraiteesDelai / $totalTraitees) * 100, 1) : 0.0;
+
+                return [
+                    'fonction_code' => $code,
+                    'fonction_label' => $code === 'UCAS'
+                        ? $defaultLabel
+                        : (string) ($metric->fonction_label ?? $defaultLabel),
+                    'total_demandes' => $totalDemandes,
+                    'total_traitees' => $totalTraitees,
+                    'taux_execution' => $tauxExecution,
+                    'total_traitees_delai' => $totalTraiteesDelai,
+                    'taux_conformite' => $tauxConformite,
+                    'score_moyen' => round(($tauxExecution + $tauxConformite) / 2, 1),
+                ];
+            })
+            ->values();
+
+        $sumDemandes = (int) $rows->sum('total_demandes');
+        $sumTraitees = (int) $rows->sum('total_traitees');
+        $sumTraiteesDelai = (int) $rows->sum('total_traitees_delai');
+        $totalTauxExecution = $sumDemandes > 0 ? round(($sumTraitees / $sumDemandes) * 100, 1) : 0.0;
+        $totalTauxConformite = $sumTraitees > 0 ? round(($sumTraiteesDelai / $sumTraitees) * 100, 1) : 0.0;
+
+        return [
+            'rows' => $rows,
+            'totaux' => [
+                'total_demandes' => $sumDemandes,
+                'total_traitees' => $sumTraitees,
+                'taux_execution' => $totalTauxExecution,
+                'total_traitees_delai' => $sumTraiteesDelai,
+                'taux_conformite' => $totalTauxConformite,
+                'score_moyen' => round(($totalTauxExecution + $totalTauxConformite) / 2, 1),
+            ],
+        ];
+    }
+
+    private function humanAlertLabel(string $alertCode): string
+    {
+        return match ($alertCode) {
+            'dans_les_delais' => 'Dans les delais',
+            'a_risque' => 'A risque',
+            'en_retard' => 'Hors delai',
+            default => '-',
+        };
+    }
+}
