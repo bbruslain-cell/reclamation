@@ -33,6 +33,7 @@ class OverviewController extends Controller
                 throw new AuthorizationException('Acces tableau de bord refuse.');
             }
 
+            $roleCodes = $access->roleCodes($userId);
             $canViewAll = $access->hasPermission($userId, 'demande.view.all');
             $serviceScopeIds = $canViewAll ? null : $access->scopedServiceIds($userId);
         } catch (AuthorizationException $e) {
@@ -52,7 +53,8 @@ class OverviewController extends Controller
             'application_state' => ['nullable', 'in:appliquee,non_appliquee'],
         ]);
 
-        $periodCode = (string) ($filters['periode'] ?? 'month');
+        $defaultPeriod = in_array('chef_direction', $roleCodes ?? [], true) ? 'all' : 'month';
+        $periodCode = (string) ($filters['periode'] ?? $defaultPeriod);
         $directionId = isset($filters['direction_id']) ? (int) $filters['direction_id'] : null;
         $serviceId = isset($filters['service_id']) ? (int) $filters['service_id'] : null;
         $statusCode = isset($filters['statut_code']) && $filters['statut_code'] !== ''
@@ -519,9 +521,11 @@ class OverviewController extends Controller
                 'd.date_cloture',
                 'd.objet',
                 'd.categorie',
+                'd.message',
                 'd.delai_alerte',
                 'st.code as statut_code',
                 'st.libelle as statut_traitement',
+                'td.code as type_demande_code',
                 'td.libelle as type_demande',
                 's.id_service as service_id',
                 's.code as service_code',
@@ -530,6 +534,8 @@ class OverviewController extends Controller
                 'dir.libelle as direction_libelle',
                 'u.nom as usager_nom',
                 'u.prenom as usager_prenom',
+                'u.email as usager_email',
+                'u.telephone as usager_telephone',
                 'ua.nom as accueil_nom',
                 'ua.prenom as accueil_prenom',
                 'ua.id_service as accueil_service_id'
@@ -540,6 +546,8 @@ class OverviewController extends Controller
 
         $annexeChefByDemand = collect();
         $annexeDirectAccueilByDemand = collect();
+        $annexeResponseServiceByDemand = collect();
+        $annexePiecesByDemand = collect();
         $annexeDemandIds = $annexeBaseRows->pluck('id_demande')->filter()->values()->all();
         if (!empty($annexeDemandIds)) {
             $annexeChefByDemand = DB::table('historique_actions as ha')
@@ -588,6 +596,24 @@ class OverviewController extends Controller
 
                     return $serviceId > 0 ? $serviceId : null;
                 });
+
+            $annexePiecesByDemand = DB::table('demande_piece_jointe as dpj')
+                ->join('pieces_jointes as pj', 'pj.id_piece_jointe', '=', 'dpj.id_piece_jointe')
+                ->whereIn('dpj.id_demande', $annexeDemandIds)
+                ->orderByDesc('pj.id_piece_jointe')
+                ->get([
+                    'dpj.id_demande',
+                    'pj.id_piece_jointe',
+                    'pj.nom_fichier',
+                ])
+                ->groupBy('id_demande')
+                ->map(fn ($rows) => $rows
+                    ->map(fn ($piece) => [
+                        'id_piece_jointe' => (int) $piece->id_piece_jointe,
+                        'nom_fichier' => (string) $piece->nom_fichier,
+                    ])
+                    ->values()
+                    ->all());
         }
 
         $serviceMetaById = DB::table('services')
@@ -615,7 +641,7 @@ class OverviewController extends Controller
 
         $annexeRows = $annexeBaseRows
             ->values()
-            ->map(function ($row, int $index) use ($annexeChefByDemand, $annexeDirectAccueilByDemand, $annexeResponseServiceByDemand, $serviceChefByServiceId, $serviceMetaById) {
+            ->map(function ($row, int $index) use ($annexeChefByDemand, $annexeDirectAccueilByDemand, $annexeResponseServiceByDemand, $annexePiecesByDemand, $serviceChefByServiceId, $serviceMetaById) {
                 $dispatching = $row->date_affectation_accueil ? Carbon::parse($row->date_affectation_accueil) : null;
                 $reception = $row->date_soumission ? Carbon::parse($row->date_soumission) : null;
 
@@ -667,11 +693,15 @@ class OverviewController extends Controller
                     $qcs = (string) $serviceChefByServiceId->get($serviceId, '');
                 }
 
+                $expediteur = trim(((string) ($row->usager_prenom ?? '')).' '.((string) ($row->usager_nom ?? '')));
+                $piecesJointes = $annexePiecesByDemand->get($row->id_demande, []);
+
                 return [
+                    'id_demande' => (int) $row->id_demande,
                     'rang' => $index + 1,
                     'numero_suivi' => $row->numero_suivi,
                     'date_reception' => $row->date_soumission,
-                    'expediteur' => trim(((string) ($row->usager_prenom ?? '')).' '.((string) ($row->usager_nom ?? ''))),
+                    'expediteur' => $expediteur,
                     'objet' => (string) ($row->categorie ?: ($row->objet ?: $row->type_demande ?: '-')),
                     'date_dispatching' => $row->date_affectation_accueil,
                     'delai_transmission_oh' => $row->date_affectation_accueil ? ($transmissionOk ? 'OUI' : 'NON') : '-',
@@ -685,6 +715,16 @@ class OverviewController extends Controller
                         (int) $row->id_config_sla
                     ),
                     'qcs' => $qcs !== '' ? $qcs : '-',
+                    'usager_nom' => (string) ($row->usager_nom ?? ''),
+                    'usager_prenom' => (string) ($row->usager_prenom ?? ''),
+                    'usager_email' => (string) ($row->usager_email ?? ''),
+                    'usager_telephone' => (string) ($row->usager_telephone ?? ''),
+                    'type_demande' => (string) ($row->type_demande ?? '-'),
+                    'type_demande_code' => (string) ($row->type_demande_code ?? ''),
+                    'categorie' => (string) ($row->categorie ?? ''),
+                    'objet_original' => (string) ($row->objet ?? ''),
+                    'message' => (string) ($row->message ?? ''),
+                    'pieces_jointes' => $piecesJointes,
                 ];
             });
 
@@ -794,6 +834,9 @@ class OverviewController extends Controller
 
         $annexeFonctionsGlobal = $this->buildFunctionPerformanceAnnexe(clone $baseDemands);
         $annexeFonctionsInformations = $this->buildFunctionPerformanceAnnexe(clone $baseDemands, 'demande_information');
+        $annexeServicesInformations = $this->buildServicePerformanceAnnexe(clone $baseDemands, 'demande_information');
+        $annexeFonctionsReclamations = $this->buildFunctionPerformanceAnnexe(clone $baseDemands, 'reclamation');
+        $annexeServicesReclamations = $this->buildServicePerformanceAnnexe(clone $baseDemands, 'reclamation');
 
         $openDemands = (clone $baseDemands)
             ->where('st.code', '!=', 'cloturee')
@@ -1112,6 +1155,11 @@ class OverviewController extends Controller
             'annexes_fonctions' => [
                 'global' => $annexeFonctionsGlobal,
                 'informations' => $annexeFonctionsInformations,
+                'reclamations' => $annexeFonctionsReclamations,
+            ],
+            'annexes_services' => [
+                'informations' => $annexeServicesInformations,
+                'reclamations' => $annexeServicesReclamations,
             ],
             'actions_recentes' => $actionsRecentes,
             'tracabilite_globale' => $traceRows,
@@ -1180,13 +1228,7 @@ class OverviewController extends Controller
                 $query->where(function (Builder $serviceQuery) use ($serviceId) {
                     $serviceQuery
                         ->where('s.id_service', $serviceId)
-                        ->orWhereExists(function ($existsQuery) {
-                            $existsQuery
-                                ->selectRaw('1')
-                                ->from('historique_actions as ha')
-                                ->whereColumn('ha.id_demande', 'd.id_demande')
-                                ->where('ha.type_action', 'reponse_directe_accueil');
-                        });
+                        ->orWhereRaw($this->directAccueilExpression());
                 });
             } else {
                 $query->where('s.id_service', $serviceId);
@@ -1505,9 +1547,9 @@ class OverviewController extends Controller
             'UCAS' => 'Unite Courrier, Accueil et Securite',
         ];
 
-        $directAccueilExistsExpression = "EXISTS (SELECT 1 FROM historique_actions ha WHERE ha.id_demande = d.id_demande AND ha.type_action = 'reponse_directe_accueil')";
-        $functionCodeExpression = "CASE WHEN {$directAccueilExistsExpression} OR s.code = 'UCAS' THEN 'UCAS' WHEN dir.code IN ('DS', 'DSIC', 'DAF') THEN dir.code ELSE NULL END";
-        $functionLabelExpression = "CASE WHEN {$directAccueilExistsExpression} OR s.code = 'UCAS' THEN COALESCE(s.libelle, 'Unite Courrier, Accueil et Securite') WHEN dir.code IN ('DS', 'DSIC', 'DAF') THEN dir.libelle ELSE NULL END";
+        $directAccueilExistsExpression = $this->directAccueilExpression();
+        $functionCodeExpression = "CASE WHEN {$directAccueilExistsExpression} THEN 'UCAS' WHEN dir.code IN ('DS', 'DSIC', 'DAF') THEN dir.code ELSE NULL END";
+        $functionLabelExpression = "CASE WHEN {$directAccueilExistsExpression} THEN 'Unite Courrier, Accueil et Securite' WHEN dir.code IN ('DS', 'DSIC', 'DAF') THEN dir.libelle ELSE NULL END";
 
         $filteredDemands = (clone $baseDemands)
             ->when($typeCode !== null, fn (Builder $query) => $query->where('td.code', $typeCode));
@@ -1526,11 +1568,7 @@ class OverviewController extends Controller
             ->keyBy('fonction_code');
 
         $ucasMetrics = (clone $filteredDemands)
-            ->where(function (Builder $query) use ($directAccueilExistsExpression) {
-                $query
-                    ->where('s.code', 'UCAS')
-                    ->orWhereRaw($directAccueilExistsExpression);
-            })
+            ->whereRaw($directAccueilExistsExpression)
             ->selectRaw('COUNT(*) as total_demandes')
             ->selectRaw("SUM(CASE WHEN st.code = 'cloturee' AND {$directAccueilExistsExpression} THEN 1 ELSE 0 END) as total_traitees")
             ->selectRaw("SUM(CASE WHEN st.code = 'cloturee' AND d.delai_alerte = 'dans_les_delais' AND {$directAccueilExistsExpression} THEN 1 ELSE 0 END) as total_traitees_delai")
@@ -1581,6 +1619,107 @@ class OverviewController extends Controller
         ];
     }
 
+    private function buildServicePerformanceAnnexe(Builder $baseDemands, ?string $typeCode = null): array
+    {
+        $directAccueilExistsExpression = $this->directAccueilExpression();
+        $serviceCodeExpression = "CASE WHEN {$directAccueilExistsExpression} THEN 'UCAS' ELSE s.code END";
+        $serviceLabelExpression = "CASE WHEN {$directAccueilExistsExpression} THEN 'Unite Courrier, Accueil et Securite' ELSE s.libelle END";
+
+        $filteredDemands = (clone $baseDemands)
+            ->when($typeCode !== null, fn (Builder $query) => $query->where('td.code', $typeCode));
+
+        $responsableByServiceCode = DB::table('utilisateurs as u')
+            ->join('utilisateur_role as ur', 'ur.id_utilisateur', '=', 'u.id_utilisateur')
+            ->join('roles as r', 'r.id_role', '=', 'ur.id_role')
+            ->join('services as s', 's.id_service', '=', 'u.id_service')
+            ->where('r.code', 'chef_service')
+            ->whereNotNull('s.code')
+            ->orderBy('u.prenom')
+            ->orderBy('u.nom')
+            ->get([
+                's.code as service_code',
+                'u.nom',
+                'u.prenom',
+            ])
+            ->groupBy('service_code')
+            ->map(function ($rows) {
+                $first = $rows->first();
+
+                return trim(((string) ($first->prenom ?? '')).' '.((string) ($first->nom ?? '')));
+            });
+
+        $metrics = (clone $filteredDemands)
+            ->where(function (Builder $query) use ($directAccueilExistsExpression) {
+                $query
+                    ->whereRaw($directAccueilExistsExpression)
+                    ->orWhere(function (Builder $serviceQuery) {
+                        $serviceQuery
+                            ->whereNotNull('s.id_service')
+                            ->where('s.code', '!=', 'UCAS');
+                    });
+            })
+            ->select(
+                DB::raw($serviceCodeExpression.' as service_code'),
+                DB::raw($serviceLabelExpression.' as service_label'),
+                DB::raw('COUNT(*) as total_demandes'),
+                DB::raw("SUM(CASE WHEN st.code = 'cloturee' THEN 1 ELSE 0 END) as total_traitees"),
+                DB::raw("SUM(CASE WHEN st.code = 'cloturee' AND d.delai_alerte = 'dans_les_delais' THEN 1 ELSE 0 END) as total_traitees_delai")
+            )
+            ->groupBy(DB::raw($serviceCodeExpression), DB::raw($serviceLabelExpression))
+            ->get()
+            ->map(function ($row) use ($responsableByServiceCode) {
+                $serviceCode = (string) ($row->service_code ?? '');
+                $totalDemandes = (int) ($row->total_demandes ?? 0);
+                $totalTraitees = $serviceCode === 'UCAS'
+                    ? $totalDemandes
+                    : (int) ($row->total_traitees ?? 0);
+                $totalTraiteesDelai = (int) ($row->total_traitees_delai ?? 0);
+                $tauxExecution = $totalDemandes > 0 ? round(($totalTraitees / $totalDemandes) * 100, 1) : 0.0;
+                $tauxConformite = $totalTraitees > 0 ? round(($totalTraiteesDelai / $totalTraitees) * 100, 1) : 0.0;
+
+                return [
+                    'service_code' => $serviceCode,
+                    'service_label' => (string) ($row->service_label ?? $serviceCode ?: '-'),
+                    'responsable' => (string) ($responsableByServiceCode->get($serviceCode, '-') ?: '-'),
+                    'total_demandes' => $totalDemandes,
+                    'total_traitees' => $totalTraitees,
+                    'taux_execution' => $tauxExecution,
+                    'total_traitees_delai' => $totalTraiteesDelai,
+                    'taux_conformite' => $tauxConformite,
+                ];
+            })
+            ->filter(fn (array $row) => $row['service_code'] !== '' && $row['total_demandes'] > 0)
+            ->sort(function (array $a, array $b) {
+                if ($a['service_code'] === 'UCAS' && $b['service_code'] !== 'UCAS') {
+                    return -1;
+                }
+
+                if ($b['service_code'] === 'UCAS' && $a['service_code'] !== 'UCAS') {
+                    return 1;
+                }
+
+                return strcmp($a['service_code'], $b['service_code']);
+            })
+            ->values();
+
+        $sumDemandes = (int) $metrics->sum('total_demandes');
+        $sumTraitees = (int) $metrics->sum('total_traitees');
+        $sumTraiteesDelai = (int) $metrics->sum('total_traitees_delai');
+        $totalTauxExecution = $sumDemandes > 0 ? round(($sumTraitees / $sumDemandes) * 100, 1) : 0.0;
+        $totalTauxConformite = $sumTraitees > 0 ? round(($sumTraiteesDelai / $sumTraitees) * 100, 1) : 0.0;
+
+        return [
+            'rows' => $metrics,
+            'totaux' => [
+                'total_demandes' => $sumDemandes,
+                'total_traitees' => $sumTraitees,
+                'taux_execution' => $totalTauxExecution,
+                'total_traitees_delai' => $sumTraiteesDelai,
+                'taux_conformite' => $totalTauxConformite,
+            ],
+        ];
+    }
+
     private function humanAlertLabel(string $alertCode): string
     {
         return match ($alertCode) {
@@ -1589,5 +1728,25 @@ class OverviewController extends Controller
             'en_retard' => 'Hors delai',
             default => '-',
         };
+    }
+
+    private function directAccueilExpression(): string
+    {
+        return "(
+            EXISTS (
+                SELECT 1
+                FROM historique_actions ha
+                WHERE ha.id_demande = d.id_demande
+                  AND ha.type_action = 'reponse_directe_accueil'
+            )
+            OR (
+                s.code = 'UCAS'
+                AND d.id_agent_accueil IS NOT NULL
+                AND d.id_agent_traitant IS NULL
+                AND d.date_affectation_agent IS NULL
+                AND d.date_envoi_usager IS NOT NULL
+                AND (d.id_agent_direction = d.id_agent_accueil OR d.id_agent_direction IS NULL)
+            )
+        )";
     }
 }

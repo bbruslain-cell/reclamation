@@ -12,10 +12,14 @@
 
     $pageTitle = 'Pilotage';
     $pageSubtitle = 'Lecture globale, supervision et reporting.';
+    $canViewScopedCiqTables = in_array('ciq', $roleCodes, true) || in_array('chef_direction', $roleCodes, true);
 
     if (in_array('ciq', $roleCodes, true)) {
         $pageTitle = 'Controle interne et qualite';
         $pageSubtitle = 'Statistiques de volume et d activite sur la periode selectionnee.';
+    } elseif (in_array('chef_direction', $roleCodes, true)) {
+        $pageTitle = 'Pilotage de direction';
+        $pageSubtitle = 'Tableaux de supervision limites aux services de votre direction.';
     } elseif (in_array('dg', $roleCodes, true)) {
         $pageTitle = 'Direction generale';
         $pageSubtitle = 'Statistiques de volume et d activite sur la periode selectionnee.';
@@ -59,6 +63,18 @@
     $functionDistribution = $overviewData['annexes_fonctions']['global'] ?? [];
     $functionDistributionRows = collect($functionDistribution['rows'] ?? []);
     $functionDistributionTotals = $functionDistribution['totaux'] ?? [];
+    $informationFunctionDistribution = $overviewData['annexes_fonctions']['informations'] ?? [];
+    $informationFunctionDistributionRows = collect($informationFunctionDistribution['rows'] ?? []);
+    $informationFunctionDistributionTotals = $informationFunctionDistribution['totaux'] ?? [];
+    $informationServiceDistribution = $overviewData['annexes_services']['informations'] ?? [];
+    $informationServiceDistributionRows = collect($informationServiceDistribution['rows'] ?? []);
+    $informationServiceDistributionTotals = $informationServiceDistribution['totaux'] ?? [];
+    $reclamationFunctionDistribution = $overviewData['annexes_fonctions']['reclamations'] ?? [];
+    $reclamationFunctionDistributionRows = collect($reclamationFunctionDistribution['rows'] ?? []);
+    $reclamationFunctionDistributionTotals = $reclamationFunctionDistribution['totaux'] ?? [];
+    $reclamationServiceDistribution = $overviewData['annexes_services']['reclamations'] ?? [];
+    $reclamationServiceDistributionRows = collect($reclamationServiceDistribution['rows'] ?? []);
+    $reclamationServiceDistributionTotals = $reclamationServiceDistribution['totaux'] ?? [];
 
     $typeChartEntries = collect([
         [
@@ -145,6 +161,7 @@
 
     $directionVolumeChart = $buildDirectionVolumeChart($directionProcessingEntries);
     $ciqTrackingRows = collect($overviewData['tableau_suivi_annexe'] ?? []);
+    $ciqTrackingRowsJson = $ciqTrackingRows->values()->all();
     $formatShortDate = function ($value) {
         if (!$value) {
             return '-';
@@ -727,13 +744,118 @@
                     </section>
                 </div>
             </section>
+
+            <div id="ciq-tracking-modal" class="fixed inset-0 z-[80] hidden">
+                <div id="ciq-tracking-backdrop" class="absolute inset-0 bg-navy/55 backdrop-blur-[2px]"></div>
+                <div class="relative z-[81] min-h-full flex items-center justify-center px-4 py-6">
+                    <div class="w-full max-w-4xl rounded-3xl bg-white shadow-2xl border border-white/70 overflow-hidden">
+                        <div class="flex items-start justify-between gap-4 px-6 py-5 border-b border-neutral-200 bg-gradient-to-r from-neutral-50 to-white">
+                            <div>
+                                <p class="text-xs uppercase tracking-[0.25em] text-neutral-400">Lecture du dossier</p>
+                                <h3 id="ciq-modal-tracking-number" class="mt-1 text-xl font-semibold text-navy">Demande</h3>
+                                <p id="ciq-modal-subtitle" class="mt-1 text-sm text-neutral-500">Fiche de soumission usager</p>
+                            </div>
+                            <button type="button" id="ciq-tracking-close" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 text-neutral-500 hover:text-navy hover:border-sky/40 transition-colors">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <div class="max-h-[80vh] overflow-y-auto px-6 py-6 space-y-6">
+                            <section class="rounded-2xl border border-neutral-200 bg-neutral-50/60 p-5">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <div class="w-6 h-6 rounded-full bg-navy text-white text-xs font-semibold flex items-center justify-center">1</div>
+                                    <h4 class="text-sm font-semibold text-navy uppercase tracking-[0.15em]">Formulaire usager</h4>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Nom</p>
+                                        <p id="ciq-modal-nom" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                    </div>
+                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Prenom</p>
+                                        <p id="ciq-modal-prenom" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                    </div>
+                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Adresse email</p>
+                                        <p id="ciq-modal-email" class="mt-1 text-sm font-medium text-neutral-700 break-all">-</p>
+                                    </div>
+                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Telephone</p>
+                                        <p id="ciq-modal-telephone" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                    </div>
+                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Type de demande</p>
+                                        <p id="ciq-modal-type" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                    </div>
+                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Categorie</p>
+                                        <p id="ciq-modal-categorie" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                    </div>
+                                </div>
+                                <div class="mt-4 rounded-xl bg-white border border-neutral-200 p-4">
+                                    <p class="text-xs uppercase tracking-wide text-neutral-400">Objet</p>
+                                    <p id="ciq-modal-objet" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                </div>
+                                <div class="mt-4 rounded-xl bg-white border border-neutral-200 p-4">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Message</p>
+                                        <p id="ciq-modal-reception" class="text-xs text-neutral-400">-</p>
+                                    </div>
+                                    <p id="ciq-modal-message" class="mt-2 text-sm leading-6 text-neutral-700 whitespace-pre-line">-</p>
+                                </div>
+                                <div class="mt-4 rounded-xl bg-white border border-neutral-200 p-4">
+                                    <p class="text-xs uppercase tracking-wide text-neutral-400">Pieces jointes</p>
+                                    <div id="ciq-modal-pieces" class="mt-3 flex flex-wrap gap-2">
+                                        <span class="inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-500">Aucune piece jointe</span>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="rounded-2xl border border-sky/20 bg-sky/5 p-5">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <div class="w-6 h-6 rounded-full bg-sky text-white text-xs font-semibold flex items-center justify-center">2</div>
+                                    <h4 class="text-sm font-semibold text-navy uppercase tracking-[0.15em]">Suivi dossier</h4>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Date de dispatch</p>
+                                        <p id="ciq-modal-dispatch" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                    </div>
+                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Service</p>
+                                        <p id="ciq-modal-service" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                    </div>
+                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Realisation</p>
+                                        <p id="ciq-modal-realisation" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                    </div>
+                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Statut</p>
+                                        <p id="ciq-modal-statut" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                    </div>
+                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Respect delais</p>
+                                        <p id="ciq-modal-respect" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                    </div>
+                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">RZ / CS</p>
+                                        <p id="ciq-modal-qcs" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
-        @if (in_array('ciq', $roleCodes, true))
+        @if ($canViewScopedCiqTables)
         <section class="space-y-5">
             <div>
                 <h2 class="ciq-section-title text-sm font-medium text-navy">Tableau actuel du suivi des reclamations</h2>
-                <p class="text-xs text-neutral-400 mt-1">Presentation alignee sur le modele bureautique CIQ : reception, dispatch, service, realisation et respect des delais.</p>
+                <p class="text-xs text-neutral-400 mt-1">
+                    {{ in_array('chef_direction', $roleCodes, true) ? 'Presentation alignee sur le modele CIQ, limitee a votre perimetre de services.' : 'Presentation alignee sur le modele bureautique CIQ : reception, dispatch, service, realisation et respect des delais.' }}
+                </p>
             </div>
 
             <section class="ciq-surface rounded-2xl overflow-hidden">
@@ -973,7 +1095,345 @@
                 </div>
             </section>
         </section>
-        @endif
+
+        <section class="space-y-5">
+            <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <h2 class="ciq-section-title text-sm font-medium text-navy">tableau de repartition des demandes d information par direction et par service</h2>
+                    <p class="text-xs text-neutral-400 mt-1">Meme logique de calcul, mais uniquement pour les demandes d information.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <p class="hidden sm:block text-xs text-neutral-400">{{ number_format($informationFunctionDistributionRows->count(), 0, ',', ' ') }} ligne(s) au total</p>
+                    <button type="button" id="information-function-distribution-export-xls" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <i class="fas fa-file-excel text-[11px]"></i>
+                        <span>Excel</span>
+                    </button>
+                    <button type="button" id="information-function-distribution-export-pdf" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <i class="fas fa-file-pdf text-[11px]"></i>
+                        <span>PDF</span>
+                    </button>
+                </div>
+            </div>
+
+            <section id="information-function-distribution-export-area" class="ciq-surface rounded-2xl p-4 sm:p-5 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table id="information-function-distribution-table" class="w-full min-w-[1180px] border-collapse">
+                        <thead>
+                            <tr class="bg-neutral-50">
+                                <th rowspan="2" class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300 w-[120px]">Fonctions</th>
+                                <th colspan="6" class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Repartition par fonction</th>
+                            </tr>
+                            <tr class="bg-white">
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de demandes d'informations total</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de demandes d'informations traitees</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux d'execution (%)</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de demandes d'informations traitees dans les delais</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux de conformite (72h) (%)</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-red-500 border border-neutral-300">(A + B) / 2</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($informationFunctionDistributionRows as $row)
+                            <tr class="odd:bg-white even:bg-neutral-50">
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">{{ $row['fonction_code'] ?? '-' }}</td>
+                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_demandes'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_traitees'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($row['taux_execution'] ?? 0) }}</td>
+                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_traitees_delai'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($row['taux_conformite'] ?? 0) }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-red-500 border border-neutral-300">{{ $formatPercent($row['score_moyen'] ?? 0) }}</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="7" class="px-4 py-10 text-center text-sm text-neutral-400 border border-neutral-300">Aucune donnee disponible pour les demandes d information sur la periode selectionnee.</td>
+                            </tr>
+                            @endforelse
+                            <tr class="bg-neutral-100">
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">Total</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($informationFunctionDistributionTotals['total_demandes'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($informationFunctionDistributionTotals['total_traitees'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($informationFunctionDistributionTotals['taux_execution'] ?? 0) }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($informationFunctionDistributionTotals['total_traitees_delai'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($informationFunctionDistributionTotals['taux_conformite'] ?? 0) }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-red-500 border border-neutral-300">{{ $formatPercent($informationFunctionDistributionTotals['score_moyen'] ?? 0) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </section>
+
+        <section class="space-y-5">
+            <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <h2 class="ciq-section-title text-sm font-medium text-navy">tableau de repartition des demandes d information par service</h2>
+                    <p class="text-xs text-neutral-400 mt-1">Vue par service et responsable, avec execution et conformite sur les demandes d information.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <p class="hidden sm:block text-xs text-neutral-400">{{ number_format($informationServiceDistributionRows->count(), 0, ',', ' ') }} ligne(s) au total</p>
+                    <button type="button" id="information-service-distribution-export-xls" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <i class="fas fa-file-excel text-[11px]"></i>
+                        <span>Excel</span>
+                    </button>
+                    <button type="button" id="information-service-distribution-export-pdf" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <i class="fas fa-file-pdf text-[11px]"></i>
+                        <span>PDF</span>
+                    </button>
+                </div>
+            </div>
+
+            <section id="information-service-distribution-export-area" class="ciq-surface rounded-2xl p-4 sm:p-5 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table id="information-service-distribution-table" class="w-full min-w-[1120px] border-collapse">
+                        <thead>
+                            <tr class="bg-neutral-50">
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Services / Unite</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Agents</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails recus</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails traites</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux d'execution (%) (A)</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails traites dans les delais</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux de conformite (72h) (%) (B)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($informationServiceDistributionRows as $row)
+                            <tr class="odd:bg-white even:bg-neutral-50">
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">{{ $row['service_code'] ?? '-' }}</td>
+                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ $row['responsable'] ?? '-' }}</td>
+                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_demandes'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_traitees'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($row['taux_execution'] ?? 0) }}</td>
+                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_traitees_delai'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($row['taux_conformite'] ?? 0) }}</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="7" class="px-4 py-10 text-center text-sm text-neutral-400 border border-neutral-300">Aucune donnee disponible pour cette repartition par service sur la periode selectionnee.</td>
+                            </tr>
+                            @endforelse
+                            <tr class="bg-neutral-100">
+                                <td colspan="2" class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">TOTAL</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($informationServiceDistributionTotals['total_demandes'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($informationServiceDistributionTotals['total_traitees'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($informationServiceDistributionTotals['taux_execution'] ?? 0) }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($informationServiceDistributionTotals['total_traitees_delai'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($informationServiceDistributionTotals['taux_conformite'] ?? 0) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </section>
+
+        <section class="space-y-5">
+            <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <h2 class="ciq-section-title text-sm font-medium text-navy">tableau de repartition des reclamations par direction et par service</h2>
+                    <p class="text-xs text-neutral-400 mt-1">Meme logique de calcul, mais uniquement pour les reclamations.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <p class="hidden sm:block text-xs text-neutral-400">{{ number_format($reclamationFunctionDistributionRows->count(), 0, ',', ' ') }} ligne(s) au total</p>
+                    <button type="button" id="reclamation-function-distribution-export-xls" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <i class="fas fa-file-excel text-[11px]"></i>
+                        <span>Excel</span>
+                    </button>
+                    <button type="button" id="reclamation-function-distribution-export-pdf" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <i class="fas fa-file-pdf text-[11px]"></i>
+                        <span>PDF</span>
+                    </button>
+                </div>
+            </div>
+
+            <section id="reclamation-function-distribution-export-area" class="ciq-surface rounded-2xl p-4 sm:p-5 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table id="reclamation-function-distribution-table" class="w-full min-w-[1180px] border-collapse">
+                        <thead>
+                            <tr class="bg-neutral-50">
+                                <th rowspan="2" class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300 w-[120px]">Fonctions</th>
+                                <th colspan="6" class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Repartition par fonction</th>
+                            </tr>
+                            <tr class="bg-white">
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de reclamations total</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de reclamations traitees</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux d'execution (%)</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de reclamations traitees dans les delais</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux de conformite (72h) (%)</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-red-500 border border-neutral-300">(A + B) / 2</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($reclamationFunctionDistributionRows as $row)
+                            <tr class="odd:bg-white even:bg-neutral-50">
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">{{ $row['fonction_code'] ?? '-' }}</td>
+                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_demandes'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_traitees'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($row['taux_execution'] ?? 0) }}</td>
+                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_traitees_delai'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($row['taux_conformite'] ?? 0) }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-red-500 border border-neutral-300">{{ $formatPercent($row['score_moyen'] ?? 0) }}</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="7" class="px-4 py-10 text-center text-sm text-neutral-400 border border-neutral-300">Aucune donnee disponible pour les reclamations sur la periode selectionnee.</td>
+                            </tr>
+                            @endforelse
+                            <tr class="bg-neutral-100">
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">Total</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($reclamationFunctionDistributionTotals['total_demandes'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($reclamationFunctionDistributionTotals['total_traitees'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($reclamationFunctionDistributionTotals['taux_execution'] ?? 0) }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($reclamationFunctionDistributionTotals['total_traitees_delai'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($reclamationFunctionDistributionTotals['taux_conformite'] ?? 0) }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-red-500 border border-neutral-300">{{ $formatPercent($reclamationFunctionDistributionTotals['score_moyen'] ?? 0) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </section>
+
+        <section class="space-y-5">
+            <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <h2 class="ciq-section-title text-sm font-medium text-navy">tableau de repartition des reclamations par service</h2>
+                    <p class="text-xs text-neutral-400 mt-1">Vue par service et responsable, avec execution et conformite sur les reclamations.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <p class="hidden sm:block text-xs text-neutral-400">{{ number_format($reclamationServiceDistributionRows->count(), 0, ',', ' ') }} ligne(s) au total</p>
+                    <button type="button" id="reclamation-service-distribution-export-xls" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <i class="fas fa-file-excel text-[11px]"></i>
+                        <span>Excel</span>
+                    </button>
+                    <button type="button" id="reclamation-service-distribution-export-pdf" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <i class="fas fa-file-pdf text-[11px]"></i>
+                        <span>PDF</span>
+                    </button>
+                </div>
+            </div>
+
+            <section id="reclamation-service-distribution-export-area" class="ciq-surface rounded-2xl p-4 sm:p-5 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table id="reclamation-service-distribution-table" class="w-full min-w-[1120px] border-collapse">
+                        <thead>
+                            <tr class="bg-neutral-50">
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Services / Unite</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Agents</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails recus</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails traites</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux d'execution (%) (A)</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails traites dans les delais</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux de conformite (72h) (%) (B)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($reclamationServiceDistributionRows as $row)
+                            <tr class="odd:bg-white even:bg-neutral-50">
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">{{ $row['service_code'] ?? '-' }}</td>
+                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ $row['responsable'] ?? '-' }}</td>
+                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_demandes'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_traitees'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($row['taux_execution'] ?? 0) }}</td>
+                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_traitees_delai'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($row['taux_conformite'] ?? 0) }}</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="7" class="px-4 py-10 text-center text-sm text-neutral-400 border border-neutral-300">Aucune donnee disponible pour cette repartition par service sur la periode selectionnee.</td>
+                            </tr>
+                            @endforelse
+                            <tr class="bg-neutral-100">
+                                <td colspan="2" class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">TOTAL</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($reclamationServiceDistributionTotals['total_demandes'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($reclamationServiceDistributionTotals['total_traitees'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($reclamationServiceDistributionTotals['taux_execution'] ?? 0) }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($reclamationServiceDistributionTotals['total_traitees_delai'] ?? 0), 0, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($reclamationServiceDistributionTotals['taux_conformite'] ?? 0) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </section>
+
+        <section class="space-y-5">
+            <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <h2 class="ciq-section-title text-sm font-medium text-navy">Consultation des dossiers usagers</h2>
+                    <p class="text-xs text-neutral-400 mt-1">Registre de consultation des demandes, accessible a partir du numero de suivi.</p>
+                </div>
+                <p class="text-xs text-neutral-400">{{ number_format($ciqTrackingRows->count(), 0, ',', ' ') }} dossier(s) disponibles sur le filtre courant</p>
+            </div>
+
+            <section class="ciq-surface rounded-2xl overflow-hidden">
+                <div class="px-5 py-4 border-b border-sky/10 flex items-center gap-2">
+                    <i class="fas fa-folder-open text-sky text-sm"></i>
+                    <h3 class="text-sm font-medium text-navy">Registre des numeros de suivi</h3>
+                </div>
+
+                <div class="overflow-x-auto bg-white">
+                    <table class="w-full min-w-[980px]">
+                        <thead class="bg-neutral-50 border-b border-neutral-200">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Numero de suivi</th>
+                                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Expediteur</th>
+                                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Objet</th>
+                                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Reception</th>
+                                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Service</th>
+                                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Statut</th>
+                                <th class="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-neutral-200">
+                            @forelse($ciqTrackingRows as $row)
+                            <tr class="odd:bg-white even:bg-neutral-50/70 hover:bg-sky/5 transition-colors">
+                                <td class="px-4 py-3 align-top">
+                                    <button
+                                        type="button"
+                                        class="tracking-detail-trigger inline-flex items-center gap-2 text-sm font-semibold text-sky hover:text-navy underline underline-offset-2 transition-colors"
+                                        data-tracking-index="{{ $loop->index }}"
+                                    >
+                                        <i class="fas fa-folder-open text-[11px]"></i>
+                                        <span>{{ $row['numero_suivi'] ?? '-' }}</span>
+                                    </button>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-neutral-700 align-top">{{ $row['expediteur'] ?? '-' }}</td>
+                                <td class="px-4 py-3 text-sm text-neutral-700 align-top">{{ $row['objet'] ?? '-' }}</td>
+                                <td class="px-4 py-3 text-sm text-neutral-600 whitespace-nowrap align-top">{{ $formatShortDate($row['date_reception'] ?? null) }}</td>
+                                <td class="px-4 py-3 text-sm text-neutral-600 whitespace-nowrap align-top">{{ $row['service_direction'] ?? '-' }}</td>
+                                <td class="px-4 py-3 align-top">
+                                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium {{ ($row['respect_delais'] ?? 'NON') === 'OUI' ? 'bg-leaf/10 text-green-700' : 'bg-red-50 text-red-700' }}">
+                                        {{ $row['statut_traitement'] ?? '-' }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-right align-top">
+                                    <button
+                                        type="button"
+                                        class="tracking-detail-trigger inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-600 hover:border-sky/35 hover:text-navy transition-colors"
+                                        data-tracking-index="{{ $loop->index }}"
+                                    >
+                                        <i class="fas fa-eye text-[11px]"></i>
+                                        <span>Consulter</span>
+                                    </button>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="7" class="px-4 py-10 text-center text-sm text-neutral-400">
+                                    Aucun dossier disponible pour la consultation sur la periode selectionnee.
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="px-5 py-3 border-t border-neutral-200 bg-neutral-50 text-xs text-neutral-400">
+                    Cliquer sur le numero de suivi ou sur <span class="font-medium text-neutral-500">Consulter</span> pour ouvrir la fiche complete de la demande.
+                </div>
+            </section>
+        </section>
+
+    @endif
 
         <footer class="border-t border-neutral-200 pt-4 pb-2 mt-6 flex items-center justify-between text-xs text-neutral-400">
             <span>&copy; {{ date('Y') }} Agence Nationale des Bourses du Gabon</span>
@@ -998,6 +1458,19 @@
             const annexe2ExportPdfButton = document.getElementById('annexe2-export-pdf');
             const functionDistributionExportXlsButton = document.getElementById('function-distribution-export-xls');
             const functionDistributionExportPdfButton = document.getElementById('function-distribution-export-pdf');
+            const informationFunctionDistributionExportXlsButton = document.getElementById('information-function-distribution-export-xls');
+            const informationFunctionDistributionExportPdfButton = document.getElementById('information-function-distribution-export-pdf');
+            const informationServiceDistributionExportXlsButton = document.getElementById('information-service-distribution-export-xls');
+            const informationServiceDistributionExportPdfButton = document.getElementById('information-service-distribution-export-pdf');
+            const reclamationFunctionDistributionExportXlsButton = document.getElementById('reclamation-function-distribution-export-xls');
+            const reclamationFunctionDistributionExportPdfButton = document.getElementById('reclamation-function-distribution-export-pdf');
+            const reclamationServiceDistributionExportXlsButton = document.getElementById('reclamation-service-distribution-export-xls');
+            const reclamationServiceDistributionExportPdfButton = document.getElementById('reclamation-service-distribution-export-pdf');
+            const trackingDetailButtons = document.querySelectorAll('.tracking-detail-trigger');
+            const ciqTrackingModal = document.getElementById('ciq-tracking-modal');
+            const ciqTrackingBackdrop = document.getElementById('ciq-tracking-backdrop');
+            const ciqTrackingClose = document.getElementById('ciq-tracking-close');
+            const ciqTrackingDetails = @json($ciqTrackingRowsJson);
             let activePerformanceTarget = 'type';
 
             function formatCountUpValue(value, decimals, suffix = '') {
@@ -1035,6 +1508,106 @@
                 }
 
                 requestAnimationFrame(tick);
+            }
+
+            function formatDetailDate(value) {
+                if (!value) {
+                    return '-';
+                }
+
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) {
+                    return value;
+                }
+
+                return date.toLocaleString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+            }
+
+            function setModalText(id, value) {
+                const element = document.getElementById(id);
+                if (!element) {
+                    return;
+                }
+
+                element.textContent = value && `${value}`.trim() !== '' ? value : '-';
+            }
+
+            function renderTrackingAttachments(attachments) {
+                const container = document.getElementById('ciq-modal-pieces');
+                if (!container) {
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                if (!Array.isArray(attachments) || attachments.length === 0) {
+                    const empty = document.createElement('span');
+                    empty.className = 'inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-500';
+                    empty.textContent = 'Aucune piece jointe';
+                    container.appendChild(empty);
+                    return;
+                }
+
+                attachments.forEach((piece) => {
+                    const link = document.createElement('a');
+                    link.href = `/pieces-jointes/${piece.id_piece_jointe}`;
+                    link.target = '_blank';
+                    link.rel = 'noopener';
+                    link.className = 'inline-flex items-center gap-2 rounded-full border border-sky/20 bg-sky/5 px-3 py-1.5 text-xs font-medium text-sky hover:bg-sky/10 transition-colors';
+
+                    const icon = document.createElement('i');
+                    icon.className = 'fas fa-paperclip text-[10px]';
+                    const label = document.createElement('span');
+                    label.textContent = piece.nom_fichier ?? 'Piece jointe';
+
+                    link.appendChild(icon);
+                    link.appendChild(label);
+                    container.appendChild(link);
+                });
+            }
+
+            function openTrackingModal(index) {
+                const row = ciqTrackingDetails[index];
+                if (!row || !ciqTrackingModal) {
+                    return;
+                }
+
+                setModalText('ciq-modal-tracking-number', row.numero_suivi ?? '-');
+                setModalText('ciq-modal-subtitle', `${row.expediteur ?? '-'} • ${row.type_demande ?? '-'}`);
+                setModalText('ciq-modal-nom', row.usager_nom ?? '-');
+                setModalText('ciq-modal-prenom', row.usager_prenom ?? '-');
+                setModalText('ciq-modal-email', row.usager_email ?? '-');
+                setModalText('ciq-modal-telephone', row.usager_telephone ?? '-');
+                setModalText('ciq-modal-type', row.type_demande ?? '-');
+                setModalText('ciq-modal-categorie', row.categorie ?? '-');
+                setModalText('ciq-modal-objet', row.objet_original ?? row.objet ?? '-');
+                setModalText('ciq-modal-message', row.message ?? '-');
+                setModalText('ciq-modal-reception', `Soumise le ${formatDetailDate(row.date_reception ?? null)}`);
+                setModalText('ciq-modal-dispatch', formatDetailDate(row.date_dispatching ?? null));
+                setModalText('ciq-modal-service', row.service_direction ?? '-');
+                setModalText('ciq-modal-realisation', formatDetailDate(row.realisation ?? null));
+                setModalText('ciq-modal-statut', row.statut_traitement ?? '-');
+                setModalText('ciq-modal-respect', row.respect_delais ?? '-');
+                setModalText('ciq-modal-qcs', row.qcs ?? '-');
+                renderTrackingAttachments(row.pieces_jointes ?? []);
+
+                ciqTrackingModal.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+            }
+
+            function closeTrackingModal() {
+                if (!ciqTrackingModal) {
+                    return;
+                }
+
+                ciqTrackingModal.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
             }
 
             function initCountUps() {
@@ -1206,6 +1779,20 @@
                 const canvas = document.getElementById('temporal-evolution-chart');
                 const labels = @json($temporalLabels);
                 const series = @json($temporalSeries);
+                const normalizeSeries = (values) => {
+                    if (Array.isArray(values)) {
+                        return values.map((value) => Number(value || 0));
+                    }
+
+                    if (values && typeof values === 'object') {
+                        return Object.values(values).map((value) => Number(value || 0));
+                    }
+
+                    return [];
+                };
+                const reclamationsRecues = normalizeSeries(series.reclamations_recues);
+                const informationsRecues = normalizeSeries(series.informations_recues);
+                const demandesCloturees = normalizeSeries(series.demandes_cloturees);
 
                 if (!canvas || typeof Chart === 'undefined' || !labels.length) {
                     return null;
@@ -1222,10 +1809,11 @@
                         datasets: [
                             {
                                 label: 'Reclamations recues',
-                                data: series.reclamations_recues || [],
+                                data: reclamationsRecues,
                                 borderColor: '#3996d3',
                                 backgroundColor: 'rgba(57, 150, 211, 0.14)',
                                 tension: 0.3,
+                                spanGaps: true,
                                 fill: false,
                                 borderWidth: 3,
                                 pointRadius: 3,
@@ -1233,10 +1821,11 @@
                             },
                             {
                                 label: 'Demandes d information',
-                                data: series.informations_recues || [],
+                                data: informationsRecues,
                                 borderColor: '#8fc043',
                                 backgroundColor: 'rgba(143, 192, 67, 0.14)',
                                 tension: 0.3,
+                                spanGaps: true,
                                 fill: false,
                                 borderWidth: 3,
                                 pointRadius: 3,
@@ -1244,10 +1833,11 @@
                             },
                             {
                                 label: 'Demandes cloturees',
-                                data: series.demandes_cloturees || [],
+                                data: demandesCloturees,
                                 borderColor: '#f9b13c',
                                 backgroundColor: 'rgba(249, 177, 60, 0.16)',
                                 tension: 0.3,
+                                spanGaps: true,
                                 fill: false,
                                 borderWidth: 3,
                                 pointRadius: 3,
@@ -1264,12 +1854,7 @@
                         },
                         plugins: {
                             legend: {
-                                position: 'bottom',
-                                labels: {
-                                    usePointStyle: true,
-                                    boxWidth: 10,
-                                    color: '#495057',
-                                },
+                                display: false,
                             },
                         },
                         scales: {
@@ -1825,6 +2410,578 @@
                 pdf.save(`${exportTitle}.pdf`);
             }
 
+            function exportInformationFunctionDistributionAsExcel() {
+                const area = document.getElementById('information-function-distribution-export-area');
+
+                if (!area) {
+                    return;
+                }
+
+                const exportTitle = "Tableau de repartition des demandes d'information par direction et par service.";
+                const clone = area.cloneNode(true);
+
+                const workbookHtml = `
+                    <html xmlns:o="urn:schemas-microsoft-com:office:office"
+                          xmlns:x="urn:schemas-microsoft-com:office:excel"
+                          xmlns="http://www.w3.org/TR/REC-html40">
+                    <head>
+                        <meta charset="utf-8">
+                        <style>
+                            body { font-family: Arial, sans-serif; }
+                            table { border-collapse: collapse; width: 100%; }
+                            th, td { border: 1px solid #aab7c4; padding: 6px; font-size: 12px; vertical-align: middle; text-align: center; }
+                            thead th { background: #f3f4f6; color: #1f2937; font-weight: bold; }
+                        </style>
+                    </head>
+                    <body>
+                        <div style="font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; margin: 0 0 12px 0;">
+                            ${exportTitle}
+                        </div>
+                        ${clone.outerHTML}
+                    </body>
+                    </html>
+                `;
+
+                const blob = new Blob([workbookHtml], { type: 'application/vnd.ms-excel' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'tableau-repartition-demandes-information-par-direction-service.xls';
+                link.click();
+                URL.revokeObjectURL(url);
+            }
+
+            async function exportInformationFunctionDistributionAsPdf() {
+                const area = document.getElementById('information-function-distribution-export-area');
+
+                if (!area || typeof html2canvas === 'undefined' || !window.jspdf?.jsPDF) {
+                    return;
+                }
+
+                const exportTitle = "Tableau de repartition des demandes d'information par direction et par service.";
+                const cloneWrapper = document.createElement('div');
+                cloneWrapper.style.position = 'fixed';
+                cloneWrapper.style.left = '-100000px';
+                cloneWrapper.style.top = '0';
+                cloneWrapper.style.width = '1600px';
+                cloneWrapper.style.background = '#ffffff';
+                cloneWrapper.style.padding = '0';
+                cloneWrapper.style.overflow = 'visible';
+                cloneWrapper.style.zIndex = '-1';
+
+                const cloneArea = area.cloneNode(true);
+                cloneArea.style.width = '1600px';
+                cloneArea.style.maxWidth = 'none';
+
+                cloneArea.querySelectorAll('table').forEach((table) => {
+                    table.style.width = '100%';
+                    table.style.minWidth = '0';
+                    table.style.tableLayout = 'fixed';
+                });
+
+                cloneWrapper.appendChild(cloneArea);
+                document.body.appendChild(cloneWrapper);
+
+                let canvas;
+                try {
+                    canvas = await html2canvas(cloneArea, {
+                        backgroundColor: '#ffffff',
+                        scale: 2,
+                        useCORS: true,
+                        windowWidth: 1600,
+                        width: 1600,
+                        scrollX: 0,
+                        scrollY: -window.scrollY,
+                    });
+                } finally {
+                    document.body.removeChild(cloneWrapper);
+                }
+
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4',
+                });
+
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const margin = 6;
+                const availableWidth = pageWidth - (margin * 2);
+                const titleHeight = 12;
+                const availableHeight = pageHeight - (margin * 2) - titleHeight - 4;
+                const ratio = availableWidth / canvas.width;
+                const sliceHeight = Math.max(1, Math.floor(availableHeight / ratio));
+
+                let offsetY = 0;
+                let pageIndex = 0;
+
+                while (offsetY < canvas.height) {
+                    const sliceCanvas = document.createElement('canvas');
+                    const sliceHeightCurrent = Math.min(sliceHeight, canvas.height - offsetY);
+                    sliceCanvas.width = canvas.width;
+                    sliceCanvas.height = sliceHeightCurrent;
+
+                    const sliceContext = sliceCanvas.getContext('2d');
+                    sliceContext.drawImage(
+                        canvas,
+                        0,
+                        offsetY,
+                        canvas.width,
+                        sliceHeightCurrent,
+                        0,
+                        0,
+                        canvas.width,
+                        sliceHeightCurrent
+                    );
+
+                    if (pageIndex > 0) {
+                        pdf.addPage();
+                    }
+
+                    const imageData = sliceCanvas.toDataURL('image/png', 1.0);
+                    const renderHeight = sliceHeightCurrent * ratio;
+
+                    pdf.setFontSize(12);
+                    pdf.text(exportTitle, margin, 10);
+                    pdf.addImage(imageData, 'PNG', margin, 14, availableWidth, renderHeight);
+
+                    offsetY += sliceHeightCurrent;
+                    pageIndex += 1;
+                }
+
+                pdf.save(`${exportTitle}.pdf`);
+            }
+
+            function exportInformationServiceDistributionAsExcel() {
+                const area = document.getElementById('information-service-distribution-export-area');
+
+                if (!area) {
+                    return;
+                }
+
+                const exportTitle = "Tableau de repartition des demandes d'information par service.";
+                const clone = area.cloneNode(true);
+
+                const workbookHtml = `
+                    <html xmlns:o="urn:schemas-microsoft-com:office:office"
+                          xmlns:x="urn:schemas-microsoft-com:office:excel"
+                          xmlns="http://www.w3.org/TR/REC-html40">
+                    <head>
+                        <meta charset="utf-8">
+                        <style>
+                            body { font-family: Arial, sans-serif; }
+                            table { border-collapse: collapse; width: 100%; }
+                            th, td { border: 1px solid #aab7c4; padding: 6px; font-size: 12px; vertical-align: middle; text-align: center; }
+                            thead th { background: #f3f4f6; color: #1f2937; font-weight: bold; }
+                        </style>
+                    </head>
+                    <body>
+                        <div style="font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; margin: 0 0 12px 0;">
+                            ${exportTitle}
+                        </div>
+                        ${clone.outerHTML}
+                    </body>
+                    </html>
+                `;
+
+                const blob = new Blob([workbookHtml], { type: 'application/vnd.ms-excel' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'tableau-repartition-demandes-information-par-service.xls';
+                link.click();
+                URL.revokeObjectURL(url);
+            }
+
+            async function exportInformationServiceDistributionAsPdf() {
+                const area = document.getElementById('information-service-distribution-export-area');
+
+                if (!area || typeof html2canvas === 'undefined' || !window.jspdf?.jsPDF) {
+                    return;
+                }
+
+                const exportTitle = "Tableau de repartition des demandes d'information par service.";
+                const cloneWrapper = document.createElement('div');
+                cloneWrapper.style.position = 'fixed';
+                cloneWrapper.style.left = '-100000px';
+                cloneWrapper.style.top = '0';
+                cloneWrapper.style.width = '1600px';
+                cloneWrapper.style.background = '#ffffff';
+                cloneWrapper.style.padding = '0';
+                cloneWrapper.style.overflow = 'visible';
+                cloneWrapper.style.zIndex = '-1';
+
+                const cloneArea = area.cloneNode(true);
+                cloneArea.style.width = '1600px';
+                cloneArea.style.maxWidth = 'none';
+
+                cloneArea.querySelectorAll('table').forEach((table) => {
+                    table.style.width = '100%';
+                    table.style.minWidth = '0';
+                    table.style.tableLayout = 'fixed';
+                });
+
+                cloneWrapper.appendChild(cloneArea);
+                document.body.appendChild(cloneWrapper);
+
+                let canvas;
+                try {
+                    canvas = await html2canvas(cloneArea, {
+                        backgroundColor: '#ffffff',
+                        scale: 2,
+                        useCORS: true,
+                        windowWidth: 1600,
+                        width: 1600,
+                        scrollX: 0,
+                        scrollY: -window.scrollY,
+                    });
+                } finally {
+                    document.body.removeChild(cloneWrapper);
+                }
+
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4',
+                });
+
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const margin = 6;
+                const availableWidth = pageWidth - (margin * 2);
+                const titleHeight = 12;
+                const availableHeight = pageHeight - (margin * 2) - titleHeight - 4;
+                const ratio = availableWidth / canvas.width;
+                const sliceHeight = Math.max(1, Math.floor(availableHeight / ratio));
+
+                let offsetY = 0;
+                let pageIndex = 0;
+
+                while (offsetY < canvas.height) {
+                    const sliceCanvas = document.createElement('canvas');
+                    const sliceHeightCurrent = Math.min(sliceHeight, canvas.height - offsetY);
+                    sliceCanvas.width = canvas.width;
+                    sliceCanvas.height = sliceHeightCurrent;
+
+                    const sliceContext = sliceCanvas.getContext('2d');
+                    sliceContext.drawImage(
+                        canvas,
+                        0,
+                        offsetY,
+                        canvas.width,
+                        sliceHeightCurrent,
+                        0,
+                        0,
+                        canvas.width,
+                        sliceHeightCurrent
+                    );
+
+                    if (pageIndex > 0) {
+                        pdf.addPage();
+                    }
+
+                    const imageData = sliceCanvas.toDataURL('image/png', 1.0);
+                    const renderHeight = sliceHeightCurrent * ratio;
+
+                    pdf.setFontSize(12);
+                    pdf.text(exportTitle, margin, 10);
+                    pdf.addImage(imageData, 'PNG', margin, 14, availableWidth, renderHeight);
+
+                    offsetY += sliceHeightCurrent;
+                    pageIndex += 1;
+                }
+
+                pdf.save(`${exportTitle}.pdf`);
+            }
+
+            function exportReclamationFunctionDistributionAsExcel() {
+                const area = document.getElementById('reclamation-function-distribution-export-area');
+
+                if (!area) {
+                    return;
+                }
+
+                const exportTitle = "Tableau de repartition des reclamations par direction et par service.";
+                const clone = area.cloneNode(true);
+
+                const workbookHtml = `
+                    <html xmlns:o="urn:schemas-microsoft-com:office:office"
+                          xmlns:x="urn:schemas-microsoft-com:office:excel"
+                          xmlns="http://www.w3.org/TR/REC-html40">
+                    <head>
+                        <meta charset="utf-8">
+                        <style>
+                            body { font-family: Arial, sans-serif; }
+                            table { border-collapse: collapse; width: 100%; }
+                            th, td { border: 1px solid #aab7c4; padding: 6px; font-size: 12px; vertical-align: middle; text-align: center; }
+                            thead th { background: #f3f4f6; color: #1f2937; font-weight: bold; }
+                        </style>
+                    </head>
+                    <body>
+                        <div style="font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; margin: 0 0 12px 0;">
+                            ${exportTitle}
+                        </div>
+                        ${clone.outerHTML}
+                    </body>
+                    </html>
+                `;
+
+                const blob = new Blob([workbookHtml], { type: 'application/vnd.ms-excel' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'tableau-repartition-reclamations-par-direction-service.xls';
+                link.click();
+                URL.revokeObjectURL(url);
+            }
+
+            async function exportReclamationFunctionDistributionAsPdf() {
+                const area = document.getElementById('reclamation-function-distribution-export-area');
+
+                if (!area || typeof html2canvas === 'undefined' || !window.jspdf?.jsPDF) {
+                    return;
+                }
+
+                const exportTitle = "Tableau de repartition des reclamations par direction et par service.";
+                const cloneWrapper = document.createElement('div');
+                cloneWrapper.style.position = 'fixed';
+                cloneWrapper.style.left = '-100000px';
+                cloneWrapper.style.top = '0';
+                cloneWrapper.style.width = '1600px';
+                cloneWrapper.style.background = '#ffffff';
+                cloneWrapper.style.padding = '0';
+                cloneWrapper.style.overflow = 'visible';
+                cloneWrapper.style.zIndex = '-1';
+
+                const cloneArea = area.cloneNode(true);
+                cloneArea.style.width = '1600px';
+                cloneArea.style.maxWidth = 'none';
+
+                cloneArea.querySelectorAll('table').forEach((table) => {
+                    table.style.width = '100%';
+                    table.style.minWidth = '0';
+                    table.style.tableLayout = 'fixed';
+                });
+
+                cloneWrapper.appendChild(cloneArea);
+                document.body.appendChild(cloneWrapper);
+
+                let canvas;
+                try {
+                    canvas = await html2canvas(cloneArea, {
+                        backgroundColor: '#ffffff',
+                        scale: 2,
+                        useCORS: true,
+                        windowWidth: 1600,
+                        width: 1600,
+                        scrollX: 0,
+                        scrollY: -window.scrollY,
+                    });
+                } finally {
+                    document.body.removeChild(cloneWrapper);
+                }
+
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4',
+                });
+
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const margin = 6;
+                const availableWidth = pageWidth - (margin * 2);
+                const titleHeight = 12;
+                const availableHeight = pageHeight - (margin * 2) - titleHeight - 4;
+                const ratio = availableWidth / canvas.width;
+                const sliceHeight = Math.max(1, Math.floor(availableHeight / ratio));
+
+                let offsetY = 0;
+                let pageIndex = 0;
+
+                while (offsetY < canvas.height) {
+                    const sliceCanvas = document.createElement('canvas');
+                    const sliceHeightCurrent = Math.min(sliceHeight, canvas.height - offsetY);
+                    sliceCanvas.width = canvas.width;
+                    sliceCanvas.height = sliceHeightCurrent;
+
+                    const sliceContext = sliceCanvas.getContext('2d');
+                    sliceContext.drawImage(
+                        canvas,
+                        0,
+                        offsetY,
+                        canvas.width,
+                        sliceHeightCurrent,
+                        0,
+                        0,
+                        canvas.width,
+                        sliceHeightCurrent
+                    );
+
+                    if (pageIndex > 0) {
+                        pdf.addPage();
+                    }
+
+                    const imageData = sliceCanvas.toDataURL('image/png', 1.0);
+                    const renderHeight = sliceHeightCurrent * ratio;
+
+                    pdf.setFontSize(12);
+                    pdf.text(exportTitle, margin, 10);
+                    pdf.addImage(imageData, 'PNG', margin, 14, availableWidth, renderHeight);
+
+                    offsetY += sliceHeightCurrent;
+                    pageIndex += 1;
+                }
+
+                pdf.save(`${exportTitle}.pdf`);
+            }
+
+            function exportReclamationServiceDistributionAsExcel() {
+                const area = document.getElementById('reclamation-service-distribution-export-area');
+
+                if (!area) {
+                    return;
+                }
+
+                const exportTitle = "Tableau de repartition des reclamations par service.";
+                const clone = area.cloneNode(true);
+
+                const workbookHtml = `
+                    <html xmlns:o="urn:schemas-microsoft-com:office:office"
+                          xmlns:x="urn:schemas-microsoft-com:office:excel"
+                          xmlns="http://www.w3.org/TR/REC-html40">
+                    <head>
+                        <meta charset="utf-8">
+                        <style>
+                            body { font-family: Arial, sans-serif; }
+                            table { border-collapse: collapse; width: 100%; }
+                            th, td { border: 1px solid #aab7c4; padding: 6px; font-size: 12px; vertical-align: middle; text-align: center; }
+                            thead th { background: #f3f4f6; color: #1f2937; font-weight: bold; }
+                        </style>
+                    </head>
+                    <body>
+                        <div style="font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; margin: 0 0 12px 0;">
+                            ${exportTitle}
+                        </div>
+                        ${clone.outerHTML}
+                    </body>
+                    </html>
+                `;
+
+                const blob = new Blob([workbookHtml], { type: 'application/vnd.ms-excel' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'tableau-repartition-reclamations-par-service.xls';
+                link.click();
+                URL.revokeObjectURL(url);
+            }
+
+            async function exportReclamationServiceDistributionAsPdf() {
+                const area = document.getElementById('reclamation-service-distribution-export-area');
+
+                if (!area || typeof html2canvas === 'undefined' || !window.jspdf?.jsPDF) {
+                    return;
+                }
+
+                const exportTitle = "Tableau de repartition des reclamations par service.";
+                const cloneWrapper = document.createElement('div');
+                cloneWrapper.style.position = 'fixed';
+                cloneWrapper.style.left = '-100000px';
+                cloneWrapper.style.top = '0';
+                cloneWrapper.style.width = '1600px';
+                cloneWrapper.style.background = '#ffffff';
+                cloneWrapper.style.padding = '0';
+                cloneWrapper.style.overflow = 'visible';
+                cloneWrapper.style.zIndex = '-1';
+
+                const cloneArea = area.cloneNode(true);
+                cloneArea.style.width = '1600px';
+                cloneArea.style.maxWidth = 'none';
+
+                cloneArea.querySelectorAll('table').forEach((table) => {
+                    table.style.width = '100%';
+                    table.style.minWidth = '0';
+                    table.style.tableLayout = 'fixed';
+                });
+
+                cloneWrapper.appendChild(cloneArea);
+                document.body.appendChild(cloneWrapper);
+
+                let canvas;
+                try {
+                    canvas = await html2canvas(cloneArea, {
+                        backgroundColor: '#ffffff',
+                        scale: 2,
+                        useCORS: true,
+                        windowWidth: 1600,
+                        width: 1600,
+                        scrollX: 0,
+                        scrollY: -window.scrollY,
+                    });
+                } finally {
+                    document.body.removeChild(cloneWrapper);
+                }
+
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4',
+                });
+
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const margin = 6;
+                const availableWidth = pageWidth - (margin * 2);
+                const titleHeight = 12;
+                const availableHeight = pageHeight - (margin * 2) - titleHeight - 4;
+                const ratio = availableWidth / canvas.width;
+                const sliceHeight = Math.max(1, Math.floor(availableHeight / ratio));
+
+                let offsetY = 0;
+                let pageIndex = 0;
+
+                while (offsetY < canvas.height) {
+                    const sliceCanvas = document.createElement('canvas');
+                    const sliceHeightCurrent = Math.min(sliceHeight, canvas.height - offsetY);
+                    sliceCanvas.width = canvas.width;
+                    sliceCanvas.height = sliceHeightCurrent;
+
+                    const sliceContext = sliceCanvas.getContext('2d');
+                    sliceContext.drawImage(
+                        canvas,
+                        0,
+                        offsetY,
+                        canvas.width,
+                        sliceHeightCurrent,
+                        0,
+                        0,
+                        canvas.width,
+                        sliceHeightCurrent
+                    );
+
+                    if (pageIndex > 0) {
+                        pdf.addPage();
+                    }
+
+                    const imageData = sliceCanvas.toDataURL('image/png', 1.0);
+                    const renderHeight = sliceHeightCurrent * ratio;
+
+                    pdf.setFontSize(12);
+                    pdf.text(exportTitle, margin, 10);
+                    pdf.addImage(imageData, 'PNG', margin, 14, availableWidth, renderHeight);
+
+                    offsetY += sliceHeightCurrent;
+                    pageIndex += 1;
+                }
+
+                pdf.save(`${exportTitle}.pdf`);
+            }
+
             function setActivePerformanceChart(target) {
                 performanceTabs.forEach((tab) => {
                     const active = tab.dataset.chartTarget === target;
@@ -1842,27 +2999,31 @@
 
                 activePerformanceTarget = target;
 
-                if (initializedCharts[target]) {
-                    return;
-                }
+                const initializeChart = () => {
+                    if (!initializedCharts[target]) {
+                        if (target === 'type') {
+                            initTypeVolumeChart();
+                        }
 
-                if (target === 'type') {
-                    initTypeVolumeChart();
-                }
+                        if (target === 'status') {
+                            initStatusVolumeChart();
+                        }
 
-                if (target === 'status') {
-                    initStatusVolumeChart();
-                }
+                        if (target === 'timeline') {
+                            initTemporalEvolutionChart();
+                        }
 
-                if (target === 'timeline') {
-                    initTemporalEvolutionChart();
-                }
+                        if (target === 'direction') {
+                            initDirectionVolumeChart('direction-compliance-chart', @json($directionVolumeChart));
+                        }
 
-                if (target === 'direction') {
-                    initDirectionVolumeChart('direction-compliance-chart', @json($directionVolumeChart));
-                }
+                        initializedCharts[target] = true;
+                    }
 
-                initializedCharts[target] = true;
+                    chartInstances[target]?.resize();
+                };
+
+                requestAnimationFrame(() => requestAnimationFrame(initializeChart));
             }
 
             if (periodSelect) {
@@ -1883,6 +3044,29 @@
 
             performanceTabs.forEach((tab) => {
                 tab.addEventListener('click', () => setActivePerformanceChart(tab.dataset.chartTarget));
+            });
+
+            trackingDetailButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    const index = Number(button.dataset.trackingIndex ?? '-1');
+                    if (index >= 0) {
+                        openTrackingModal(index);
+                    }
+                });
+            });
+
+            if (ciqTrackingClose) {
+                ciqTrackingClose.addEventListener('click', closeTrackingModal);
+            }
+
+            if (ciqTrackingBackdrop) {
+                ciqTrackingBackdrop.addEventListener('click', closeTrackingModal);
+            }
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && ciqTrackingModal && !ciqTrackingModal.classList.contains('hidden')) {
+                    closeTrackingModal();
+                }
             });
 
             if (downloadChartPngButton) {
@@ -1915,6 +3099,38 @@
 
             if (functionDistributionExportPdfButton) {
                 functionDistributionExportPdfButton.addEventListener('click', exportFunctionDistributionAsPdf);
+            }
+
+            if (informationFunctionDistributionExportXlsButton) {
+                informationFunctionDistributionExportXlsButton.addEventListener('click', exportInformationFunctionDistributionAsExcel);
+            }
+
+            if (informationFunctionDistributionExportPdfButton) {
+                informationFunctionDistributionExportPdfButton.addEventListener('click', exportInformationFunctionDistributionAsPdf);
+            }
+
+            if (informationServiceDistributionExportXlsButton) {
+                informationServiceDistributionExportXlsButton.addEventListener('click', exportInformationServiceDistributionAsExcel);
+            }
+
+            if (informationServiceDistributionExportPdfButton) {
+                informationServiceDistributionExportPdfButton.addEventListener('click', exportInformationServiceDistributionAsPdf);
+            }
+
+            if (reclamationFunctionDistributionExportXlsButton) {
+                reclamationFunctionDistributionExportXlsButton.addEventListener('click', exportReclamationFunctionDistributionAsExcel);
+            }
+
+            if (reclamationFunctionDistributionExportPdfButton) {
+                reclamationFunctionDistributionExportPdfButton.addEventListener('click', exportReclamationFunctionDistributionAsPdf);
+            }
+
+            if (reclamationServiceDistributionExportXlsButton) {
+                reclamationServiceDistributionExportXlsButton.addEventListener('click', exportReclamationServiceDistributionAsExcel);
+            }
+
+            if (reclamationServiceDistributionExportPdfButton) {
+                reclamationServiceDistributionExportPdfButton.addEventListener('click', exportReclamationServiceDistributionAsPdf);
             }
 
             syncDateInputs();
