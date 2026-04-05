@@ -7,10 +7,11 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
 
-class DemandResponseMail extends Mailable
+class DemandResponseMail extends Mailable implements ShouldQueue
 {
     use Queueable;
     use SerializesModels;

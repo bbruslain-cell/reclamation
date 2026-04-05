@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="fr">
 @php
     $roleCodes = $roleCodes ?? [];
@@ -193,7 +193,7 @@
                         gold:    { DEFAULT: '#f9b13c', 50: '#fff8ee' },
                         neutral: { 50:'#f8f9fa',100:'#f1f3f5',200:'#e9ecef',300:'#dee2e6',400:'#adb5bd',500:'#6c757d',600:'#495057',700:'#343a40' },
                     },
-                    fontFamily: { sans: ['"Roboto"', 'system-ui', 'sans-serif'] },
+                    fontFamily: { sans: ['"Inter"', 'system-ui', 'sans-serif'] },
                     boxShadow: {
                         'card': '0 1px 3px rgba(28,32,61,0.05), 0 4px 16px rgba(28,32,61,0.07)',
                     }
@@ -203,8 +203,7 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             background:
@@ -218,6 +217,37 @@
             border: 1px solid rgba(57, 150, 211, 0.10);
             box-shadow: 0 16px 40px rgba(28, 32, 61, 0.08);
             backdrop-filter: blur(10px);
+        }
+        .hero-shell {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, rgba(28, 32, 61, 0.98) 0%, rgba(34, 56, 107, 0.94) 54%, rgba(57, 150, 211, 0.94) 100%);
+        }
+        .hero-shell::before {
+            content: '';
+            position: absolute;
+            inset: -20% auto auto -8%;
+            width: 280px;
+            height: 280px;
+            border-radius: 9999px;
+            background: radial-gradient(circle, rgba(248, 233, 50, 0.20) 0%, transparent 68%);
+            pointer-events: none;
+        }
+        .hero-shell::after {
+            content: '';
+            position: absolute;
+            right: -70px;
+            bottom: -90px;
+            width: 260px;
+            height: 260px;
+            border-radius: 9999px;
+            background: radial-gradient(circle, rgba(143, 192, 67, 0.26) 0%, transparent 72%);
+            pointer-events: none;
+        }
+        .hero-chip {
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.10);
+            backdrop-filter: blur(8px);
         }
         .ciq-section-title {
             position: relative;
@@ -325,6 +355,33 @@
             background: linear-gradient(180deg, rgba(57,150,211,0.10), rgba(143,192,67,0.12));
             border-color: rgba(57, 150, 211, 0.36);
         }
+        .ciq-export-button--pdf {
+            background: linear-gradient(180deg, rgba(255, 241, 239, 0.96), rgba(255, 232, 228, 0.98));
+            border-color: rgba(180, 35, 24, 0.18);
+            color: #9f1f16 !important;
+        }
+        .ciq-export-button--pdf:hover {
+            background: linear-gradient(180deg, rgba(254, 220, 215, 0.98), rgba(255, 232, 228, 1));
+            border-color: rgba(180, 35, 24, 0.34);
+        }
+        .ciq-export-button--excel {
+            background: linear-gradient(180deg, rgba(243, 249, 234, 0.98), rgba(232, 245, 214, 0.98));
+            border-color: rgba(79, 121, 28, 0.2);
+            color: #3f6f16 !important;
+        }
+        .ciq-export-button--excel:hover {
+            background: linear-gradient(180deg, rgba(227, 241, 200, 0.98), rgba(243, 249, 234, 1));
+            border-color: rgba(79, 121, 28, 0.34);
+        }
+        .ciq-export-button--png {
+            background: linear-gradient(180deg, rgba(234, 244, 251, 0.98), rgba(214, 235, 248, 0.98));
+            border-color: rgba(57, 150, 211, 0.22);
+            color: #1f78b4 !important;
+        }
+        .ciq-export-button--png:hover {
+            background: linear-gradient(180deg, rgba(213, 233, 248, 1), rgba(234, 244, 251, 1));
+            border-color: rgba(57, 150, 211, 0.36);
+        }
         .field {
             transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
         }
@@ -335,6 +392,13 @@
             background-color: #ffffff;
         }
         .trow:hover td { background: #f8fafd; }
+        .icon-svg {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            vertical-align: middle;
+            flex-shrink: 0;
+        }
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: #f1f3f5; }
         ::-webkit-scrollbar-thumb { background: #c5c7d9; border-radius: 99px; }
@@ -384,25 +448,34 @@
             </div>
             <div class="flex items-center gap-3">
                 <a href="/espace" class="hidden sm:inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150">
-                    <i class="fas fa-grid-2 text-[10px]"></i>
+                    <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z" fill="currentColor"/>
+                    </svg>
                     <span>Mon espace</span>
                 </a>
                 @if (in_array('admin', $roleCodes, true))
                 <a href="/admin" class="hidden sm:inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150">
-                    <i class="fas fa-gear text-[10px]"></i>
+                    <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="m10.6 2 2.8 0 .5 2.1a7.9 7.9 0 0 1 1.8.8l1.9-1 2 2-1 1.9c.3.6.6 1.2.8 1.8L22 10.6v2.8l-2.1.5a7.9 7.9 0 0 1-.8 1.8l1 1.9-2 2-1.9-1a7.9 7.9 0 0 1-1.8.8l-.5 2.1h-2.8l-.5-2.1a7.9 7.9 0 0 1-1.8-.8l-1.9 1-2-2 1-1.9a7.9 7.9 0 0 1-.8-1.8L2 13.4v-2.8l2.1-.5c.2-.6.5-1.2.8-1.8l-1-1.9 2-2 1.9 1c.6-.3 1.2-.6 1.8-.8L10.6 2Zm1.4 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" fill="currentColor"/>
+                    </svg>
                     <span>Administration</span>
                 </a>
                 @endif
                 <div class="hidden sm:flex items-center gap-2 bg-white/10 border border-white/15 rounded-lg px-3 py-1.5">
                     <div class="w-6 h-6 rounded-full bg-sky/30 flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-user text-sky-100 text-[10px]"></i>
+                        <svg class="icon-svg text-sky-100 text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M6 18c1.4-2.8 4-4.2 6-4.2s4.6 1.4 6 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
                     </div>
                     <span class="text-white text-xs font-medium">{{ $actorName !== '' ? $actorName : 'Utilisateur ANBG' }}</span>
                 </div>
                 <form method="post" action="/logout">
                     @csrf
                     <button type="submit" class="flex items-center gap-1.5 bg-white/10 hover:bg-red-500/20 border border-white/15 hover:border-red-400/40 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150">
-                        <i class="fas fa-right-from-bracket text-[10px]"></i>
+                        <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2H5V5h5V3Zm9.7 9-4.2-4.2-1.4 1.4 1.8 1.8H9v2h6.9l-1.8 1.8 1.4 1.4 4.2-4.2Z" fill="currentColor"/>
+                        </svg>
                         <span class="hidden sm:inline">Deconnexion</span>
                     </button>
                 </form>
@@ -410,15 +483,31 @@
         </div>
     </header>
 
-    <section class="border-b border-white/10 pb-8 pt-6" style="background: linear-gradient(135deg, #1c203d 0%, #22386b 54%, #3996d3 100%);">
+    <section class="hero-shell border-b border-white/10 pb-8 pt-6">
         <div class="max-w-screen-xl mx-auto px-4 sm:px-6">
-            <div class="flex items-start gap-4">
+            <div class="relative z-10 flex items-start gap-4">
                 <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 mt-1 shadow-lg" style="background: linear-gradient(135deg, rgba(143,192,67,0.9) 0%, rgba(248,233,50,0.95) 100%);">
-                    <i class="fas fa-chart-line text-navy text-sm"></i>
+                    <svg class="icon-svg text-navy text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 19h16v2H2V4h2v15Zm2.7-4.3 3.5-3.5 2.6 2.6 4.5-5.3 1.5 1.3-5.9 7-2.7-2.7-2.1 2.1-1.4-1.5Z" fill="currentColor"/>
+                    </svg>
                 </div>
                 <div>
                     <h1 class="text-white text-xl font-medium leading-snug mb-1">{{ $pageTitle }}</h1>
                     <p class="text-sky-100 text-sm font-light leading-relaxed max-w-3xl">{{ $pageSubtitle }}</p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <span class="hero-chip inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs text-white/90">
+                            <svg class="icon-svg text-[#f8e932]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M11 2v10h10A10 10 0 0 0 11 2Zm-1 1.1A10 10 0 1 0 20.9 14H10V3.1Z" fill="currentColor"/>
+                            </svg>
+                            Lecture de supervision
+                        </span>
+                        <span class="hero-chip inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs text-white/90">
+                            <svg class="icon-svg text-[#8fc043]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M3 4h18v16H3V4Zm2 2v3h14V6H5Zm0 5v3h4v-3H5Zm6 0v3h8v-3h-8Zm-6 5v2h4v-2H5Zm6 0v2h8v-2h-8Z" fill="currentColor"/>
+                            </svg>
+                            Reporting CIQ et direction
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -444,7 +533,9 @@
                     <div class="relative">
                         <input id="date_from" type="date" name="date_from" value="{{ $dateFromValue }}" class="field w-full px-3 py-2.5 pr-11 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy">
                         <button type="button" class="date-picker-trigger absolute inset-y-0 right-0 px-3 text-neutral-400 hover:text-navy transition-colors" data-target="date_from" aria-label="Choisir la date de debut">
-                            <i class="fas fa-calendar-days text-sm"></i>
+                            <svg class="icon-svg text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2Zm13 8H4v10h16V10ZM4 8h16V6H4v2Zm2 4h4v4H6v-4Z" fill="currentColor"/>
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -453,7 +544,9 @@
                     <div class="relative">
                         <input id="date_to" type="date" name="date_to" value="{{ $dateToValue }}" class="field w-full px-3 py-2.5 pr-11 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy">
                         <button type="button" class="date-picker-trigger absolute inset-y-0 right-0 px-3 text-neutral-400 hover:text-navy transition-colors" data-target="date_to" aria-label="Choisir la date de fin">
-                            <i class="fas fa-calendar-days text-sm"></i>
+                            <svg class="icon-svg text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2Zm13 8H4v10h16V10ZM4 8h16V6H4v2Zm2 4h4v4H6v-4Z" fill="currentColor"/>
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -504,10 +597,16 @@
                 </div>
                 <div class="md:col-span-2 xl:col-span-4 flex flex-wrap gap-3">
                     <button type="submit" class="inline-flex items-center gap-2 bg-navy hover:bg-navy-600 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors duration-150">
-                        <i class="fas fa-filter text-xs"></i> Appliquer
+                        <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z" fill="currentColor"/>
+                        </svg>
+                        <span>Appliquer</span>
                     </button>
                     <a href="/pilotage" class="inline-flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-medium px-5 py-2.5 rounded-xl transition-colors duration-150">
-                        <i class="fas fa-rotate-left text-xs"></i> Reinitialiser
+                        <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M12 5a7 7 0 1 1-6.6 9.3l1.9-.6A5 5 0 1 0 12 7h-1.6l2.3 2.3-1.4 1.4L6.6 6l4.7-4.7 1.4 1.4L10.4 5H12Z" fill="currentColor"/>
+                        </svg>
+                        <span>Reinitialiser</span>
                     </a>
                 </div>
                 <div class="md:col-span-2 xl:col-span-4">
@@ -583,12 +682,16 @@
                     <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <h3 class="text-sm font-medium text-navy">Vue graphique</h3>
                         <div class="flex flex-wrap gap-2">
-                            <button type="button" id="download-chart-png" class="ciq-export-button inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
-                                <i class="fas fa-image text-xs"></i>
+                            <button type="button" id="download-chart-png" class="ciq-export-button ciq-export-button--png inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
+                                <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm0 2v10h16V7H4Zm3 2.5A1.5 1.5 0 1 0 7 12a1.5 1.5 0 0 0 0-3Zm12 6.5H5l4-4 2.5 2.5 2-2L19 16Z" fill="currentColor"/>
+                                </svg>
                                 <span>Telecharger PNG</span>
                             </button>
-                            <button type="button" id="download-chart-pdf" class="ciq-export-button inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
-                                <i class="fas fa-file-pdf text-xs"></i>
+                            <button type="button" id="download-chart-pdf" class="ciq-export-button ciq-export-button--pdf inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
+                                <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm6 1.5V8h4.5L13 3.5ZM8 12h2.2a2.3 2.3 0 1 1 0 4.6H9.5V19H8v-7Zm1.5 1.4v1.8h.7a.9.9 0 1 0 0-1.8h-.7ZM13 12h2.1a2.5 2.5 0 1 1 0 5H14.5V19H13v-7Zm1.5 1.4v2.2h.6a1.1 1.1 0 1 0 0-2.2h-.6ZM18.5 13.4H17V15h1.2v1.4H17V19h-1.5v-7h3v1.4Z" fill="currentColor"/>
+                                </svg>
                                 <span>Telecharger PDF</span>
                             </button>
                         </div>
@@ -598,19 +701,27 @@
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <button type="button" data-chart-target="type" class="performance-tab inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
-                            <i class="fas fa-chart-pie text-xs"></i>
+                            <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M11 2v10h10A10 10 0 0 0 11 2Zm-1 1.1A10 10 0 1 0 20.9 14H10V3.1Z" fill="currentColor"/>
+                            </svg>
                             <span>Types</span>
                         </button>
                         <button type="button" data-chart-target="status" class="performance-tab inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
-                            <i class="fas fa-chart-column text-xs"></i>
+                            <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M4 20h16v2H2V4h2v16Zm2-8h3v6H6v-6Zm5-5h3v11h-3V7Zm5 3h3v8h-3v-8Z" fill="currentColor"/>
+                            </svg>
                             <span>Statut global</span>
                         </button>
                         <button type="button" data-chart-target="timeline" class="performance-tab inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
-                            <i class="fas fa-chart-line text-xs"></i>
+                            <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M4 19h16v2H2V4h2v15Zm2.7-4.3 3.5-3.5 2.6 2.6 4.5-5.3 1.5 1.3-5.9 7-2.7-2.7-2.1 2.1-1.4-1.5Z" fill="currentColor"/>
+                            </svg>
                             <span>Evolution</span>
                         </button>
                         <button type="button" data-chart-target="direction" class="performance-tab inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
-                            <i class="fas fa-building text-xs"></i>
+                            <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M4 21V5a2 2 0 0 1 2-2h8v18H4Zm4-14H6v2h2V7Zm4 0h-2v2h2V7Zm-4 4H6v2h2v-2Zm4 0h-2v2h2v-2Zm7 10h-4V9l4 2v10Zm-2-6h-1v2h1v-2Z" fill="currentColor"/>
+                            </svg>
                             <span>Directions</span>
                         </button>
                     </div>
@@ -756,7 +867,7 @@
                                 <p id="ciq-modal-subtitle" class="mt-1 text-sm text-neutral-500">Fiche de soumission usager</p>
                             </div>
                             <button type="button" id="ciq-tracking-close" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 text-neutral-500 hover:text-navy hover:border-sky/40 transition-colors">
-                                <i class="fas fa-times"></i>
+                                <svg class="icon-svg h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
                             </button>
                         </div>
 
@@ -861,18 +972,18 @@
             <section class="ciq-surface rounded-2xl overflow-hidden">
                 <div class="px-5 py-4 border-b border-sky/10 flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <i class="fas fa-table text-sky text-sm"></i>
+                        <svg class="icon-svg h-4 w-4 text-sky" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 5.5h18v13H3z" stroke="currentColor" stroke-width="1.7"/><path d="M3 10h18M9 10v8M15 10v8" stroke="currentColor" stroke-width="1.7"/></svg>
                         <h3 class="text-sm font-medium text-navy">Suivi detaille</h3>
                     </div>
                     <div class="flex items-center gap-2">
                         <p class="text-xs text-neutral-400 hidden sm:block">{{ number_format($ciqTrackingRows->count(), 0, ',', ' ') }} ligne(s) sur le filtre courant</p>
-                        <button type="button" id="ciq-tracking-export-xls" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                            <i class="fas fa-file-excel text-[11px]"></i>
-                            <span>Excel</span>
+                        <button type="button" id="ciq-tracking-export-xls" class="ciq-export-button ciq-export-button--excel inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8.5 12.5 3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="m11.5 12.5-3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14.5 12.5h2.5M14.5 15.5H17M14.5 18.5h2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                        <span>Excel</span>
                         </button>
-                        <button type="button" id="ciq-tracking-export-pdf" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                            <i class="fas fa-file-pdf text-[11px]"></i>
-                            <span>PDF</span>
+                        <button type="button" id="ciq-tracking-export-pdf" class="ciq-export-button ciq-export-button--pdf inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 18.5v-6h2.2a1.9 1.9 0 1 1 0 3.8H8.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 18.5v-6h1.8a2 2 0 1 1 0 4H14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span>PDF</span>
                         </button>
                     </div>
                 </div>
@@ -895,7 +1006,7 @@
                         </colgroup>
                         <thead>
                             <tr class="bg-[#2f5f93] border-b border-[#274f79]">
-                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">N°</th>
+                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">NÂ°</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Date de reception</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Expediteur</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Objet</th>
@@ -943,17 +1054,17 @@
         <section class="space-y-5">
             <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
-                    <h2 class="text-sm font-medium text-navy"> tableau de la répartition des demandes d’informations et réclamations les plus récurrentes dans la cellule. </h2>
+                    <h2 class="text-sm font-medium text-navy"> tableau de la rÃ©partition des demandes dâ€™informations et rÃ©clamations les plus rÃ©currentes dans la cellule. </h2>
                     <p class="text-xs text-neutral-400 mt-1">Nombre de mails par categorie avec pourcentage sur le total du type.</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <p class="hidden sm:block text-xs text-neutral-400">{{ number_format(($annexeInformationsRows->count() + $annexeReclamationsRows->count()), 0, ',', ' ') }} ligne(s) au total</p>
-                    <button type="button" id="annexe2-export-xls" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <i class="fas fa-file-excel text-[11px]"></i>
+                    <button type="button" id="annexe2-export-xls" class="ciq-export-button ciq-export-button--excel inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8.5 12.5 3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="m11.5 12.5-3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14.5 12.5h2.5M14.5 15.5H17M14.5 18.5h2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
                         <span>Excel</span>
                     </button>
-                    <button type="button" id="annexe2-export-pdf" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <i class="fas fa-file-pdf text-[11px]"></i>
+                    <button type="button" id="annexe2-export-pdf" class="ciq-export-button ciq-export-button--pdf inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 18.5v-6h2.2a1.9 1.9 0 1 1 0 3.8H8.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 18.5v-6h1.8a2 2 0 1 1 0 4H14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         <span>PDF</span>
                     </button>
                 </div>
@@ -1037,12 +1148,12 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <p class="hidden sm:block text-xs text-neutral-400">{{ number_format($functionDistributionRows->count(), 0, ',', ' ') }} ligne(s) au total</p>
-                    <button type="button" id="function-distribution-export-xls" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <i class="fas fa-file-excel text-[11px]"></i>
+                    <button type="button" id="function-distribution-export-xls" class="ciq-export-button ciq-export-button--excel inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8.5 12.5 3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="m11.5 12.5-3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14.5 12.5h2.5M14.5 15.5H17M14.5 18.5h2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
                         <span>Excel</span>
                     </button>
-                    <button type="button" id="function-distribution-export-pdf" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <i class="fas fa-file-pdf text-[11px]"></i>
+                    <button type="button" id="function-distribution-export-pdf" class="ciq-export-button ciq-export-button--pdf inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 18.5v-6h2.2a1.9 1.9 0 1 1 0 3.8H8.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 18.5v-6h1.8a2 2 0 1 1 0 4H14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         <span>PDF</span>
                     </button>
                 </div>
@@ -1104,12 +1215,12 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <p class="hidden sm:block text-xs text-neutral-400">{{ number_format($informationFunctionDistributionRows->count(), 0, ',', ' ') }} ligne(s) au total</p>
-                    <button type="button" id="information-function-distribution-export-xls" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <i class="fas fa-file-excel text-[11px]"></i>
+                    <button type="button" id="information-function-distribution-export-xls" class="ciq-export-button ciq-export-button--excel inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8.5 12.5 3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="m11.5 12.5-3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14.5 12.5h2.5M14.5 15.5H17M14.5 18.5h2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
                         <span>Excel</span>
                     </button>
-                    <button type="button" id="information-function-distribution-export-pdf" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <i class="fas fa-file-pdf text-[11px]"></i>
+                    <button type="button" id="information-function-distribution-export-pdf" class="ciq-export-button ciq-export-button--pdf inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 18.5v-6h2.2a1.9 1.9 0 1 1 0 3.8H8.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 18.5v-6h1.8a2 2 0 1 1 0 4H14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         <span>PDF</span>
                     </button>
                 </div>
@@ -1171,12 +1282,12 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <p class="hidden sm:block text-xs text-neutral-400">{{ number_format($informationServiceDistributionRows->count(), 0, ',', ' ') }} ligne(s) au total</p>
-                    <button type="button" id="information-service-distribution-export-xls" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <i class="fas fa-file-excel text-[11px]"></i>
+                    <button type="button" id="information-service-distribution-export-xls" class="ciq-export-button ciq-export-button--excel inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8.5 12.5 3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="m11.5 12.5-3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14.5 12.5h2.5M14.5 15.5H17M14.5 18.5h2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
                         <span>Excel</span>
                     </button>
-                    <button type="button" id="information-service-distribution-export-pdf" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <i class="fas fa-file-pdf text-[11px]"></i>
+                    <button type="button" id="information-service-distribution-export-pdf" class="ciq-export-button ciq-export-button--pdf inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 18.5v-6h2.2a1.9 1.9 0 1 1 0 3.8H8.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 18.5v-6h1.8a2 2 0 1 1 0 4H14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         <span>PDF</span>
                     </button>
                 </div>
@@ -1234,12 +1345,12 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <p class="hidden sm:block text-xs text-neutral-400">{{ number_format($reclamationFunctionDistributionRows->count(), 0, ',', ' ') }} ligne(s) au total</p>
-                    <button type="button" id="reclamation-function-distribution-export-xls" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <i class="fas fa-file-excel text-[11px]"></i>
+                    <button type="button" id="reclamation-function-distribution-export-xls" class="ciq-export-button ciq-export-button--excel inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8.5 12.5 3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="m11.5 12.5-3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14.5 12.5h2.5M14.5 15.5H17M14.5 18.5h2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
                         <span>Excel</span>
                     </button>
-                    <button type="button" id="reclamation-function-distribution-export-pdf" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <i class="fas fa-file-pdf text-[11px]"></i>
+                    <button type="button" id="reclamation-function-distribution-export-pdf" class="ciq-export-button ciq-export-button--pdf inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 18.5v-6h2.2a1.9 1.9 0 1 1 0 3.8H8.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 18.5v-6h1.8a2 2 0 1 1 0 4H14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         <span>PDF</span>
                     </button>
                 </div>
@@ -1301,12 +1412,12 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <p class="hidden sm:block text-xs text-neutral-400">{{ number_format($reclamationServiceDistributionRows->count(), 0, ',', ' ') }} ligne(s) au total</p>
-                    <button type="button" id="reclamation-service-distribution-export-xls" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <i class="fas fa-file-excel text-[11px]"></i>
+                    <button type="button" id="reclamation-service-distribution-export-xls" class="ciq-export-button ciq-export-button--excel inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8.5 12.5 3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="m11.5 12.5-3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14.5 12.5h2.5M14.5 15.5H17M14.5 18.5h2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
                         <span>Excel</span>
                     </button>
-                    <button type="button" id="reclamation-service-distribution-export-pdf" class="ciq-export-button inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <i class="fas fa-file-pdf text-[11px]"></i>
+                    <button type="button" id="reclamation-service-distribution-export-pdf" class="ciq-export-button ciq-export-button--pdf inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
+                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 18.5v-6h2.2a1.9 1.9 0 1 1 0 3.8H8.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 18.5v-6h1.8a2 2 0 1 1 0 4H14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         <span>PDF</span>
                     </button>
                 </div>
@@ -1360,14 +1471,14 @@
             <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                 <div>
                     <h2 class="ciq-section-title text-sm font-medium text-navy">Consultation des dossiers usagers</h2>
-                    <p class="text-xs text-neutral-400 mt-1">Registre de consultation des demandes, accessible a partir du numero de suivi.</p>
+                    <p class="text-xs text-neutral-400 mt-1">Registre de consultation des demandes, avec ouverture detaillee via le bouton Consulter.</p>
                 </div>
                 <p class="text-xs text-neutral-400">{{ number_format($ciqTrackingRows->count(), 0, ',', ' ') }} dossier(s) disponibles sur le filtre courant</p>
             </div>
 
             <section class="ciq-surface rounded-2xl overflow-hidden">
                 <div class="px-5 py-4 border-b border-sky/10 flex items-center gap-2">
-                    <i class="fas fa-folder-open text-sky text-sm"></i>
+                    <svg class="icon-svg h-4 w-4 text-sky" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5V11H8.5L6.8 13H3V7.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 13h4.6l1.8-2H21l-2 8H5.5A2.5 2.5 0 0 1 3 16.5V13Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
                     <h3 class="text-sm font-medium text-navy">Registre des numeros de suivi</h3>
                 </div>
 
@@ -1388,14 +1499,10 @@
                             @forelse($ciqTrackingRows as $row)
                             <tr class="odd:bg-white even:bg-neutral-50/70 hover:bg-sky/5 transition-colors">
                                 <td class="px-4 py-3 align-top">
-                                    <button
-                                        type="button"
-                                        class="tracking-detail-trigger inline-flex items-center gap-2 text-sm font-semibold text-sky hover:text-navy underline underline-offset-2 transition-colors"
-                                        data-tracking-index="{{ $loop->index }}"
-                                    >
-                                        <i class="fas fa-folder-open text-[11px]"></i>
+                                    <div class="inline-flex items-center gap-2 text-sm font-semibold text-navy">
+                                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5V11H8.5L6.8 13H3V7.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 13h4.6l1.8-2H21l-2 8H5.5A2.5 2.5 0 0 1 3 16.5V13Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
                                         <span>{{ $row['numero_suivi'] ?? '-' }}</span>
-                                    </button>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3 text-sm text-neutral-700 align-top">{{ $row['expediteur'] ?? '-' }}</td>
                                 <td class="px-4 py-3 text-sm text-neutral-700 align-top">{{ $row['objet'] ?? '-' }}</td>
@@ -1412,7 +1519,7 @@
                                         class="tracking-detail-trigger inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-600 hover:border-sky/35 hover:text-navy transition-colors"
                                         data-tracking-index="{{ $loop->index }}"
                                     >
-                                        <i class="fas fa-eye text-[11px]"></i>
+                                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/></svg>
                                         <span>Consulter</span>
                                     </button>
                                 </td>
@@ -1428,7 +1535,7 @@
                     </table>
                 </div>
                 <div class="px-5 py-3 border-t border-neutral-200 bg-neutral-50 text-xs text-neutral-400">
-                    Cliquer sur le numero de suivi ou sur <span class="font-medium text-neutral-500">Consulter</span> pour ouvrir la fiche complete de la demande.
+                    Utiliser le bouton <span class="font-medium text-neutral-500">Consulter</span> pour ouvrir la fiche complete de la demande.
                 </div>
             </section>
         </section>
@@ -1561,8 +1668,18 @@
                     link.rel = 'noopener';
                     link.className = 'inline-flex items-center gap-2 rounded-full border border-sky/20 bg-sky/5 px-3 py-1.5 text-xs font-medium text-sky hover:bg-sky/10 transition-colors';
 
-                    const icon = document.createElement('i');
-                    icon.className = 'fas fa-paperclip text-[10px]';
+                    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    icon.setAttribute('viewBox', '0 0 24 24');
+                    icon.setAttribute('fill', 'none');
+                    icon.setAttribute('aria-hidden', 'true');
+                    icon.setAttribute('class', 'icon-svg h-3 w-3');
+                    const iconPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    iconPath.setAttribute('d', 'M16.5 6.5a4 4 0 0 1 0 5.7l-6.8 6.8a3 3 0 0 1-4.2-4.2l6.7-6.8 1.4 1.4-6.7 6.8a1 1 0 1 0 1.4 1.4l6.8-6.8a2 2 0 0 0-2.8-2.8L5.8 14.7 4.4 13.3l6.5-6.8a4 4 0 0 1 5.6 0Z');
+                    iconPath.setAttribute('stroke', 'currentColor');
+                    iconPath.setAttribute('stroke-width', '1.8');
+                    iconPath.setAttribute('stroke-linecap', 'round');
+                    iconPath.setAttribute('stroke-linejoin', 'round');
+                    icon.appendChild(iconPath);
                     const label = document.createElement('span');
                     label.textContent = piece.nom_fichier ?? 'Piece jointe';
 
@@ -1579,7 +1696,7 @@
                 }
 
                 setModalText('ciq-modal-tracking-number', row.numero_suivi ?? '-');
-                setModalText('ciq-modal-subtitle', `${row.expediteur ?? '-'} • ${row.type_demande ?? '-'}`);
+                setModalText('ciq-modal-subtitle', `${row.expediteur ?? '-'} â€¢ ${row.type_demande ?? '-'}`);
                 setModalText('ciq-modal-nom', row.usager_nom ?? '-');
                 setModalText('ciq-modal-prenom', row.usager_prenom ?? '-');
                 setModalText('ciq-modal-email', row.usager_email ?? '-');
@@ -2001,987 +2118,40 @@
                 pdf.save(`${slugifyChartTitle(context.title)}.pdf`);
             }
 
-            function exportCiqTrackingAsExcel() {
-                const table = document.getElementById('ciq-tracking-table');
+            const pilotageExportBaseUrl = @json(url('/pilotage/export/__SECTION__/__FORMAT__'));
 
-                if (!table) {
-                    return;
-                }
-
-                const workbookHtml = `
-                    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-                          xmlns:x="urn:schemas-microsoft-com:office:excel"
-                          xmlns="http://www.w3.org/TR/REC-html40">
-                    <head>
-                        <meta charset="utf-8">
-                        <style>
-                            table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; }
-                            th, td { border: 1px solid #b7c3d0; padding: 6px; font-size: 12px; vertical-align: top; }
-                            th { background: #1f4e79; color: #ffffff; font-weight: bold; text-transform: uppercase; }
-                        </style>
-                    </head>
-                    <body>${table.outerHTML}</body>
-                    </html>
-                `;
-
-                const blob = new Blob([workbookHtml], { type: 'application/vnd.ms-excel' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'tableau-suivi-ciq.xls';
-                link.click();
-                URL.revokeObjectURL(url);
-            }
-
-            async function exportCiqTrackingAsPdf() {
-                const area = document.getElementById('ciq-tracking-export-area');
-                const table = document.getElementById('ciq-tracking-table');
-
-                if (!area || !table || typeof html2canvas === 'undefined' || !window.jspdf?.jsPDF) {
-                    return;
-                }
-
-                const cloneWrapper = document.createElement('div');
-                cloneWrapper.style.position = 'fixed';
-                cloneWrapper.style.left = '-100000px';
-                cloneWrapper.style.top = '0';
-                cloneWrapper.style.width = `${table.scrollWidth}px`;
-                cloneWrapper.style.background = '#ffffff';
-                cloneWrapper.style.padding = '0';
-                cloneWrapper.style.overflow = 'visible';
-                cloneWrapper.style.zIndex = '-1';
-
-                const cloneTable = table.cloneNode(true);
-                cloneTable.style.width = `${table.scrollWidth}px`;
-                cloneTable.style.minWidth = `${table.scrollWidth}px`;
-                cloneTable.style.maxWidth = 'none';
-                cloneTable.style.tableLayout = 'fixed';
-                cloneTable.style.overflow = 'visible';
-
-                cloneWrapper.appendChild(cloneTable);
-                document.body.appendChild(cloneWrapper);
-
-                let canvas;
-                try {
-                    canvas = await html2canvas(cloneTable, {
-                        backgroundColor: '#ffffff',
-                        scale: 2,
-                        useCORS: true,
-                        windowWidth: table.scrollWidth,
-                        width: table.scrollWidth,
-                        scrollX: 0,
-                        scrollY: -window.scrollY,
-                    });
-                } finally {
-                    document.body.removeChild(cloneWrapper);
-                }
-
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'mm',
-                    format: 'a4',
-                });
-
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 6;
-                const imageData = canvas.toDataURL('image/png', 1.0);
-                const ratio = Math.min(
-                    (pageWidth - (margin * 2)) / canvas.width,
-                    (pageHeight - 18) / canvas.height
+            function redirectToPilotageExport(section, format) {
+                const url = new URL(
+                    pilotageExportBaseUrl
+                        .replace('__SECTION__', encodeURIComponent(section))
+                        .replace('__FORMAT__', encodeURIComponent(format)),
+                    window.location.origin
                 );
-                const renderWidth = canvas.width * ratio;
-                const renderHeight = canvas.height * ratio;
-                const renderX = (pageWidth - renderWidth) / 2;
 
-                pdf.setFontSize(12);
-                pdf.text('Tableau actuel du suivi des reclamations', margin, 10);
-                pdf.addImage(imageData, 'PNG', renderX, 14, renderWidth, renderHeight);
-                pdf.save('tableau-suivi-ciq.pdf');
-            }
-
-            function exportAnnexe2AsExcel() {
-                const area = document.getElementById('annexe2-export-area');
-
-                if (!area) {
-                    return;
-                }
-
-                const exportTitle = "Tableau de la repartition des demandes d'informations et reclamations les plus recurrentes dans la cellule.";
-                const clone = area.cloneNode(true);
-                const heading = clone.querySelector('h2, h3');
-                if (heading) {
-                    heading.textContent = exportTitle;
-                }
-
-                const workbookHtml = `
-                    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-                          xmlns:x="urn:schemas-microsoft-com:office:excel"
-                          xmlns="http://www.w3.org/TR/REC-html40">
-                    <head>
-                        <meta charset="utf-8">
-                        <style>
-                            body { font-family: Arial, sans-serif; }
-                            h2, h3 { margin: 0 0 8px 0; }
-                            .sheet { margin-bottom: 18px; }
-                            table { border-collapse: collapse; width: 100%; }
-                            th, td { border: 1px solid #aab7c4; padding: 6px; font-size: 12px; vertical-align: top; }
-                            thead th { background: #d9e2f3; color: #1f2937; font-weight: bold; }
-                        </style>
-                    </head>
-                    <body>
-                        <div style="font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; margin: 0 0 12px 0;">
-                            ${exportTitle}
-                        </div>
-                        ${clone.outerHTML}
-                    </body>
-                    </html>
-                `;
-
-                const blob = new Blob([workbookHtml], { type: 'application/vnd.ms-excel' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'annexe-2-repartition-ciq.xls';
-                link.click();
-                URL.revokeObjectURL(url);
-            }
-
-            async function exportAnnexe2AsPdf() {
-                const area = document.getElementById('annexe2-export-area');
-
-                if (!area || typeof html2canvas === 'undefined' || !window.jspdf?.jsPDF) {
-                    return;
-                }
-
-                const exportTitle = "Tableau de la repartition des demandes d'informations et reclamations les plus recurrentes dans la cellule.";
-
-                const cloneWrapper = document.createElement('div');
-                cloneWrapper.style.position = 'fixed';
-                cloneWrapper.style.left = '-100000px';
-                cloneWrapper.style.top = '0';
-                cloneWrapper.style.width = '1600px';
-                cloneWrapper.style.background = '#ffffff';
-                cloneWrapper.style.padding = '0';
-                cloneWrapper.style.overflow = 'visible';
-                cloneWrapper.style.zIndex = '-1';
-
-                const cloneArea = area.cloneNode(true);
-                cloneArea.style.width = '1600px';
-                cloneArea.style.maxWidth = 'none';
-
-                const heading = cloneArea.querySelector('h2, h3');
-                if (heading) {
-                    heading.textContent = exportTitle;
-                }
-
-                const layout = cloneArea.querySelector('.grid');
-                if (layout) {
-                    layout.style.display = 'block';
-                }
-
-                cloneArea.querySelectorAll('section').forEach((section) => {
-                    section.style.width = '100%';
-                    section.style.maxWidth = 'none';
-                    section.style.marginBottom = '18px';
-                });
-
-                cloneArea.querySelectorAll('table').forEach((table) => {
-                    table.style.width = '100%';
-                    table.style.minWidth = '0';
-                    table.style.tableLayout = 'fixed';
-                });
-
-                cloneWrapper.appendChild(cloneArea);
-                document.body.appendChild(cloneWrapper);
-
-                let canvas;
-                try {
-                    canvas = await html2canvas(cloneArea, {
-                        backgroundColor: '#ffffff',
-                        scale: 2,
-                        useCORS: true,
-                        windowWidth: 1600,
-                        width: 1600,
-                        scrollX: 0,
-                        scrollY: -window.scrollY,
-                    });
-                } finally {
-                    document.body.removeChild(cloneWrapper);
-                }
-
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'mm',
-                    format: 'a4',
-                });
-
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 6;
-                const availableWidth = pageWidth - (margin * 2);
-                const titleHeight = 12;
-                const availableHeight = pageHeight - (margin * 2) - titleHeight - 4;
-                const ratio = availableWidth / canvas.width;
-                const sliceHeight = Math.max(1, Math.floor(availableHeight / ratio));
-
-                let offsetY = 0;
-                let pageIndex = 0;
-
-                while (offsetY < canvas.height) {
-                    const sliceCanvas = document.createElement('canvas');
-                    const sliceHeightCurrent = Math.min(sliceHeight, canvas.height - offsetY);
-                    sliceCanvas.width = canvas.width;
-                    sliceCanvas.height = sliceHeightCurrent;
-
-                    const sliceContext = sliceCanvas.getContext('2d');
-                    sliceContext.drawImage(
-                        canvas,
-                        0,
-                        offsetY,
-                        canvas.width,
-                        sliceHeightCurrent,
-                        0,
-                        0,
-                        canvas.width,
-                        sliceHeightCurrent
-                    );
-
-                    if (pageIndex > 0) {
-                        pdf.addPage();
+                const currentParams = new URLSearchParams(window.location.search);
+                currentParams.forEach((value, key) => {
+                    if (value !== '') {
+                        url.searchParams.set(key, value);
                     }
-
-                    const imageData = sliceCanvas.toDataURL('image/png', 1.0);
-                    const renderHeight = sliceHeightCurrent * ratio;
-
-                    pdf.setFontSize(12);
-                    pdf.text(exportTitle, margin, 10);
-                    pdf.addImage(imageData, 'PNG', margin, 14, availableWidth, renderHeight);
-
-                    offsetY += sliceHeightCurrent;
-                    pageIndex += 1;
-                }
-
-                pdf.save(`${exportTitle}.pdf`);
-            }
-
-            function exportFunctionDistributionAsExcel() {
-                const area = document.getElementById('function-distribution-export-area');
-
-                if (!area) {
-                    return;
-                }
-
-                const exportTitle = "Tableau de repartition de l'ensemble des reclamations de la cellule par direction.";
-                const clone = area.cloneNode(true);
-
-                const workbookHtml = `
-                    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-                          xmlns:x="urn:schemas-microsoft-com:office:excel"
-                          xmlns="http://www.w3.org/TR/REC-html40">
-                    <head>
-                        <meta charset="utf-8">
-                        <style>
-                            body { font-family: Arial, sans-serif; }
-                            table { border-collapse: collapse; width: 100%; }
-                            th, td { border: 1px solid #aab7c4; padding: 6px; font-size: 12px; vertical-align: middle; text-align: center; }
-                            thead th { background: #f3f4f6; color: #1f2937; font-weight: bold; }
-                        </style>
-                    </head>
-                    <body>
-                        <div style="font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; margin: 0 0 12px 0;">
-                            ${exportTitle}
-                        </div>
-                        ${clone.outerHTML}
-                    </body>
-                    </html>
-                `;
-
-                const blob = new Blob([workbookHtml], { type: 'application/vnd.ms-excel' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'tableau-repartition-reclamations-par-direction.xls';
-                link.click();
-                URL.revokeObjectURL(url);
-            }
-
-            async function exportFunctionDistributionAsPdf() {
-                const area = document.getElementById('function-distribution-export-area');
-
-                if (!area || typeof html2canvas === 'undefined' || !window.jspdf?.jsPDF) {
-                    return;
-                }
-
-                const exportTitle = "Tableau de repartition de l'ensemble des reclamations de la cellule par direction.";
-                const cloneWrapper = document.createElement('div');
-                cloneWrapper.style.position = 'fixed';
-                cloneWrapper.style.left = '-100000px';
-                cloneWrapper.style.top = '0';
-                cloneWrapper.style.width = '1600px';
-                cloneWrapper.style.background = '#ffffff';
-                cloneWrapper.style.padding = '0';
-                cloneWrapper.style.overflow = 'visible';
-                cloneWrapper.style.zIndex = '-1';
-
-                const cloneArea = area.cloneNode(true);
-                cloneArea.style.width = '1600px';
-                cloneArea.style.maxWidth = 'none';
-
-                cloneArea.querySelectorAll('table').forEach((table) => {
-                    table.style.width = '100%';
-                    table.style.minWidth = '0';
-                    table.style.tableLayout = 'fixed';
                 });
 
-                cloneWrapper.appendChild(cloneArea);
-                document.body.appendChild(cloneWrapper);
-
-                let canvas;
-                try {
-                    canvas = await html2canvas(cloneArea, {
-                        backgroundColor: '#ffffff',
-                        scale: 2,
-                        useCORS: true,
-                        windowWidth: 1600,
-                        width: 1600,
-                        scrollX: 0,
-                        scrollY: -window.scrollY,
-                    });
-                } finally {
-                    document.body.removeChild(cloneWrapper);
-                }
-
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'mm',
-                    format: 'a4',
-                });
-
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 6;
-                const availableWidth = pageWidth - (margin * 2);
-                const titleHeight = 12;
-                const availableHeight = pageHeight - (margin * 2) - titleHeight - 4;
-                const ratio = availableWidth / canvas.width;
-                const sliceHeight = Math.max(1, Math.floor(availableHeight / ratio));
-
-                let offsetY = 0;
-                let pageIndex = 0;
-
-                while (offsetY < canvas.height) {
-                    const sliceCanvas = document.createElement('canvas');
-                    const sliceHeightCurrent = Math.min(sliceHeight, canvas.height - offsetY);
-                    sliceCanvas.width = canvas.width;
-                    sliceCanvas.height = sliceHeightCurrent;
-
-                    const sliceContext = sliceCanvas.getContext('2d');
-                    sliceContext.drawImage(
-                        canvas,
-                        0,
-                        offsetY,
-                        canvas.width,
-                        sliceHeightCurrent,
-                        0,
-                        0,
-                        canvas.width,
-                        sliceHeightCurrent
-                    );
-
-                    if (pageIndex > 0) {
-                        pdf.addPage();
-                    }
-
-                    const imageData = sliceCanvas.toDataURL('image/png', 1.0);
-                    const renderHeight = sliceHeightCurrent * ratio;
-
-                    pdf.setFontSize(12);
-                    pdf.text(exportTitle, margin, 10);
-                    pdf.addImage(imageData, 'PNG', margin, 14, availableWidth, renderHeight);
-
-                    offsetY += sliceHeightCurrent;
-                    pageIndex += 1;
-                }
-
-                pdf.save(`${exportTitle}.pdf`);
+                window.location.href = url.toString();
             }
 
-            function exportInformationFunctionDistributionAsExcel() {
-                const area = document.getElementById('information-function-distribution-export-area');
-
-                if (!area) {
-                    return;
-                }
-
-                const exportTitle = "Tableau de repartition des demandes d'information par direction et par service.";
-                const clone = area.cloneNode(true);
-
-                const workbookHtml = `
-                    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-                          xmlns:x="urn:schemas-microsoft-com:office:excel"
-                          xmlns="http://www.w3.org/TR/REC-html40">
-                    <head>
-                        <meta charset="utf-8">
-                        <style>
-                            body { font-family: Arial, sans-serif; }
-                            table { border-collapse: collapse; width: 100%; }
-                            th, td { border: 1px solid #aab7c4; padding: 6px; font-size: 12px; vertical-align: middle; text-align: center; }
-                            thead th { background: #f3f4f6; color: #1f2937; font-weight: bold; }
-                        </style>
-                    </head>
-                    <body>
-                        <div style="font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; margin: 0 0 12px 0;">
-                            ${exportTitle}
-                        </div>
-                        ${clone.outerHTML}
-                    </body>
-                    </html>
-                `;
-
-                const blob = new Blob([workbookHtml], { type: 'application/vnd.ms-excel' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'tableau-repartition-demandes-information-par-direction-service.xls';
-                link.click();
-                URL.revokeObjectURL(url);
-            }
-
-            async function exportInformationFunctionDistributionAsPdf() {
-                const area = document.getElementById('information-function-distribution-export-area');
-
-                if (!area || typeof html2canvas === 'undefined' || !window.jspdf?.jsPDF) {
-                    return;
-                }
-
-                const exportTitle = "Tableau de repartition des demandes d'information par direction et par service.";
-                const cloneWrapper = document.createElement('div');
-                cloneWrapper.style.position = 'fixed';
-                cloneWrapper.style.left = '-100000px';
-                cloneWrapper.style.top = '0';
-                cloneWrapper.style.width = '1600px';
-                cloneWrapper.style.background = '#ffffff';
-                cloneWrapper.style.padding = '0';
-                cloneWrapper.style.overflow = 'visible';
-                cloneWrapper.style.zIndex = '-1';
-
-                const cloneArea = area.cloneNode(true);
-                cloneArea.style.width = '1600px';
-                cloneArea.style.maxWidth = 'none';
-
-                cloneArea.querySelectorAll('table').forEach((table) => {
-                    table.style.width = '100%';
-                    table.style.minWidth = '0';
-                    table.style.tableLayout = 'fixed';
-                });
-
-                cloneWrapper.appendChild(cloneArea);
-                document.body.appendChild(cloneWrapper);
-
-                let canvas;
-                try {
-                    canvas = await html2canvas(cloneArea, {
-                        backgroundColor: '#ffffff',
-                        scale: 2,
-                        useCORS: true,
-                        windowWidth: 1600,
-                        width: 1600,
-                        scrollX: 0,
-                        scrollY: -window.scrollY,
-                    });
-                } finally {
-                    document.body.removeChild(cloneWrapper);
-                }
-
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'mm',
-                    format: 'a4',
-                });
-
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 6;
-                const availableWidth = pageWidth - (margin * 2);
-                const titleHeight = 12;
-                const availableHeight = pageHeight - (margin * 2) - titleHeight - 4;
-                const ratio = availableWidth / canvas.width;
-                const sliceHeight = Math.max(1, Math.floor(availableHeight / ratio));
-
-                let offsetY = 0;
-                let pageIndex = 0;
-
-                while (offsetY < canvas.height) {
-                    const sliceCanvas = document.createElement('canvas');
-                    const sliceHeightCurrent = Math.min(sliceHeight, canvas.height - offsetY);
-                    sliceCanvas.width = canvas.width;
-                    sliceCanvas.height = sliceHeightCurrent;
-
-                    const sliceContext = sliceCanvas.getContext('2d');
-                    sliceContext.drawImage(
-                        canvas,
-                        0,
-                        offsetY,
-                        canvas.width,
-                        sliceHeightCurrent,
-                        0,
-                        0,
-                        canvas.width,
-                        sliceHeightCurrent
-                    );
-
-                    if (pageIndex > 0) {
-                        pdf.addPage();
-                    }
-
-                    const imageData = sliceCanvas.toDataURL('image/png', 1.0);
-                    const renderHeight = sliceHeightCurrent * ratio;
-
-                    pdf.setFontSize(12);
-                    pdf.text(exportTitle, margin, 10);
-                    pdf.addImage(imageData, 'PNG', margin, 14, availableWidth, renderHeight);
-
-                    offsetY += sliceHeightCurrent;
-                    pageIndex += 1;
-                }
-
-                pdf.save(`${exportTitle}.pdf`);
-            }
-
-            function exportInformationServiceDistributionAsExcel() {
-                const area = document.getElementById('information-service-distribution-export-area');
-
-                if (!area) {
-                    return;
-                }
-
-                const exportTitle = "Tableau de repartition des demandes d'information par service.";
-                const clone = area.cloneNode(true);
-
-                const workbookHtml = `
-                    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-                          xmlns:x="urn:schemas-microsoft-com:office:excel"
-                          xmlns="http://www.w3.org/TR/REC-html40">
-                    <head>
-                        <meta charset="utf-8">
-                        <style>
-                            body { font-family: Arial, sans-serif; }
-                            table { border-collapse: collapse; width: 100%; }
-                            th, td { border: 1px solid #aab7c4; padding: 6px; font-size: 12px; vertical-align: middle; text-align: center; }
-                            thead th { background: #f3f4f6; color: #1f2937; font-weight: bold; }
-                        </style>
-                    </head>
-                    <body>
-                        <div style="font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; margin: 0 0 12px 0;">
-                            ${exportTitle}
-                        </div>
-                        ${clone.outerHTML}
-                    </body>
-                    </html>
-                `;
-
-                const blob = new Blob([workbookHtml], { type: 'application/vnd.ms-excel' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'tableau-repartition-demandes-information-par-service.xls';
-                link.click();
-                URL.revokeObjectURL(url);
-            }
-
-            async function exportInformationServiceDistributionAsPdf() {
-                const area = document.getElementById('information-service-distribution-export-area');
-
-                if (!area || typeof html2canvas === 'undefined' || !window.jspdf?.jsPDF) {
-                    return;
-                }
-
-                const exportTitle = "Tableau de repartition des demandes d'information par service.";
-                const cloneWrapper = document.createElement('div');
-                cloneWrapper.style.position = 'fixed';
-                cloneWrapper.style.left = '-100000px';
-                cloneWrapper.style.top = '0';
-                cloneWrapper.style.width = '1600px';
-                cloneWrapper.style.background = '#ffffff';
-                cloneWrapper.style.padding = '0';
-                cloneWrapper.style.overflow = 'visible';
-                cloneWrapper.style.zIndex = '-1';
-
-                const cloneArea = area.cloneNode(true);
-                cloneArea.style.width = '1600px';
-                cloneArea.style.maxWidth = 'none';
-
-                cloneArea.querySelectorAll('table').forEach((table) => {
-                    table.style.width = '100%';
-                    table.style.minWidth = '0';
-                    table.style.tableLayout = 'fixed';
-                });
-
-                cloneWrapper.appendChild(cloneArea);
-                document.body.appendChild(cloneWrapper);
-
-                let canvas;
-                try {
-                    canvas = await html2canvas(cloneArea, {
-                        backgroundColor: '#ffffff',
-                        scale: 2,
-                        useCORS: true,
-                        windowWidth: 1600,
-                        width: 1600,
-                        scrollX: 0,
-                        scrollY: -window.scrollY,
-                    });
-                } finally {
-                    document.body.removeChild(cloneWrapper);
-                }
-
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'mm',
-                    format: 'a4',
-                });
-
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 6;
-                const availableWidth = pageWidth - (margin * 2);
-                const titleHeight = 12;
-                const availableHeight = pageHeight - (margin * 2) - titleHeight - 4;
-                const ratio = availableWidth / canvas.width;
-                const sliceHeight = Math.max(1, Math.floor(availableHeight / ratio));
-
-                let offsetY = 0;
-                let pageIndex = 0;
-
-                while (offsetY < canvas.height) {
-                    const sliceCanvas = document.createElement('canvas');
-                    const sliceHeightCurrent = Math.min(sliceHeight, canvas.height - offsetY);
-                    sliceCanvas.width = canvas.width;
-                    sliceCanvas.height = sliceHeightCurrent;
-
-                    const sliceContext = sliceCanvas.getContext('2d');
-                    sliceContext.drawImage(
-                        canvas,
-                        0,
-                        offsetY,
-                        canvas.width,
-                        sliceHeightCurrent,
-                        0,
-                        0,
-                        canvas.width,
-                        sliceHeightCurrent
-                    );
-
-                    if (pageIndex > 0) {
-                        pdf.addPage();
-                    }
-
-                    const imageData = sliceCanvas.toDataURL('image/png', 1.0);
-                    const renderHeight = sliceHeightCurrent * ratio;
-
-                    pdf.setFontSize(12);
-                    pdf.text(exportTitle, margin, 10);
-                    pdf.addImage(imageData, 'PNG', margin, 14, availableWidth, renderHeight);
-
-                    offsetY += sliceHeightCurrent;
-                    pageIndex += 1;
-                }
-
-                pdf.save(`${exportTitle}.pdf`);
-            }
-
-            function exportReclamationFunctionDistributionAsExcel() {
-                const area = document.getElementById('reclamation-function-distribution-export-area');
-
-                if (!area) {
-                    return;
-                }
-
-                const exportTitle = "Tableau de repartition des reclamations par direction et par service.";
-                const clone = area.cloneNode(true);
-
-                const workbookHtml = `
-                    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-                          xmlns:x="urn:schemas-microsoft-com:office:excel"
-                          xmlns="http://www.w3.org/TR/REC-html40">
-                    <head>
-                        <meta charset="utf-8">
-                        <style>
-                            body { font-family: Arial, sans-serif; }
-                            table { border-collapse: collapse; width: 100%; }
-                            th, td { border: 1px solid #aab7c4; padding: 6px; font-size: 12px; vertical-align: middle; text-align: center; }
-                            thead th { background: #f3f4f6; color: #1f2937; font-weight: bold; }
-                        </style>
-                    </head>
-                    <body>
-                        <div style="font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; margin: 0 0 12px 0;">
-                            ${exportTitle}
-                        </div>
-                        ${clone.outerHTML}
-                    </body>
-                    </html>
-                `;
-
-                const blob = new Blob([workbookHtml], { type: 'application/vnd.ms-excel' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'tableau-repartition-reclamations-par-direction-service.xls';
-                link.click();
-                URL.revokeObjectURL(url);
-            }
-
-            async function exportReclamationFunctionDistributionAsPdf() {
-                const area = document.getElementById('reclamation-function-distribution-export-area');
-
-                if (!area || typeof html2canvas === 'undefined' || !window.jspdf?.jsPDF) {
-                    return;
-                }
-
-                const exportTitle = "Tableau de repartition des reclamations par direction et par service.";
-                const cloneWrapper = document.createElement('div');
-                cloneWrapper.style.position = 'fixed';
-                cloneWrapper.style.left = '-100000px';
-                cloneWrapper.style.top = '0';
-                cloneWrapper.style.width = '1600px';
-                cloneWrapper.style.background = '#ffffff';
-                cloneWrapper.style.padding = '0';
-                cloneWrapper.style.overflow = 'visible';
-                cloneWrapper.style.zIndex = '-1';
-
-                const cloneArea = area.cloneNode(true);
-                cloneArea.style.width = '1600px';
-                cloneArea.style.maxWidth = 'none';
-
-                cloneArea.querySelectorAll('table').forEach((table) => {
-                    table.style.width = '100%';
-                    table.style.minWidth = '0';
-                    table.style.tableLayout = 'fixed';
-                });
-
-                cloneWrapper.appendChild(cloneArea);
-                document.body.appendChild(cloneWrapper);
-
-                let canvas;
-                try {
-                    canvas = await html2canvas(cloneArea, {
-                        backgroundColor: '#ffffff',
-                        scale: 2,
-                        useCORS: true,
-                        windowWidth: 1600,
-                        width: 1600,
-                        scrollX: 0,
-                        scrollY: -window.scrollY,
-                    });
-                } finally {
-                    document.body.removeChild(cloneWrapper);
-                }
-
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'mm',
-                    format: 'a4',
-                });
-
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 6;
-                const availableWidth = pageWidth - (margin * 2);
-                const titleHeight = 12;
-                const availableHeight = pageHeight - (margin * 2) - titleHeight - 4;
-                const ratio = availableWidth / canvas.width;
-                const sliceHeight = Math.max(1, Math.floor(availableHeight / ratio));
-
-                let offsetY = 0;
-                let pageIndex = 0;
-
-                while (offsetY < canvas.height) {
-                    const sliceCanvas = document.createElement('canvas');
-                    const sliceHeightCurrent = Math.min(sliceHeight, canvas.height - offsetY);
-                    sliceCanvas.width = canvas.width;
-                    sliceCanvas.height = sliceHeightCurrent;
-
-                    const sliceContext = sliceCanvas.getContext('2d');
-                    sliceContext.drawImage(
-                        canvas,
-                        0,
-                        offsetY,
-                        canvas.width,
-                        sliceHeightCurrent,
-                        0,
-                        0,
-                        canvas.width,
-                        sliceHeightCurrent
-                    );
-
-                    if (pageIndex > 0) {
-                        pdf.addPage();
-                    }
-
-                    const imageData = sliceCanvas.toDataURL('image/png', 1.0);
-                    const renderHeight = sliceHeightCurrent * ratio;
-
-                    pdf.setFontSize(12);
-                    pdf.text(exportTitle, margin, 10);
-                    pdf.addImage(imageData, 'PNG', margin, 14, availableWidth, renderHeight);
-
-                    offsetY += sliceHeightCurrent;
-                    pageIndex += 1;
-                }
-
-                pdf.save(`${exportTitle}.pdf`);
-            }
-
-            function exportReclamationServiceDistributionAsExcel() {
-                const area = document.getElementById('reclamation-service-distribution-export-area');
-
-                if (!area) {
-                    return;
-                }
-
-                const exportTitle = "Tableau de repartition des reclamations par service.";
-                const clone = area.cloneNode(true);
-
-                const workbookHtml = `
-                    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-                          xmlns:x="urn:schemas-microsoft-com:office:excel"
-                          xmlns="http://www.w3.org/TR/REC-html40">
-                    <head>
-                        <meta charset="utf-8">
-                        <style>
-                            body { font-family: Arial, sans-serif; }
-                            table { border-collapse: collapse; width: 100%; }
-                            th, td { border: 1px solid #aab7c4; padding: 6px; font-size: 12px; vertical-align: middle; text-align: center; }
-                            thead th { background: #f3f4f6; color: #1f2937; font-weight: bold; }
-                        </style>
-                    </head>
-                    <body>
-                        <div style="font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; margin: 0 0 12px 0;">
-                            ${exportTitle}
-                        </div>
-                        ${clone.outerHTML}
-                    </body>
-                    </html>
-                `;
-
-                const blob = new Blob([workbookHtml], { type: 'application/vnd.ms-excel' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'tableau-repartition-reclamations-par-service.xls';
-                link.click();
-                URL.revokeObjectURL(url);
-            }
-
-            async function exportReclamationServiceDistributionAsPdf() {
-                const area = document.getElementById('reclamation-service-distribution-export-area');
-
-                if (!area || typeof html2canvas === 'undefined' || !window.jspdf?.jsPDF) {
-                    return;
-                }
-
-                const exportTitle = "Tableau de repartition des reclamations par service.";
-                const cloneWrapper = document.createElement('div');
-                cloneWrapper.style.position = 'fixed';
-                cloneWrapper.style.left = '-100000px';
-                cloneWrapper.style.top = '0';
-                cloneWrapper.style.width = '1600px';
-                cloneWrapper.style.background = '#ffffff';
-                cloneWrapper.style.padding = '0';
-                cloneWrapper.style.overflow = 'visible';
-                cloneWrapper.style.zIndex = '-1';
-
-                const cloneArea = area.cloneNode(true);
-                cloneArea.style.width = '1600px';
-                cloneArea.style.maxWidth = 'none';
-
-                cloneArea.querySelectorAll('table').forEach((table) => {
-                    table.style.width = '100%';
-                    table.style.minWidth = '0';
-                    table.style.tableLayout = 'fixed';
-                });
-
-                cloneWrapper.appendChild(cloneArea);
-                document.body.appendChild(cloneWrapper);
-
-                let canvas;
-                try {
-                    canvas = await html2canvas(cloneArea, {
-                        backgroundColor: '#ffffff',
-                        scale: 2,
-                        useCORS: true,
-                        windowWidth: 1600,
-                        width: 1600,
-                        scrollX: 0,
-                        scrollY: -window.scrollY,
-                    });
-                } finally {
-                    document.body.removeChild(cloneWrapper);
-                }
-
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'mm',
-                    format: 'a4',
-                });
-
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 6;
-                const availableWidth = pageWidth - (margin * 2);
-                const titleHeight = 12;
-                const availableHeight = pageHeight - (margin * 2) - titleHeight - 4;
-                const ratio = availableWidth / canvas.width;
-                const sliceHeight = Math.max(1, Math.floor(availableHeight / ratio));
-
-                let offsetY = 0;
-                let pageIndex = 0;
-
-                while (offsetY < canvas.height) {
-                    const sliceCanvas = document.createElement('canvas');
-                    const sliceHeightCurrent = Math.min(sliceHeight, canvas.height - offsetY);
-                    sliceCanvas.width = canvas.width;
-                    sliceCanvas.height = sliceHeightCurrent;
-
-                    const sliceContext = sliceCanvas.getContext('2d');
-                    sliceContext.drawImage(
-                        canvas,
-                        0,
-                        offsetY,
-                        canvas.width,
-                        sliceHeightCurrent,
-                        0,
-                        0,
-                        canvas.width,
-                        sliceHeightCurrent
-                    );
-
-                    if (pageIndex > 0) {
-                        pdf.addPage();
-                    }
-
-                    const imageData = sliceCanvas.toDataURL('image/png', 1.0);
-                    const renderHeight = sliceHeightCurrent * ratio;
-
-                    pdf.setFontSize(12);
-                    pdf.text(exportTitle, margin, 10);
-                    pdf.addImage(imageData, 'PNG', margin, 14, availableWidth, renderHeight);
-
-                    offsetY += sliceHeightCurrent;
-                    pageIndex += 1;
-                }
-
-                pdf.save(`${exportTitle}.pdf`);
-            }
-
+            function exportCiqTrackingAsExcel() { redirectToPilotageExport('ciq-tracking', 'xlsx'); }
+            async function exportCiqTrackingAsPdf() { redirectToPilotageExport('ciq-tracking', 'pdf'); }
+            function exportAnnexe2AsExcel() { redirectToPilotageExport('annexe2', 'xlsx'); }
+            async function exportAnnexe2AsPdf() { redirectToPilotageExport('annexe2', 'pdf'); }
+            function exportFunctionDistributionAsExcel() { redirectToPilotageExport('function-distribution', 'xlsx'); }
+            async function exportFunctionDistributionAsPdf() { redirectToPilotageExport('function-distribution', 'pdf'); }
+            function exportInformationFunctionDistributionAsExcel() { redirectToPilotageExport('information-function-distribution', 'xlsx'); }
+            async function exportInformationFunctionDistributionAsPdf() { redirectToPilotageExport('information-function-distribution', 'pdf'); }
+            function exportInformationServiceDistributionAsExcel() { redirectToPilotageExport('information-service-distribution', 'xlsx'); }
+            async function exportInformationServiceDistributionAsPdf() { redirectToPilotageExport('information-service-distribution', 'pdf'); }
+            function exportReclamationFunctionDistributionAsExcel() { redirectToPilotageExport('reclamation-function-distribution', 'xlsx'); }
+            async function exportReclamationFunctionDistributionAsPdf() { redirectToPilotageExport('reclamation-function-distribution', 'pdf'); }
+            function exportReclamationServiceDistributionAsExcel() { redirectToPilotageExport('reclamation-service-distribution', 'xlsx'); }
+            async function exportReclamationServiceDistributionAsPdf() { redirectToPilotageExport('reclamation-service-distribution', 'pdf'); }
             function setActivePerformanceChart(target) {
                 performanceTabs.forEach((tab) => {
                     const active = tab.dataset.chartTarget === target;

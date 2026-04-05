@@ -18,7 +18,7 @@ class OverviewApiTest extends TestCase
             ->value('id_utilisateur');
 
         $response = $this->withHeader('X-User-Id', (string) $ciqId)
-            ->getJson('/api/overview');
+            ->getJson('/api/overview?periode=all');
 
         $response->assertOk()
             ->assertJsonStructure([
@@ -133,7 +133,7 @@ class OverviewApiTest extends TestCase
             ->value('id_service');
 
         $response = $this->withHeader('X-User-Id', (string) $userId)
-            ->getJson("/api/overview?service_id={$serviceId}&application_state=appliquee");
+            ->getJson("/api/overview?periode=all&service_id={$serviceId}&application_state=appliquee");
 
         $response->assertOk()
             ->assertJsonPath('filters_appliques.service_id', $serviceId)
@@ -157,7 +157,7 @@ class OverviewApiTest extends TestCase
             ->value('id_utilisateur');
 
         $response = $this->withHeader('X-User-Id', (string) $userId)
-            ->getJson('/api/overview');
+            ->getJson('/api/overview?periode=all');
 
         $response->assertOk();
 
@@ -219,7 +219,7 @@ class OverviewApiTest extends TestCase
             ->value('id_utilisateur');
 
         $response = $this->withHeader('X-User-Id', (string) $ciqId)
-            ->getJson('/api/overview');
+            ->getJson('/api/overview?periode=all');
 
         $response->assertOk();
 
@@ -239,7 +239,7 @@ class OverviewApiTest extends TestCase
             ->value('id_utilisateur');
 
         $response = $this->withHeader('X-User-Id', (string) $ciqId)
-            ->getJson('/api/overview');
+            ->getJson('/api/overview?periode=all');
 
         $response->assertOk();
 

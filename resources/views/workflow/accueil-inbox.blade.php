@@ -21,7 +21,7 @@
                         }
                     },
                     fontFamily: {
-                        sans: ['"Roboto"', 'system-ui', 'sans-serif'],
+                        sans: ['"Inter"', 'system-ui', 'sans-serif'],
                     },
                     boxShadow: {
                         'card':  '0 1px 3px rgba(28,32,61,0.05), 0 4px 16px rgba(28,32,61,0.07)',
@@ -33,9 +33,22 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --anbg-navy: #1c203d;
+            --anbg-sky: #3996d3;
+            --anbg-leaf: #8fc043;
+            --anbg-sun: #f8e932;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(57, 150, 211, 0.14), transparent 10%),
+                radial-gradient(circle at top right, rgba(143, 192, 67, 0.14), transparent 24%),
+                linear-gradient(180deg, #fff 0%, #fff 100%);
+        }
+
         /* Input / select focus ring */
         .field:focus {
             outline: none;
@@ -43,8 +56,77 @@
             box-shadow: 0 0 0 3px rgba(57,150,211,0.18);
             background: #fff;
         }
+        .surface-card {
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(197, 203, 217, 0.55);
+            box-shadow: 0 18px 40px rgba(28, 32, 61, 0.08);
+            backdrop-filter: blur(10px);
+        }
+        .hero-shell {
+            background:
+                linear-gradient(135deg, rgba(28, 32, 61, 0.98) 0%, rgba(28, 32, 61, 0.92) 48%, rgba(57, 150, 211, 0.94) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-shell::before {
+            content: '';
+            position: absolute;
+            inset: -20% auto auto -10%;
+            width: 280px;
+            height: 280px;
+            background: radial-gradient(circle, rgba(248, 233, 50, 0.22) 0%, transparent 68%);
+            pointer-events: none;
+        }
+        .hero-shell::after {
+            content: '';
+            position: absolute;
+            right: -60px;
+            bottom: -80px;
+            width: 260px;
+            height: 260px;
+            background: radial-gradient(circle, rgba(143, 192, 67, 0.28) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero-chip {
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.10);
+            backdrop-filter: blur(8px);
+        }
+        .kpi-card {
+            position: relative;
+            overflow: hidden;
+        }
+        .kpi-card::after {
+            content: '';
+            position: absolute;
+            inset: auto -35% -45% auto;
+            width: 120px;
+            height: 120px;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.16);
+        }
+        .kpi-card > * {
+            position: relative;
+            z-index: 1;
+        }
+        .section-title-bar {
+            background: linear-gradient(90deg, rgba(28, 32, 61, 0.06), rgba(57, 150, 211, 0.04) 50%, rgba(143, 192, 67, 0.06));
+        }
+        .table-head {
+            background: linear-gradient(90deg, rgba(28, 32, 61, 0.96), rgba(57, 150, 211, 0.92));
+        }
+        .table-head th {
+            color: rgba(255, 255, 255, 0.92);
+        }
+        .icon-svg {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            vertical-align: middle;
+            flex-shrink: 0;
+        }
         /* Table row hover */
-        .demand-row:hover td { background: #f8fafd; }
+        .demand-row:hover td { background: #f4f8fc; }
         /* Detail row animation */
         .detail-row { transition: opacity 0.18s ease; }
         /* Scrollbar fin */
@@ -53,7 +135,7 @@
         ::-webkit-scrollbar-thumb { background: #c5c7d9; border-radius: 99px; }
     </style>
 </head>
-<body class="bg-neutral-100 text-navy font-sans min-h-screen">
+<body class="text-navy font-sans min-h-screen">
 
 <!-- ═══════════════════ TOPBAR ═══════════════════ -->
 <header class="bg-navy sticky top-0 z-50 shadow-md">
@@ -73,7 +155,10 @@
         <div class="flex items-center gap-3">
             <div class="hidden sm:flex items-center gap-2 bg-white/10 border border-white/15 rounded-lg px-3 py-1.5">
                 <div class="w-6 h-6 rounded-full bg-sky/30 flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-user text-sky-100 text-[10px]"></i>
+                    <svg class="icon-svg text-sky-100 text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M6 18c1.4-2.8 4-4.2 6-4.2s4.6 1.4 6 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
                 </div>
                 <span class="text-white text-xs font-medium">{{ $actor->prenom }} {{ $actor->nom }}</span>
             </div>
@@ -81,7 +166,11 @@
                 @csrf
                 <button type="submit"
                     class="flex items-center gap-1.5 bg-white/10 hover:bg-red-500/20 border border-white/15 hover:border-red-400/40 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150">
-                    <i class="fas fa-right-from-bracket text-[10px]"></i>
+                    <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M10 6H7.5A2.5 2.5 0 0 0 5 8.5v7A2.5 2.5 0 0 0 7.5 18H10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M13 8l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M9 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
                     <span class="hidden sm:inline">Déconnexion</span>
                 </button>
             </form>
@@ -95,19 +184,30 @@
     <!-- Toasts -->
     @if(session('success'))
     <div class="flex items-start gap-3 bg-leaf-50 border border-leaf/30 text-green-800 px-4 py-3 rounded-xl text-sm shadow-card">
-        <i class="fas fa-circle-check text-leaf mt-0.5 flex-shrink-0"></i>
+        <svg class="icon-svg text-leaf mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/>
+            <path d="m8.5 12 2.3 2.3L15.5 9.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
         <span>{{ session('success') }}</span>
     </div>
     @endif
     @if(session('error'))
     <div class="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm shadow-card">
-        <i class="fas fa-circle-exclamation text-red-500 mt-0.5 flex-shrink-0"></i>
+        <svg class="icon-svg text-red-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="12" cy="16.8" r="1" fill="currentColor"/>
+        </svg>
         <span>{{ session('error') }}</span>
     </div>
     @endif
     @if($errors->any())
     <div class="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm shadow-card">
-        <i class="fas fa-triangle-exclamation text-red-500 mt-0.5 flex-shrink-0"></i>
+        <svg class="icon-svg text-red-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 4.5 20 18.5H4L12 4.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M12 9.5v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="12" cy="15.8" r="1" fill="currentColor"/>
+        </svg>
         <div>
             <p class="font-medium mb-1">Erreurs de validation :</p>
             <ul class="list-disc list-inside space-y-0.5">
@@ -119,46 +219,167 @@
     </div>
     @endif
 
-    <!-- ── STAT RAPIDE ── -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-white rounded-xl shadow-card border border-neutral-200 px-5 py-4 flex items-center gap-4">
-            <div class="w-11 h-11 rounded-xl bg-sky-50 flex items-center justify-center flex-shrink-0">
-                <i class="fas fa-inbox text-sky text-base"></i>
+    @php
+        $summary = (object) [
+            'total_demandes' => (int) ($summaryStats->total_demandes ?? 0),
+            'total_nouvelles' => (int) ($summaryStats->total_nouvelles ?? 0),
+            'total_informations' => (int) ($summaryStats->total_informations ?? 0),
+            'total_reclamations' => (int) ($summaryStats->total_reclamations ?? 0),
+            'total_a_risque' => (int) ($summaryStats->total_a_risque ?? 0),
+            'total_en_retard' => (int) ($summaryStats->total_en_retard ?? 0),
+        ];
+        $filtersActifs = collect([
+            $typeCode !== '' ? 'Type filtré' : null,
+            !empty($directionId) ? 'Direction ciblée' : null,
+            $dateFrom !== '' || $dateTo !== '' ? 'Période personnalisée' : null,
+            $search !== '' ? 'Recherche active' : null,
+        ])->filter()->values();
+    @endphp
+
+    <section class="hero-shell rounded-[28px] px-6 py-6 sm:px-8 sm:py-7 text-white shadow-card">
+        <div class="relative z-10 grid gap-6 lg:grid-cols-[1.45fr_0.85fr] lg:items-end">
+            <div class="space-y-4">
+                
+                <div class="space-y-6">
+                    <h1 class="text-2xl font-bold leading-tight sm:text-[2rem]">Pilotage opérationnel des demandes entrantes</h1>
+                    <p class="max-w-3xl text-sm leading-6 text-white/78 sm:text-[15px]">
+                        L’accueil reçoit toutes les demandes, oriente chaque demande vers la bonne direction/service et répond directement aux demandes d’information.
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <span class="hero-chip inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs">
+                        <svg class="icon-svg text-[#f8e932]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z" stroke="currentColor" stroke-width="1.8"/>
+                            <path d="M4 13h4l1.5 2h5L16 13h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        {{ $summary->total_nouvelles }} demandes nouvelles
+                    </span>
+                    <span class="hero-chip inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs">
+                        <svg class="icon-svg text-[#8fc043]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M3 4v5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M5.5 9A8 8 0 1 1 8 17.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            <path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        {{ $recentAccueilActions->count() }} actions accueil récentes
+                    </span>
+                    <span class="hero-chip inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs">
+                        <svg class="icon-svg text-[#3996d3]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M4 6h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            <path d="M7 12h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            <path d="M10 18h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                        {{ $filtersActifs->isNotEmpty() ? $filtersActifs->implode(' · ') : 'Vue generale sans filtre' }}
+                    </span>
+                </div>
             </div>
-            <div>
-                <p class="text-2xl font-bold text-navy leading-none">{{ $nouvelles->total() }}</p>
-                <p class="text-xs text-neutral-400 mt-0.5">Demandes à traiter</p>
-            </div>
+
+            
         </div>
-        <div class="bg-white rounded-xl shadow-card border border-neutral-200 px-5 py-4 flex items-center gap-4">
-            <div class="w-11 h-11 rounded-xl bg-gold-50 flex items-center justify-center flex-shrink-0">
-                <i class="fas fa-triangle-exclamation text-gold text-base"></i>
+    </section>
+
+    <section class="flex flex-wrap items-stretch justify-center gap-3">
+        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#1c203d_0%,#2a3163_100%)] px-4 py-4 text-white shadow-card">
+            <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
+                <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/12">
+                    <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-7Z" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="m6 9 6 4 6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/68">Flux filtre</p>
+                <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_demandes }}">0</p>
+                <p class="text-xs text-white/68">Demandes recues</p>
             </div>
-            <div>
-                <p class="text-2xl font-bold text-navy leading-none">
-                    {{ $nouvelles->getCollection()->where('alerte_accueil','orange')->count() }}
-                </p>
-                <p class="text-xs text-neutral-400 mt-0.5">À risque</p>
+        </article>
+
+        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#3996d3_0%,#1c203d_120%)] px-4 py-4 text-white shadow-card">
+            <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
+                <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/12">
+                    <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="M4 13h4l1.5 2h5L16 13h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">A traiter</p>
+                <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_nouvelles }}">0</p>
+                <p class="text-xs text-white/68">Demandes nouvelles</p>
             </div>
-        </div>
-        <div class="bg-white rounded-xl shadow-card border border-neutral-200 px-5 py-4 flex items-center gap-4">
-            <div class="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
-                <i class="fas fa-circle-exclamation text-red-500 text-base"></i>
+        </article>
+
+        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#8fc043_0%,#45661c_115%)] px-4 py-4 text-white shadow-card">
+            <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
+                <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/12">
+                    <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="M12 11.5v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        <circle cx="12" cy="8.5" r="1" fill="currentColor"/>
+                    </svg>
+                </span>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/72">Pour Accueil</p>
+                <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_informations }}">0</p>
+                <p class="text-xs text-white/68">Demandes d’information</p>
             </div>
-            <div>
-                <p class="text-2xl font-bold text-navy leading-none">
-                    {{ $nouvelles->getCollection()->where('alerte_accueil','rouge')->count() }}
-                </p>
-                <p class="text-xs text-neutral-400 mt-0.5">En retard</p>
+        </article>
+
+        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#f8e932_0%,#d9a90a_110%)] px-4 py-4 text-[#1c203d] shadow-card">
+            <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
+                <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/35">
+                    <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M8 3.5h5l4 4V18a2 2 0 0 1-2 2H8A2 2 0 0 1 6 18V5.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                        <path d="M13 3.5V8h4.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                        <path d="M12 10.5v3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        <circle cx="12" cy="16.8" r="1" fill="currentColor"/>
+                    </svg>
+                </span>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1c203d]/72">Pour Directions</p>
+                <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_reclamations }}">0</p>
+                <p class="text-xs text-[#1c203d]/72">Reclamations</p>
             </div>
-        </div>
-    </div>
+        </article>
+
+        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#fff7df_0%,#ffe28b_100%)] px-4 py-4 text-[#8a5b00] shadow-card">
+            <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
+                <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/60">
+                    <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 4.5 20 18.5H4L12 4.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                        <path d="M12 9.5v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        <circle cx="12" cy="15.8" r="1" fill="currentColor"/>
+                    </svg>
+                </span>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8a5b00]/72">SLA accueil</p>
+                <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_a_risque }}">0</p>
+                <p class="text-xs text-[#8a5b00]/72">Demandes à risque</p>
+            </div>
+        </article>
+
+        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#ffe7e7_0%,#ffc9c9_100%)] px-4 py-4 text-[#8b1d1d] shadow-card">
+            <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
+                <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/60">
+                    <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="M12 7.8v5.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        <circle cx="12" cy="16.7" r="1" fill="currentColor"/>
+                    </svg>
+                </span>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8b1d1d]/70">Suivi</p>
+                <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_en_retard }}">0</p>
+                <p class="text-xs text-[#8b1d1d]/70">Demandes en retard</p>
+            </div>
+        </article>
+    </section>
 
     <!-- ── FILTRES ── -->
-    <div class="bg-white rounded-xl shadow-card border border-neutral-200 overflow-hidden">
-        <div class="px-5 py-3.5 border-b border-neutral-100 flex items-center gap-2">
-            <i class="fas fa-sliders text-sky text-sm"></i>
-            <h2 class="text-sm font-medium text-navy">Filtres et tri</h2>
+    <div class="surface-card rounded-[26px] overflow-hidden">
+        <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center gap-2">
+            <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 6h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M8 12h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M5 18h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <circle cx="8" cy="6" r="2" fill="currentColor"/>
+                <circle cx="15" cy="12" r="2" fill="currentColor"/>
+                <circle cx="13" cy="18" r="2" fill="currentColor"/>
+            </svg>
+            <h2 class="text-sm font-semibold text-navy">Filtres et tri des Demandes</h2>
         </div>
         <div class="px-5 py-4">
             <form method="get" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -166,7 +387,10 @@
                 <div class="col-span-2 sm:col-span-4">
                     <div class="relative">
                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm pointer-events-none">
-                            <i class="fas fa-magnifying-glass"></i>
+                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <circle cx="11" cy="11" r="5.5" stroke="currentColor" stroke-width="2"/>
+                                <path d="m16 16 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
                         </span>
                         <input
                             name="search" value="{{ $search }}"
@@ -205,15 +429,7 @@
                         class="field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy transition-all duration-150">
                 </div>
 
-                <div>
-                    <select name="sort_by" class="field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy appearance-none transition-all duration-150">
-                        <option value="date_soumission" {{ $sortBy==='date_soumission'?'selected':'' }}>Date soumission</option>
-                        <option value="numero_suivi"    {{ $sortBy==='numero_suivi'?'selected':'' }}>Numéro suivi</option>
-                        <option value="type_demande"    {{ $sortBy==='type_demande'?'selected':'' }}>Type demande</option>
-                        <option value="direction"       {{ $sortBy==='direction'?'selected':'' }}>Direction</option>
-                        <option value="alerte_accueil"  {{ $sortBy==='alerte_accueil'?'selected':'' }}>Alerte accueil</option>
-                    </select>
-                </div>
+                
                 <div>
                     <select name="sort_dir" class="field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy appearance-none transition-all duration-150">
                         <option value="desc" {{ $sortDir==='desc'?'selected':'' }}>↓ Descendant</option>
@@ -221,10 +437,14 @@
                     </select>
                 </div>
 
-                <div class="col-span-2 flex justify-end">
+                <div class="col-span-2 sm:col-span-4 flex justify-end pt-1">
                     <button type="submit"
-                        class="inline-flex items-center gap-2 bg-navy hover:bg-navy-600 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors duration-150">
-                        <i class="fas fa-filter text-xs"></i>
+                        class="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,#1c203d_0%,#3996d3_100%)] px-5 py-2.5 text-sm font-medium text-white shadow-badge transition-transform duration-200 hover:-translate-y-0.5">
+                        <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M7 12h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
                         Appliquer
                     </button>
                 </div>
@@ -233,22 +453,29 @@
     </div>
 
     <!-- ── TABLE DEMANDES ── -->
-    <div class="bg-white rounded-xl shadow-card border border-neutral-200 overflow-hidden">
-        <div class="px-5 py-3.5 border-b border-neutral-100 flex items-center justify-between">
+    <div class="surface-card rounded-[26px] overflow-hidden">
+        <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <i class="fas fa-list-check text-sky text-sm"></i>
-                <h2 class="text-sm font-medium text-navy">Demandes nouvelles</h2>
-                <span class="ml-1 bg-sky-50 text-sky text-xs font-medium px-2 py-0.5 rounded-full border border-sky-100">
+                <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M9 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M9 12h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M9 17h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="m5 7 1.5 1.5L8.5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="m5 12 1.5 1.5L8.5 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="m5 17 1.5 1.5L8.5 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h2 class="text-sm font-semibold text-navy">Demandes nouvelles</h2>
+                <span class="ml-1 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky">
                     {{ $nouvelles->total() }}
                 </span>
             </div>
-            <p class="text-xs text-neutral-400 hidden sm:block">Affecter à une direction/service ou répondre directement.</p>
+            <p class="text-xs text-neutral-400 hidden sm:block">Affecter à une direction/service ou répondez directement.</p>
         </div>
 
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
-                    <tr class="bg-neutral-50 border-b border-neutral-100">
+                    <tr class="table-head border-b border-white/10">
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Numéro</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Date</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Usager</th>
@@ -297,7 +524,12 @@
                             <button type="button"
                                 class="view-toggle inline-flex items-center gap-1.5 bg-sky-50 hover:bg-sky text-sky hover:text-white border border-sky-200 hover:border-sky text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150"
                                 data-target="detail-{{ $demande->id_demande }}" aria-expanded="false">
-                                <i class="fas fa-eye text-[10px]"></i>
+                                <span class="toggle-icon text-[10px]">
+                                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M2.8 12s3.2-5.5 9.2-5.5S21.2 12 21.2 12s-3.2 5.5-9.2 5.5S2.8 12 2.8 12Z" stroke="currentColor" stroke-width="2"/>
+                                        <circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="2"/>
+                                    </svg>
+                                </span>
                                 <span>Voir</span>
                             </button>
                         </td>
@@ -305,14 +537,21 @@
 
                     <!-- Ligne détail (cachée par défaut) -->
                     <tr id="detail-{{ $demande->id_demande }}" class="detail-row" style="display:none;">
-                        <td colspan="6" class="px-4 py-4 bg-neutral-50 border-b border-neutral-100">
-                            @php $pieces = $piecesByDemand->get($demande->id_demande, collect()); @endphp
+                        <td colspan="6" class="px-4 py-4 bg-[linear-gradient(180deg,#f8fbfe_0%,#f4f7fb_100%)] border-b border-neutral-100">
+                            @php
+                                $pieces = $piecesByDemand->get($demande->id_demande, collect());
+                            @endphp
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                                 <!-- Colonne gauche : détail demande -->
                                 <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
                                     <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2">
-                                        <i class="fas fa-file-lines text-sky mr-1.5"></i>Détail de la demande
+                                        <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                            <path d="M8 3.5h5l4 4V18a2 2 0 0 1-2 2H8A2 2 0 0 1 6 18V5.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                            <path d="M13 3.5V8h4.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                            <path d="M9 11.5h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                            <path d="M9 15h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                        </svg>Détails de la demande
                                     </h4>
 
                                     <div>
@@ -343,7 +582,9 @@
                                             @foreach($pieces as $piece)
                                             <a href="/pieces-jointes/{{ $piece->id_piece_jointe }}" target="_blank" rel="noopener"
                                                class="flex items-center gap-2 bg-sky-50 border border-sky-100 text-sky text-xs font-medium px-3 py-2 rounded-lg hover:bg-sky-100 transition-colors duration-150">
-                                                <i class="fas fa-paperclip text-[10px]"></i>
+                                                <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <path d="M8.5 12.5 13 8a3 3 0 1 1 4.2 4.2l-6 6a5 5 0 1 1-7.1-7.1l6.3-6.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
                                                 {{ $piece->nom_fichier }}
                                             </a>
                                             @endforeach
@@ -358,7 +599,11 @@
                                     <!-- Box affectation -->
                                     <div class="bg-white border border-neutral-200 rounded-xl p-4">
                                         <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2 mb-3">
-                                            <i class="fas fa-arrow-right-to-bracket text-sky mr-1.5"></i>Affectation Direction → Service
+                                            <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <path d="M10 6H7.5A2.5 2.5 0 0 0 5 8.5v7A2.5 2.5 0 0 0 7.5 18H10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                <path d="M13 8l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M9 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                            </svg>Affectation Direction → Service
                                         </h4>
                                         <form method="post" action="/accueil/demandes/{{ $demande->id_demande }}/affecter" class="affectation-form space-y-2.5">
                                             @csrf
@@ -379,7 +624,10 @@
                                                 class="field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy placeholder-neutral-400 transition-all duration-150">
                                             <button type="submit"
                                                 class="w-full flex items-center justify-center gap-2 bg-navy hover:bg-navy-600 text-white text-sm font-medium py-2.5 rounded-lg transition-colors duration-150">
-                                                <i class="fas fa-paper-plane text-xs"></i>
+                                                <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <path d="M4 11.5 19 5l-4.8 14-3.1-5.1L4 11.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                                    <path d="M10.8 13.8 19 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                </svg>
                                                 Affecter
                                             </button>
                                         </form>
@@ -388,7 +636,10 @@
                                     <!-- Box réponse directe -->
                                     <div class="bg-white border border-neutral-200 rounded-xl p-4">
                                         <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2 mb-3">
-                                            <i class="fas fa-reply text-sky mr-1.5"></i>Réponse directe à l'usager
+                                            <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <path d="M9 8 4 12l5 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M20 18c0-4.4-3.6-8-8-8H4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                            </svg>Réponse directe à l’usager
                                         </h4>
                                         @if($demande->type_demande_code === 'demande_information')
                                             <form method="post" action="/accueil/demandes/{{ $demande->id_demande }}/reponse-directe" enctype="multipart/form-data" class="space-y-2.5">
@@ -399,20 +650,30 @@
                                                     class="field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy placeholder-neutral-400 resize-y transition-all duration-150"></textarea>
                                                 <div class="relative">
                                                     <label class="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-neutral-200 hover:border-sky rounded-lg p-3 cursor-pointer transition-colors duration-150 bg-neutral-50 hover:bg-sky-50">
-                                                        <i class="fas fa-cloud-arrow-up text-neutral-400 text-base"></i>
-                                                        <span class="text-xs text-neutral-400">Pièces jointes (optionnel)</span>
+                                                        <svg class="icon-svg text-neutral-400 text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                            <path d="M8 16.5h8a3.5 3.5 0 0 0 .4-7A5.2 5.2 0 0 0 6.1 10 3.2 3.2 0 0 0 8 16.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                                            <path d="m12 8.5 2.5 2.5M12 8.5 9.5 11M12 8.5v7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        </svg>
+                                                        <span class="text-xs text-neutral-400">Pièces jointes (optionnelles)</span>
                                                         <input type="file" name="pieces_jointes[]" multiple class="hidden">
                                                     </label>
                                                 </div>
                                                 <button type="submit"
                                                     class="w-full flex items-center justify-center gap-2 bg-sky hover:bg-sky-600 text-white text-sm font-medium py-2.5 rounded-lg transition-colors duration-150">
-                                                    <i class="fas fa-envelope-circle-check text-xs"></i>
+                                                    <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                        <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-7Z" stroke="currentColor" stroke-width="2"/>
+                                                        <path d="m6 9 6 4 6-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        <path d="m9 13.8 1.8 1.8 3.4-3.4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    </svg>
                                                     Envoyer maintenant
                                                 </button>
                                             </form>
                                         @else
                                             <div class="flex items-start gap-2.5 bg-neutral-50 border border-neutral-200 rounded-lg px-3 py-2.5">
-                                                <i class="fas fa-lock text-neutral-400 text-xs mt-0.5 flex-shrink-0"></i>
+                                                <svg class="icon-svg text-neutral-400 text-xs mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <rect x="6" y="11" width="12" height="8" rx="2" stroke="currentColor" stroke-width="2"/>
+                                                    <path d="M9 11V8.5A3 3 0 0 1 12 5.5a3 3 0 0 1 3 3V11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                </svg>
                                                 <p class="text-xs text-neutral-500 leading-relaxed">
                                                     Réponse directe désactivée — cette demande doit être traitée par une direction/service.
                                                 </p>
@@ -430,7 +691,10 @@
                         <td colspan="6" class="px-4 py-12 text-center">
                             <div class="flex flex-col items-center gap-3 text-neutral-400">
                                 <div class="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center">
-                                    <i class="fas fa-inbox text-xl"></i>
+                                    <svg class="icon-svg text-xl" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z" stroke="currentColor" stroke-width="1.8"/>
+                                        <path d="M4 13h4l1.5 2h5L16 13h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
                                 </div>
                                 <p class="text-sm">Aucune demande nouvelle.</p>
                             </div>
@@ -443,10 +707,288 @@
 
         <!-- Pagination -->
         @if($nouvelles->hasPages())
-        <div class="px-5 py-4 border-t border-neutral-100 bg-neutral-50">
+        <div class="px-5 py-4 border-t border-neutral-100 bg-white/70">
             {{ $nouvelles->links() }}
         </div>
         @endif
+    </div>
+
+    <div class="surface-card rounded-[26px] overflow-hidden">
+        <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M5 7.5A2.5 2.5 0 0 1 7.5 5H18a2 2 0 0 1 2 2v9.5A2.5 2.5 0 0 1 17.5 19h-10A2.5 2.5 0 0 1 5 16.5v-9Z" stroke="currentColor" stroke-width="1.8"/>
+                    <path d="M8.5 10.5h8M8.5 14h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="m3.5 10.5 1.6 1.6L8 9.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h2 class="text-sm font-semibold text-navy">Demandes affectées</h2>
+                <span class="ml-1 rounded-full border border-gold-200 bg-gold-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                    {{ $affectees->total() }}
+                </span>
+            </div>
+            <p class="text-xs text-neutral-400 hidden sm:block">Annuler l’affectation si la demande doit revenir au niveau accueil.</p>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="table-head border-b border-white/10">
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Numéro</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Date de dispatch</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Usager</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Type</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Direction / service</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-neutral-100">
+                @forelse($affectees as $demande)
+                    <tr class="demand-row transition-colors duration-100">
+                        <td class="px-4 py-3">
+                            <span class="font-mono text-xs font-medium text-navy bg-navy-50 px-2 py-1 rounded">
+                                {{ $demande->numero_suivi }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-xs text-neutral-500 whitespace-nowrap">
+                            {{ $demande->date_affectation_accueil ? \Illuminate\Support\Carbon::parse($demande->date_affectation_accueil)->format('d/m/Y H:i') : '—' }}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-navy font-medium">
+                            {{ trim(($demande->usager_prenom ?? '').' '.($demande->usager_nom ?? '')) }}
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="text-xs text-neutral-600 bg-neutral-100 px-2 py-1 rounded-full">
+                                {{ $demande->type_demande }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-neutral-600">
+                            {{ trim(($demande->direction ?? '').($demande->service ? ' — '.$demande->service : '')) ?: '—' }}
+                        </td>
+                        <td class="px-4 py-3">
+                            <button type="button"
+                                class="view-toggle inline-flex items-center gap-1.5 bg-gold-50 hover:bg-gold text-amber-700 hover:text-navy border border-gold-200 hover:border-gold text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150"
+                                data-target="assigned-detail-{{ $demande->id_demande }}" aria-expanded="false">
+                                <span class="toggle-icon text-[10px]">
+                                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M2.8 12s3.2-5.5 9.2-5.5S21.2 12 21.2 12s-3.2 5.5-9.2 5.5S2.8 12 2.8 12Z" stroke="currentColor" stroke-width="2"/>
+                                        <circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="2"/>
+                                    </svg>
+                                </span>
+                                <span>Voir</span>
+                            </button>
+                        </td>
+                    </tr>
+
+                    <tr id="assigned-detail-{{ $demande->id_demande }}" class="detail-row" style="display:none;">
+                        <td colspan="6" class="px-4 py-4 bg-[linear-gradient(180deg,#fffdf7_0%,#f9fbfd_100%)] border-b border-neutral-100">
+                            @php
+                                $pieces = $piecesByDemand->get($demande->id_demande, collect());
+                                $historyEntries = $historyByDemand->get($demande->id_demande, collect());
+                                $historyLabels = [
+                                    'soumission_usager' => 'Soumission usager',
+                                    'soumission' => 'Soumission',
+                                    'categorie_usager' => 'Categorie choisie',
+                                    'affectation_service' => 'Affectation service',
+                                    'annulation_affectation_service' => 'Annulation affectation service',
+                                    'affectation_agent' => 'Affectation agent',
+                                    'annulation_affectation_agent' => 'Annulation affectation agent',
+                                    'reponse_redigee' => 'Reponse redigee',
+                                    'reponse_directe_accueil' => 'Réponse directe accueil',
+                                    'reponse_directe_chef' => 'Réponse directe chef',
+                                    'envoi_reponse' => 'Envoi reponse',
+                                    'reouverture' => 'Reouverture',
+                                ];
+                            @endphp
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
+                                    <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2">
+                                        <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                            <path d="M8 3.5h5l4 4V18a2 2 0 0 1-2 2H8A2 2 0 0 1 6 18V5.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                            <path d="M13 3.5V8h4.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                            <path d="M9 11.5h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                            <path d="M9 15h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                        </svg>Détails de la demande
+                                    </h4>
+
+                                    <div>
+                                        <p class="text-xs text-neutral-400 mb-0.5">Objet</p>
+                                        <p class="text-sm font-medium text-navy">{{ $demande->objet }}</p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-xs text-neutral-400 mb-1">Message</p>
+                                        <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">{{ $demande->message }}</div>
+                                    </div>
+
+                                    <div class="flex flex-wrap gap-x-6 gap-y-1">
+                                        <div>
+                                            <p class="text-xs text-neutral-400">Email</p>
+                                            <p class="text-sm text-navy">{{ $demande->usager_email ?? '—' }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-neutral-400">Téléphone</p>
+                                            <p class="text-sm text-navy">{{ $demande->usager_telephone ?? '—' }}</p>
+                                        </div>
+                                    </div>
+
+                                    @if($pieces->isNotEmpty())
+                                    <div>
+                                        <p class="text-xs text-neutral-400 mb-1.5">Pièces jointes</p>
+                                        <div class="space-y-1.5">
+                                            @foreach($pieces as $piece)
+                                            <a href="/pieces-jointes/{{ $piece->id_piece_jointe }}" target="_blank" rel="noopener"
+                                               class="flex items-center gap-2 bg-sky-50 border border-sky-100 text-sky text-xs font-medium px-3 py-2 rounded-lg hover:bg-sky-100 transition-colors duration-150">
+                                                <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <path d="M8.5 12.5 13 8a3 3 0 1 1 4.2 4.2l-6 6a5 5 0 1 1-7.1-7.1l6.3-6.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                                {{ $piece->nom_fichier }}
+                                            </a>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    @endif
+                                </div>
+
+                                <div>
+                                    <div class="bg-white border border-neutral-200 rounded-xl p-4">
+                                        <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2 mb-3">
+                                            <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h7l2 2H19a1 1 0 0 1 1 1v10.5A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5v-11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                                <path d="M8 11h8M8 15h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                            </svg>Affectation en cours
+                                        </h4>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5">
+                                                <p class="text-xs text-neutral-400">Direction</p>
+                                                <p class="mt-1 text-sm font-medium text-navy">{{ $demande->direction ?? '—' }}</p>
+                                            </div>
+                                            <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5">
+                                                <p class="text-xs text-neutral-400">Service</p>
+                                                <p class="mt-1 text-sm font-medium text-navy">{{ trim(($demande->service_code ?? '').($demande->service ? ' — '.$demande->service : '')) ?: '—' }}</p>
+                                            </div>
+                                        </div>
+                                        <form method="post" action="/accueil/demandes/{{ $demande->id_demande }}/annuler-affectation" class="mt-3 space-y-2.5">
+                                            @csrf
+                                            @method('put')
+                                            <input name="commentaire" placeholder="Motif d’annulation optionnel…"
+                                                class="field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy placeholder-neutral-400 transition-all duration-150">
+                                            <button type="submit"
+                                                class="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-sm font-medium py-2.5 rounded-lg transition-colors duration-150">
+                                                <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <path d="M7 7h10M9 7V5.8A1.8 1.8 0 0 1 10.8 4h2.4A1.8 1.8 0 0 1 15 5.8V7M8 10.5l8 8M16 10.5l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                                Annuler l’affectation
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" class="px-4 py-12 text-center">
+                            <div class="flex flex-col items-center gap-3 text-neutral-400">
+                                <div class="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center">
+                                    <svg class="icon-svg text-xl" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M5 7.5A2.5 2.5 0 0 1 7.5 5H18a2 2 0 0 1 2 2v9.5A2.5 2.5 0 0 1 17.5 19h-10A2.5 2.5 0 0 1 5 16.5v-9Z" stroke="currentColor" stroke-width="1.8"/>
+                                        <path d="M8.5 10.5h8M8.5 14h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                    </svg>
+                                </div>
+                                <p class="text-sm">Aucune demande affectée à annuler pour le moment.</p>
+                            </div>
+                        </td>
+                    </tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        @if($affectees->hasPages())
+        <div class="px-5 py-4 border-t border-neutral-100 bg-white/70">
+            {{ $affectees->links() }}
+        </div>
+        @endif
+    </div>
+
+    <div class="surface-card rounded-[26px] overflow-hidden">
+        <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M3 4v5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M5.5 9A8 8 0 1 1 8 17.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h2 class="text-sm font-semibold text-navy">Historique des actions accueil</h2>
+            </div>
+            <p class="text-xs text-neutral-400 hidden sm:block">Affectations, annulations et réponses directes enregistrées récemment.</p>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="table-head border-b border-white/10">
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Action</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Numéro</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Usager</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Service</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Agent accueil</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Commentaire</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-neutral-100">
+                @php
+                    $actionLabels = [
+                        'affectation_service' => 'Affectation service',
+                        'annulation_affectation_service' => 'Annulation affectation',
+                        'reponse_directe_accueil' => 'Réponse directe',
+                    ];
+                @endphp
+                @forelse($recentAccueilActions as $entry)
+                    <tr class="demand-row transition-colors duration-100">
+                        <td class="px-4 py-3 text-xs text-neutral-500 whitespace-nowrap">
+                            {{ \Illuminate\Support\Carbon::parse($entry->date_action)->format('d/m/Y H:i') }}
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full {{ $entry->type_action === 'reponse_directe_accueil' ? 'bg-sky-50 text-sky border border-sky-200' : ($entry->type_action === 'annulation_affectation_service' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-navy-50 text-navy border border-navy-100') }}">
+                                <span class="w-1.5 h-1.5 rounded-full {{ $entry->type_action === 'reponse_directe_accueil' ? 'bg-sky' : ($entry->type_action === 'annulation_affectation_service' ? 'bg-red-500' : 'bg-navy') }}"></span>
+                                {{ $actionLabels[$entry->type_action] ?? ucfirst(str_replace('_', ' ', (string) $entry->type_action)) }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="font-mono text-xs font-medium text-navy bg-navy-50 px-2 py-1 rounded">
+                                {{ $entry->numero_suivi }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-navy font-medium">
+                            {{ trim(($entry->usager_prenom ?? '').' '.($entry->usager_nom ?? '')) ?: '—' }}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-neutral-600 whitespace-nowrap">{{ $entry->service_code ?? '—' }}</td>
+                        <td class="px-4 py-3 text-sm text-neutral-600">
+                            {{ trim(($entry->acteur_prenom ?? '').' '.($entry->acteur_nom ?? '')) ?: 'Système' }}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-neutral-600">
+                            {{ $entry->commentaire ?: '—' }}
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7" class="px-4 py-10 text-center">
+                            <div class="flex flex-col items-center gap-3 text-neutral-400">
+                                <div class="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center">
+                                    <svg class="icon-svg text-xl" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/>
+                                        <path d="M12 8v4l2.8 1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <p class="text-sm">Aucune action accueil enregistrée pour le moment.</p>
+                            </div>
+                        </td>
+                    </tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
 </main>
@@ -461,6 +1003,36 @@
 
 <script>
 (function () {
+    const eyeSvg = `
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M2.8 12s3.2-5.5 9.2-5.5S21.2 12 21.2 12s-3.2 5.5-9.2 5.5S2.8 12 2.8 12Z" stroke="currentColor" stroke-width="2"/>
+            <circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="2"/>
+        </svg>`;
+    const eyeOffSvg = `
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M3.5 3.5 20.5 20.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M9.9 6.8A10.3 10.3 0 0 1 12 6.5c6 0 9.2 5.5 9.2 5.5a16.7 16.7 0 0 1-3.6 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M6.3 9.2A16.3 16.3 0 0 0 2.8 12s3.2 5.5 9.2 5.5c1.3 0 2.5-.2 3.6-.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>`;
+
+    const countupNodes = document.querySelectorAll('[data-countup]');
+    countupNodes.forEach((node) => {
+        const target = Number(node.getAttribute('data-countup') || 0);
+        const duration = 700;
+        const startTime = performance.now();
+
+        const tick = (now) => {
+            const progress = Math.min((now - startTime) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            node.textContent = Math.round(target * eased).toLocaleString('fr-FR');
+            if (progress < 1) {
+                requestAnimationFrame(tick);
+            }
+        };
+
+        requestAnimationFrame(tick);
+    });
+
     /* ── Filtre services selon direction ── */
     const forms = document.querySelectorAll('.affectation-form');
     forms.forEach((form) => {
@@ -485,13 +1057,13 @@
             const isOpen = row.style.display !== 'none';
             row.style.display = isOpen ? 'none' : '';
             btn.setAttribute('aria-expanded', String(!isOpen));
-            const icon  = btn.querySelector('i');
-            const label = btn.querySelector('span');
+            const iconWrap  = btn.querySelector('.toggle-icon');
+            const label = btn.querySelectorAll('span')[1];
             if (isOpen) {
-                icon.className  = 'fas fa-eye text-[10px]';
+                if (iconWrap) iconWrap.innerHTML = eyeSvg;
                 label.textContent = 'Voir';
             } else {
-                icon.className  = 'fas fa-eye-slash text-[10px]';
+                if (iconWrap) iconWrap.innerHTML = eyeOffSvg;
                 label.textContent = 'Masquer';
             }
         });

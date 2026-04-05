@@ -58,8 +58,8 @@
                         }
                     },
                     fontFamily: {
-                        sans:    ['"Roboto"', 'system-ui', 'sans-serif'],
-                        display: ['"Roboto"', 'system-ui', 'sans-serif'],
+                        sans:    ['"Inter"', 'system-ui', 'sans-serif'],
+                        display: ['"Inter"', 'system-ui', 'sans-serif'],
                     },
                     boxShadow: {
                         'card':        '0 1px 3px rgba(28,32,61,0.06), 0 8px 24px rgba(28,32,61,0.09)',
@@ -87,8 +87,7 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <style>
         [v-cloak] { display: none; }
@@ -141,6 +140,13 @@
 
         /* Floating label effect on textarea */
         .char-count { font-size: 11px; color: #94a3b8; }
+        .icon-svg {
+            display: inline-block;
+            width: 1.24em;
+            height: 1.24em;
+            vertical-align: middle;
+            flex-shrink: 0;
+        }
 
     </style>
 </head>
@@ -171,7 +177,9 @@
             <div class="flex items-center gap-3">
                 <a href="https://www.facebook.com/anbggabon" target="_blank" rel="noopener"
                    class="w-8 h-8 rounded-lg bg-white/10 hover:bg-sky-400/30 flex items-center justify-center text-white transition-colors duration-150">
-                    <i class="fab fa-facebook-f text-xs"></i>
+                    <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M13.5 21v-7h2.3l.4-2.8h-2.7V9.4c0-.8.2-1.3 1.4-1.3H16V5.6c-.6-.1-1.3-.1-2-.1-2 0-3.4 1.2-3.4 3.5v2.2H8.5V14h2.1v7h2.9Z"/>
+                    </svg>
                 </a>
         </div>
     </header>
@@ -181,7 +189,10 @@
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
             <div class="flex items-start gap-4">
                 <div class="mt-1 w-10 h-10 rounded-full bg-sky-400/20 flex items-center justify-center flex-shrink-0 opacity-0 animate-[fade-in-up_0.6s_ease-out_forwards]">
-                    <i class="fas fa-inbox text-sky-300 text-base"></i>
+                    <svg class="icon-svg text-sky-300 text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="M4 13h4l1.5 2h5L16 13h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                 </div>
                 <div>
                     <h1 class="font-medium text-white text-xl sm:text-2xl leading-snug mb-1 tracking-wide opacity-0 animate-fade-in-up">
@@ -193,10 +204,16 @@
                     <!-- Badges SLA -->
                     <div class="mt-3 flex flex-wrap gap-2 opacity-0 animate-fade-in-up-2">
                         <span class="inline-flex items-center gap-1.5 bg-sky-400/15 border border-sky-400/25 text-sky-100 text-xs font-medium px-3 py-1 rounded-full hover:bg-sky-400/20 transition-colors">
-                            <i class="fas fa-clock text-sky-300 text-[10px]"></i> Réponse sous 72h
+                            <svg class="icon-svg text-sky-300 text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 8v4l2.8 1.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg> Réponse sous 72h
                         </span>
                         <span class="inline-flex items-center gap-1.5 bg-leaf-400/15 border border-leaf-400/25 text-green-100 text-xs font-medium px-3 py-1 rounded-full hover:bg-leaf-400/20 transition-colors">
-                            <i class="fas fa-shield-alt text-leaf-400 text-[10px]"></i> Données protégées (RGPD)
+                            <svg class="icon-svg text-leaf-400 text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M12 4.5 18 7v4.4c0 3.3-2.1 6.2-6 8.1-3.9-1.9-6-4.8-6-8.1V7l6-2.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                <path d="m9.5 12 1.7 1.7 3.3-3.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg> Données protégées (RGPD)
                         </span>
                     </div>
                 </div>
@@ -210,7 +227,10 @@
         <!-- Success Message -->
         @if(session('success'))
         <div class="mb-6 flex items-start gap-3 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3.5 rounded-xl shadow-sm">
-            <i class="fas fa-check-circle text-emerald-500 mt-0.5 flex-shrink-0"></i>
+            <svg class="icon-svg text-emerald-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/>
+                <path d="m8.5 12 2.3 2.3L15.5 9.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
             <span class="text-sm font-medium">{{ session('success') }}</span>
         </div>
         @endif
@@ -218,7 +238,11 @@
         <!-- Global errors -->
         @if($errors->any())
         <div class="mb-6 flex items-start gap-3 bg-red-50 border border-red-200 text-red-800 px-4 py-3.5 rounded-xl shadow-sm">
-            <i class="fas fa-exclamation-circle text-red-500 mt-0.5 flex-shrink-0"></i>
+            <svg class="icon-svg text-red-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="12" cy="16.8" r="1" fill="currentColor"/>
+            </svg>
             <div class="text-sm">
                 <p class="font-medium mb-1">Veuillez corriger les erreurs suivantes :</p>
                 @foreach($errors->all() as $error)
@@ -238,7 +262,10 @@
                     <p class="text-neutral-500 text-xs mt-0.5">Les champs marqués d'un <span class="text-red-500 font-bold">*</span> sont obligatoires.</p>
                 </div>
                 <div class="hidden sm:flex items-center gap-1.5 text-xs text-neutral-400 bg-neutral-50 border border-neutral-200 px-3 py-1.5 rounded-full">
-                    <i class="fas fa-lock text-neutral-400 text-[10px]"></i>
+                    <svg class="icon-svg text-neutral-400 text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <rect x="6" y="11" width="12" height="8" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M9 11V8.5A3 3 0 0 1 12 5.5a3 3 0 0 1 3 3V11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
                     Formulaire sécurisé
                 </div>
             </div>
@@ -268,7 +295,9 @@
                                 class="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
                                        focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150"
                             >
-                            <p v-if="errors.nom" class="mt-1.5 text-xs text-red-500 flex items-center gap-1"><i class="fas fa-circle-exclamation text-[10px]"></i> @{{ errors.nom }}</p>
+                            <p v-if="errors.nom" class="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                                <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.nom }}
+                            </p>
                         </div>
 
                         <!-- Prénom -->
@@ -283,7 +312,9 @@
                                 class="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
                                        focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150"
                             >
-                            <p v-if="errors.prenom" class="mt-1.5 text-xs text-red-500 flex items-center gap-1"><i class="fas fa-circle-exclamation text-[10px]"></i> @{{ errors.prenom }}</p>
+                            <p v-if="errors.prenom" class="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                                <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.prenom }}
+                            </p>
                         </div>
 
                         <!-- Email -->
@@ -293,7 +324,10 @@
                             </label>
                             <div class="relative">
                                 <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-sm pointer-events-none">
-                                    <i class="fas fa-envelope"></i>
+                                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-7Z" stroke="currentColor" stroke-width="1.8"/>
+                                        <path d="m6 9 6 4 6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
                                 </span>
                                 <input
                                     id="email" name="email" type="email"
@@ -303,7 +337,9 @@
                                            focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150"
                                 >
                             </div>
-                            <p v-if="errors.email" class="mt-1.5 text-xs text-red-500 flex items-center gap-1"><i class="fas fa-circle-exclamation text-[10px]"></i> @{{ errors.email }}</p>
+                            <p v-if="errors.email" class="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                                <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.email }}
+                            </p>
                         </div>
 
                         <!-- Téléphone -->
@@ -313,7 +349,9 @@
                             </label>
                             <div class="relative">
                                 <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-sm pointer-events-none">
-                                    <i class="fas fa-phone"></i>
+                                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M7.5 4.8h2.1l1.1 3.1-1.6 1.6a13 13 0 0 0 5.4 5.4l1.6-1.6 3.1 1.1v2.1a1.8 1.8 0 0 1-1.8 1.8h-.7C10.2 18.3 5.7 13.8 5.7 8.3v-.7A1.8 1.8 0 0 1 7.5 4.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                    </svg>
                                 </span>
                                 <input
                                     id="telephone" name="telephone" type="tel"
@@ -353,11 +391,15 @@
                                     <option value="reclamation">Réclamation</option>
                                 </select>
                                 <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none text-xs">
-                                    <i class="fas fa-chevron-down"></i>
+                                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="m7 10 5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
                                 </span>
                             </div>
                             <p class="mt-1.5 text-xs text-neutral-400">Choisissez d'abord le type pour filtrer les catégories.</p>
-                            <p v-if="errors.type_demande_code" class="mt-1 text-xs text-red-500 flex items-center gap-1"><i class="fas fa-circle-exclamation text-[10px]"></i> @{{ errors.type_demande_code }}</p>
+                            <p v-if="errors.type_demande_code" class="mt-1 text-xs text-red-500 flex items-center gap-1">
+                                <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.type_demande_code }}
+                            </p>
                         </div>
 
                         <!-- Catégorie -->
@@ -377,7 +419,9 @@
                                     <option v-for="cat in categories" :key="cat" :value="cat">@{{ cat }}</option>
                                 </select>
                                 <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none text-xs">
-                                    <i class="fas fa-chevron-down"></i>
+                                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="m7 10 5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
                                 </span>
                             </div>
                         </div>
@@ -395,7 +439,9 @@
                             class="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-100 text-neutral-500 placeholder-neutral-400
                                    cursor-not-allowed transition-all duration-150"
                         >
-                        <p v-if="errors.objet" class="mt-1.5 text-xs text-red-500 flex items-center gap-1"><i class="fas fa-circle-exclamation text-[10px]"></i> @{{ errors.objet }}</p>
+                        <p v-if="errors.objet" class="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                            <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.objet }}
+                        </p>
                     </div>
                 </div>
 
@@ -421,7 +467,9 @@
                             class="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400 resize-y
                                    focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150"
                         ></textarea>
-                        <p v-if="errors.message" class="mt-1.5 text-xs text-red-500 flex items-center gap-1"><i class="fas fa-circle-exclamation text-[10px]"></i> @{{ errors.message }}</p>
+                        <p v-if="errors.message" class="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                            <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.message }}
+                        </p>
                     </div>
                 </div>
 
@@ -438,7 +486,10 @@
                         class="border-2 border-dashed border-neutral-200 rounded-xl px-6 py-8 text-center cursor-pointer transition-all duration-150 hover:border-sky-400 hover:bg-sky-50 bg-neutral-50"
                     >
                         <div class="w-12 h-12 rounded-full bg-sky-50 border border-sky-100 flex items-center justify-center mx-auto mb-3">
-                            <i class="fas fa-cloud-arrow-up text-sky-400 text-lg"></i>
+                            <svg class="icon-svg text-sky-400 text-lg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M8 16.5h8a3.5 3.5 0 0 0 .4-7A5.2 5.2 0 0 0 6.1 10 3.2 3.2 0 0 0 8 16.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="m12 8.5 2.5 2.5M12 8.5 9.5 11M12 8.5v7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                         </div>
                         <p class="text-sm font-medium text-navy-500 mb-1">Glissez-déposez votre fichier ici</p>
                         <p class="text-xs text-neutral-400">ou <span class="text-sky-400 font-medium underline underline-offset-2">cliquez pour parcourir</span></p>
@@ -454,7 +505,9 @@
 
                     <!-- File preview -->
                     <div id="file-list" class="mt-3 space-y-2"></div>
-                    <p v-if="errors.piece_jointe" class="mt-1.5 text-xs text-red-500 flex items-center gap-1"><i class="fas fa-circle-exclamation text-[10px]"></i> @{{ errors.piece_jointe }}</p>
+                    <p v-if="errors.piece_jointe" class="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                        <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.piece_jointe }}
+                    </p>
                 </div>
 
                 <!-- ── SECTION 5 : Consentement + Soumettre ── -->
@@ -471,19 +524,26 @@
                             <span class="text-neutral-400 text-xs block mt-0.5">Ces informations ne seront utilisées qu'à des fins de traitement et de réponse à votre sollicitation.</span>
                         </label>
                     </div>
-                    <p v-if="errors.consentement" class="-mt-4 mb-4 text-xs text-red-500 flex items-center gap-1"><i class="fas fa-circle-exclamation text-[10px]"></i> @{{ errors.consentement }}</p>
+                    <p v-if="errors.consentement" class="-mt-4 mb-4 text-xs text-red-500 flex items-center gap-1">
+                        <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.consentement }}
+                    </p>
 
                     <!-- Submit button -->
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <p class="text-xs text-neutral-400 flex items-center gap-1.5">
-                            <i class="fas fa-shield-alt text-neutral-300"></i>
+                            <svg class="icon-svg text-neutral-300" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M12 4.5 18 7v4.4c0 3.3-2.1 6.2-6 8.1-3.9-1.9-6-4.8-6-8.1V7l6-2.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                            </svg>
                             Formulaire protégé — transmission chiffrée HTTPS
                         </p>
                         <button
                             type="submit"
                             class="inline-flex items-center justify-center gap-2.5 bg-sky-500 hover:bg-navy-600 text-white font-medium text-sm px-8 py-3 rounded-xl shadow-btn hover:shadow-btn-hover transition-all duration-200 w-full sm:w-auto"
                         >
-                            <i class="fas fa-paper-plane text-xs"></i>
+                            <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M4 11.5 19 5l-4.8 14-3.1-5.1L4 11.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                <path d="M10.8 13.8 19 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
                             Soumettre ma demande
                         </button>
                     </div>

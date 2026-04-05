@@ -16,7 +16,7 @@
                         gold:   { DEFAULT: '#f9b13c' },
                     },
                     fontFamily: {
-                        sans: ['"Roboto"', 'system-ui', 'sans-serif'],
+                        sans: ['"Inter"', 'system-ui', 'sans-serif'],
                     },
                     boxShadow: {
                         'panel': '0 25px 60px -10px rgba(28,32,61,0.18)',
@@ -28,9 +28,37 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        i[class*='fa-'] {
+            display: inline-block;
+            width: 1.14em;
+            height: 1.14em;
+            vertical-align: middle;
+            color: currentColor;
+            flex-shrink: 0;
+            font-size: inherit;
+            line-height: 1;
+        }
+        i[class*='fa-']::before {
+            content: '';
+            display: block;
+            width: 100%;
+            height: 100%;
+            background-color: currentColor;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            -webkit-mask-size: contain;
+            mask-size: contain;
+        }
+        .fa-check::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m9.2 16.6-4.3-4.3-1.4 1.4 5.7 5.7L20.5 8.1l-1.4-1.4-9.9 9.9Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m9.2 16.6-4.3-4.3-1.4 1.4 5.7 5.7L20.5 8.1l-1.4-1.4-9.9 9.9Z'/%3E%3C/svg%3E"); }
+        .fa-lock::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M7 10V8a5 5 0 1 1 10 0v2h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1Zm2 0h6V8a3 3 0 1 0-6 0v2Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M7 10V8a5 5 0 1 1 10 0v2h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1Zm2 0h6V8a3 3 0 1 0-6 0v2Z'/%3E%3C/svg%3E"); }
+        .fa-circle-exclamation::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1 5h2v7h-2V7Zm0 9h2v2h-2v-2Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1 5h2v7h-2V7Zm0 9h2v2h-2v-2Z'/%3E%3C/svg%3E"); }
+        .fa-envelope::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 5h18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm0 2v.5l9 5.5 9-5.5V7H3Zm18 10V9.8l-8.5 5.2a1 1 0 0 1-1 0L3 9.8V17h18Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 5h18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm0 2v.5l9 5.5 9-5.5V7H3Zm18 10V9.8l-8.5 5.2a1 1 0 0 1-1 0L3 9.8V17h18Z'/%3E%3C/svg%3E"); }
+        .fa-right-to-bracket::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M13 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6v-2h6V5h-6V3ZM4.3 12l4.2-4.2 1.4 1.4L8.1 11H16v2H8.1l1.8 1.8-1.4 1.4L4.3 12Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M13 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6v-2h6V5h-6V3ZM4.3 12l4.2-4.2 1.4 1.4L8.1 11H16v2H8.1l1.8 1.8-1.4 1.4L4.3 12Z'/%3E%3C/svg%3E"); }
+        .fa-arrow-left::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M10.7 5.3 4 12l6.7 6.7 1.4-1.4L7.8 13H20v-2H7.8l4.3-4.3-1.4-1.4Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M10.7 5.3 4 12l6.7 6.7 1.4-1.4L7.8 13H20v-2H7.8l4.3-4.3-1.4-1.4Z'/%3E%3C/svg%3E"); }
         /* Focus ring personnalisé */
         .input-field:focus {
             outline: none;
@@ -186,8 +214,21 @@
                             type="password" id="password" name="password"
                             placeholder="••••••••"
                             required
-                            class="input-field w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy placeholder-neutral-400 transition-all duration-150"
+                            class="input-field w-full pl-10 pr-11 py-3 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy placeholder-neutral-400 transition-all duration-150"
                         >
+                        <button
+                            type="button"
+                            id="toggle-password"
+                            aria-label="Afficher le mot de passe"
+                            aria-pressed="false"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center text-neutral-400 hover:text-sky transition-colors duration-150"
+                        >
+                            <span id="toggle-password-icon" class="inline-flex items-center justify-center">
+                                <svg class="h-[1.05rem] w-[1.05rem]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M12 5C5.6 5 2 12 2 12s3.6 7 10 7 10-7 10-7-3.6-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z" fill="currentColor"/>
+                                </svg>
+                            </span>
+                        </button>
                     </div>
                     @error('password')
                         <p class="mt-1.5 text-xs text-red-500 flex items-center gap-1">
@@ -218,5 +259,27 @@
 
     </div>
 
+    <script>
+        (function () {
+            const passwordInput = document.getElementById('password');
+            const toggleButton = document.getElementById('toggle-password');
+            const iconSlot = document.getElementById('toggle-password-icon');
+
+            if (!passwordInput || !toggleButton || !iconSlot) {
+                return;
+            }
+
+            const eyeSvg = '<svg class="h-[1.05rem] w-[1.05rem]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5C5.6 5 2 12 2 12s3.6 7 10 7 10-7 10-7-3.6-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z" fill="currentColor"/></svg>';
+            const eyeSlashSvg = '<svg class="h-[1.05rem] w-[1.05rem]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3.3 2 18.7 18.7-1.4 1.4-4.1-4.1A11.7 11.7 0 0 1 12 19C5.6 19 2 12 2 12a19 19 0 0 1 4.4-5.3L1.9 3.4 3.3 2Zm6.1 6.1A4 4 0 0 0 12 16c.7 0 1.4-.2 2-.5L9.4 8.1ZM12 5c6.4 0 10 7 10 7a18.9 18.9 0 0 1-4.1 5.1l-2.2-2.2A4 4 0 0 0 9.1 8.3L7.5 6.7A10.8 10.8 0 0 1 12 5Z" fill="currentColor"/></svg>';
+
+            toggleButton.addEventListener('click', () => {
+                const isHidden = passwordInput.type === 'password';
+                passwordInput.type = isHidden ? 'text' : 'password';
+                toggleButton.setAttribute('aria-pressed', String(isHidden));
+                toggleButton.setAttribute('aria-label', isHidden ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+                iconSlot.innerHTML = isHidden ? eyeSlashSvg : eyeSvg;
+            });
+        })();
+    </script>
 </body>
 </html>

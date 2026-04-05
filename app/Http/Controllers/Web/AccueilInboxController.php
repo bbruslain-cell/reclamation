@@ -52,27 +52,7 @@ class AccueilInboxController extends Controller
             ->join('parametres as td', 'td.id_parametre', '=', 'd.id_type_demande')
             ->leftJoin('services as s', 's.id_service', '=', 'd.id_service_courant')
             ->leftJoin('directions as dir', 'dir.id_direction', '=', 's.id_direction')
-            ->leftJoin('usagers as u', 'u.id_usager', '=', 'd.id_usager')
-            ->select(
-                'd.id_demande',
-                'd.numero_suivi',
-                'd.objet',
-                'd.message',
-                'd.date_soumission',
-                'd.date_affectation_accueil',
-                'd.alerte_accueil',
-                'st.code as statut_code',
-                'st.libelle as statut',
-                'td.code as type_demande_code',
-                'td.libelle as type_demande',
-                's.id_direction',
-                's.libelle as service',
-                'dir.libelle as direction',
-                'u.nom as usager_nom',
-                'u.prenom as usager_prenom',
-                'u.email as usager_email',
-                'u.telephone as usager_telephone'
-            );
+            ->leftJoin('usagers as u', 'u.id_usager', '=', 'd.id_usager');
 
         if ($search !== '') {
             $pattern = '%'.$search.'%';
@@ -96,20 +76,81 @@ class AccueilInboxController extends Controller
             $baseQuery->whereDate('d.date_soumission', '<=', $dateTo);
         }
 
+        $listQuery = (clone $baseQuery)
+            ->select(
+                'd.id_demande',
+                'd.numero_suivi',
+                'd.objet',
+                'd.message',
+                'd.date_soumission',
+                'd.date_affectation_accueil',
+                'd.alerte_accueil',
+                'st.code as statut_code',
+                'st.libelle as statut',
+                'td.code as type_demande_code',
+                'td.libelle as type_demande',
+                's.id_direction',
+                's.code as service_code',
+                's.libelle as service',
+                'dir.libelle as direction',
+                'u.nom as usager_nom',
+                'u.prenom as usager_prenom',
+                'u.email as usager_email',
+                'u.telephone as usager_telephone'
+            );
+
+        $summaryStats = (clone $baseQuery)
+            ->selectRaw("
+                COUNT(*) as total_demandes,
+                SUM(CASE WHEN st.code = 'nouvelle' THEN 1 ELSE 0 END) as total_nouvelles,
+                SUM(CASE WHEN td.code = 'demande_information' THEN 1 ELSE 0 END) as total_informations,
+                SUM(CASE WHEN td.code = 'reclamation' THEN 1 ELSE 0 END) as total_reclamations,
+                SUM(CASE WHEN st.code = 'nouvelle' AND d.alerte_accueil = 'orange' THEN 1 ELSE 0 END) as total_a_risque,
+                SUM(CASE WHEN st.code = 'nouvelle' AND d.alerte_accueil = 'rouge' THEN 1 ELSE 0 END) as total_en_retard
+            ")
+            ->first();
+
         $sortBy = $this->normalizeSortBy($sortBy);
 
-        $nouvelles = $this->applySort(clone $baseQuery, $sortBy, $sortDir)
+        $nouvelles = $this->applySort(clone $listQuery, $sortBy, $sortDir)
             ->where('st.code', 'nouvelle')
             ->paginate(10, ['*'], 'nouvelles_page')
             ->withQueryString();
+        $affectees = $this->applySort(clone $listQuery, $sortBy, $sortDir)
+            ->where('st.code', 'affectee_service')
+            ->paginate(10, ['*'], 'affectees_page')
+            ->withQueryString();
 
         $demandIds = collect($nouvelles->items())
+            ->merge($affectees->items())
             ->pluck('id_demande')
             ->unique()
             ->values()
             ->all();
 
         $piecesByDemand = collect();
+        $historyByDemand = collect();
+        $recentAccueilActions = DB::table('historique_actions as ha')
+            ->join('demandes as d', 'd.id_demande', '=', 'ha.id_demande')
+            ->leftJoin('usagers as u', 'u.id_usager', '=', 'd.id_usager')
+            ->leftJoin('utilisateurs as actor_u', 'actor_u.id_utilisateur', '=', 'ha.id_utilisateur')
+            ->leftJoin('services as s', 's.id_service', '=', 'ha.id_service_associe')
+            ->whereIn('ha.type_action', ['affectation_service', 'annulation_affectation_service', 'reponse_directe_accueil'])
+            ->orderByDesc('ha.date_action')
+            ->limit(20)
+            ->get([
+                'ha.type_action',
+                'ha.date_action',
+                'ha.commentaire',
+                'd.id_demande',
+                'd.numero_suivi',
+                'd.objet',
+                'u.nom as usager_nom',
+                'u.prenom as usager_prenom',
+                'actor_u.nom as acteur_nom',
+                'actor_u.prenom as acteur_prenom',
+                's.code as service_code',
+            ]);
         if (!empty($demandIds)) {
             $piecesByDemand = DB::table('demande_piece_jointe as dpj')
                 ->join('pieces_jointes as pj', 'pj.id_piece_jointe', '=', 'dpj.id_piece_jointe')
@@ -123,12 +164,36 @@ class AccueilInboxController extends Controller
                     'pj.type_mime',
                 ])
                 ->groupBy('id_demande');
+
+            $historyByDemand = DB::table('historique_actions as ha')
+                ->leftJoin('utilisateurs as u', 'u.id_utilisateur', '=', 'ha.id_utilisateur')
+                ->leftJoin('services as s', 's.id_service', '=', 'ha.id_service_associe')
+                ->leftJoin('parametres as old_st', 'old_st.id_parametre', '=', 'ha.ancien_statut_id')
+                ->leftJoin('parametres as new_st', 'new_st.id_parametre', '=', 'ha.nouveau_statut_id')
+                ->whereIn('ha.id_demande', $demandIds)
+                ->orderByDesc('ha.date_action')
+                ->get([
+                    'ha.id_demande',
+                    'ha.type_action',
+                    'ha.date_action',
+                    'ha.commentaire',
+                    's.code as service_code',
+                    'old_st.libelle as ancien_statut',
+                    'new_st.libelle as nouveau_statut',
+                    'u.nom as acteur_nom',
+                    'u.prenom as acteur_prenom',
+                ])
+                ->groupBy('id_demande');
         }
 
         return view('workflow.accueil-inbox', [
             'actor' => $actor,
             'nouvelles' => $nouvelles,
+            'affectees' => $affectees,
             'piecesByDemand' => $piecesByDemand,
+            'historyByDemand' => $historyByDemand,
+            'recentAccueilActions' => $recentAccueilActions,
+            'summaryStats' => $summaryStats,
             'services' => DB::table('services')
                 ->where('actif', true)
                 ->orderBy('id_direction')
@@ -174,7 +239,7 @@ class AccueilInboxController extends Controller
                 throw new RuntimeException('Service invalide ou inactif.');
             }
             if ((int) $serviceDirectionId !== (int) $payload['id_direction']) {
-                throw new RuntimeException('Le service selectionne n appartient pas a la direction choisie.');
+                throw new RuntimeException('Le service selectionné n appartient pas a la direction choisie.');
             }
 
             $this->workflow->assignDemand(
@@ -184,7 +249,7 @@ class AccueilInboxController extends Controller
                 comment: $payload['commentaire'] ?? null
             );
 
-            return redirect()->back()->with('success', 'Demande affectee.');
+            return redirect()->back()->with('success', 'Demande affectée.');
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         } catch (ValidationException $e) {
@@ -220,7 +285,7 @@ class AccueilInboxController extends Controller
                 throw new RuntimeException('Reponse directe impossible pour ce statut.');
             }
             if ((string) $demandMeta->type_demande_code !== 'demande_information') {
-                throw new RuntimeException('Reponse directe reservee aux demandes d information simples.');
+                throw new RuntimeException('Reponse directe reservée aux demandes d information simples.');
             }
 
             if (!$demandMeta->date_affectation_accueil) {
@@ -274,7 +339,33 @@ class AccueilInboxController extends Controller
                 'updated_at' => now(),
             ]);
 
-            return redirect()->back()->with('success', 'Reponse directe envoyee et demande cloturee.');
+            return redirect()->back()->with('success', 'Réponse directe envoyée et demande cloturée.');
+        } catch (AuthorizationException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (RuntimeException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function annulerAffectation(Request $request, int $id): RedirectResponse
+    {
+        try {
+            $actor = $this->access->requireActor($request);
+            $this->access->assertPermission((int) $actor->id_utilisateur, 'demande.assign');
+
+            $payload = $request->validate([
+                'commentaire' => ['nullable', 'string', 'max:2000'],
+            ]);
+
+            $this->workflow->cancelServiceAssignment(
+                actorId: (int) $actor->id_utilisateur,
+                demandId: $id,
+                comment: $payload['commentaire'] ?? null
+            );
+
+            return redirect()->back()->with('success', 'Affectation annulée et demande retournée à l accueil.');
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         } catch (ValidationException $e) {
@@ -288,7 +379,7 @@ class AccueilInboxController extends Controller
     private function assertCanAccessAccueil(int $userId): void
     {
         if (!$this->access->hasPermission($userId, 'demande.assign')) {
-            throw new AuthorizationException('Acces reserve au role accueil.');
+            throw new AuthorizationException('Acces reservé au role accueil.');
         }
     }
 

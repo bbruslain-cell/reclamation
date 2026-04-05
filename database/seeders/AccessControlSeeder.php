@@ -42,6 +42,7 @@ class AccessControlSeeder extends Seeder
             ['code' => 'demande.assign.agent', 'libelle' => 'Affecter une demande a un agent'],
             ['code' => 'demande.reply.draft', 'libelle' => 'Rediger une reponse'],
             ['code' => 'demande.reply.send', 'libelle' => 'Envoyer la reponse finale'],
+            ['code' => 'demande.reopen', 'libelle' => 'Reouvrir une demande'],
 
             ['code' => 'dashboard.view', 'libelle' => 'Voir les tableaux de bord'],
             ['code' => 'dashboard.export', 'libelle' => 'Exporter les donnees'],
@@ -68,6 +69,7 @@ class AccessControlSeeder extends Seeder
                 'demande.view.all',
                 'demande.assign',
                 'demande.reply.send',
+                'demande.reopen',
 
             ],
             'chef_service' => [

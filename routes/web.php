@@ -14,6 +14,7 @@ use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\ChefInboxController;
 use App\Http\Controllers\Web\DirectionInboxController;
 use App\Http\Controllers\Web\PasswordController;
+use App\Http\Controllers\Web\PilotageExportController;
 use App\Http\Controllers\Web\PublicDemandController;
 use App\Services\AccessControlService;
 use Illuminate\Support\Facades\Route;
@@ -60,6 +61,7 @@ Route::middleware('agent.auth')->group(function () {
     // Accueil
     Route::get('/accueil/inbox', [AccueilInboxController::class, 'index']);
     Route::put('/accueil/demandes/{id}/affecter', [AccueilInboxController::class, 'affecter']);
+    Route::put('/accueil/demandes/{id}/annuler-affectation', [AccueilInboxController::class, 'annulerAffectation']);
     Route::put('/accueil/demandes/{id}/reponse-directe', [AccueilInboxController::class, 'reponseDirecte']);
 
     // Chef de service
@@ -102,6 +104,7 @@ Route::middleware('agent.auth')->group(function () {
         $access->assertPermission((int) $actor->id_utilisateur, 'dashboard.view');
         return app(ApiOverviewController::class)->index($request);
     });
+    Route::get('/pilotage/export/{section}/{format}', [PilotageExportController::class, 'download']);
 
     // Administration
     Route::get('/admin', [AdminDashboardController::class, 'index']);

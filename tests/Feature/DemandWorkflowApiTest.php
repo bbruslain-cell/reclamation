@@ -58,7 +58,7 @@ class DemandWorkflowApiTest extends TestCase
             ->value('p.code');
 
         $this->assertSame('cloturee', $statusCode);
-        Mail::assertSent(DemandResponseMail::class, function (DemandResponseMail $mail) use ($usagerEmail): bool {
+        Mail::assertQueued(DemandResponseMail::class, function (DemandResponseMail $mail) use ($usagerEmail): bool {
             return $mail->hasTo($usagerEmail);
         });
     }

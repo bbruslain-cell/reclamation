@@ -144,6 +144,54 @@ class DemandWorkflowService
         });
     }
 
+    public function cancelServiceAssignment(int $actorId, int $demandId, ?string $comment): array
+    {
+        return DB::transaction(function () use ($actorId, $demandId, $comment) {
+            $demand = DB::table('demandes')->where('id_demande', $demandId)->lockForUpdate()->first();
+            if (!$demand) {
+                throw new RuntimeException('Demande introuvable.');
+            }
+
+            if ($this->statusCode((int) $demand->id_statut) !== 'affectee_service') {
+                throw new RuntimeException('Annulation impossible pour ce statut.');
+            }
+
+            if (!$demand->id_service_courant) {
+                throw new RuntimeException('Aucun service n est actuellement affecte a cette demande.');
+            }
+
+            $statusNouvelle = $this->statusId('nouvelle');
+            $now = now();
+
+            DB::table('demandes')
+                ->where('id_demande', $demandId)
+                ->update([
+                    'id_service_courant' => null,
+                    'id_statut' => $statusNouvelle,
+                    'id_agent_accueil' => null,
+                    'id_agent_direction' => null,
+                    'id_agent_traitant' => null,
+                    'date_affectation' => null,
+                    'date_affectation_accueil' => null,
+                    'date_affectation_agent' => null,
+                    'date_reponse_direction' => null,
+                    'updated_at' => $now,
+                ]);
+
+            $this->logAction(
+                demandId: $demandId,
+                userId: $actorId,
+                type: 'annulation_affectation_service',
+                oldStatusId: $demand->id_statut,
+                newStatusId: $statusNouvelle,
+                serviceId: (int) $demand->id_service_courant,
+                comment: $comment
+            );
+
+            return $this->refreshDemandSla($demandId);
+        });
+    }
+
     public function draftResponse(int $actorId, int $demandId, string $content, ?string $typeCode = null): array
     {
         return DB::transaction(function () use ($actorId, $demandId, $content, $typeCode) {
@@ -273,7 +321,7 @@ class DemandWorkflowService
             if ($mailPayload !== null) {
                 DB::afterCommit(function () use ($mailPayload): void {
                     try {
-                        Mail::to($mailPayload['email'])->send(new DemandResponseMail(
+                        Mail::to($mailPayload['email'])->queue(new DemandResponseMail(
                             trackingNumber: $mailPayload['tracking_number'],
                             subjectLabel: $mailPayload['subject_label'],
                             responseContent: $mailPayload['response_content'],
@@ -289,6 +337,53 @@ class DemandWorkflowService
                     }
                 });
             }
+
+            return $this->refreshDemandSla($demandId);
+        });
+    }
+
+    public function reopenDemand(int $actorId, int $demandId, ?string $comment): array
+    {
+        return DB::transaction(function () use ($actorId, $demandId, $comment) {
+            $demand = DB::table('demandes')->where('id_demande', $demandId)->lockForUpdate()->first();
+            if (!$demand) {
+                throw new RuntimeException('Demande introuvable.');
+            }
+
+            if ($this->statusCode((int) $demand->id_statut) !== 'cloturee') {
+                throw new RuntimeException('Seules les demandes cloturees peuvent etre reouvertes.');
+            }
+
+            $statusNouvelle = $this->statusId('nouvelle');
+            $now = now();
+
+            DB::table('demandes')
+                ->where('id_demande', $demandId)
+                ->update([
+                    'id_statut' => $statusNouvelle,
+                    'id_service_courant' => null,
+                    'id_agent_accueil' => null,
+                    'id_agent_direction' => null,
+                    'id_agent_traitant' => null,
+                    'date_affectation' => null,
+                    'date_affectation_accueil' => null,
+                    'date_affectation_agent' => null,
+                    'date_reponse_direction' => null,
+                    'date_envoi_usager' => null,
+                    'date_cloture' => null,
+                    'heures_ouvrees_cloture' => null,
+                    'updated_at' => $now,
+                ]);
+
+            $this->logAction(
+                demandId: $demandId,
+                userId: $actorId,
+                type: 'reouverture',
+                oldStatusId: (int) $demand->id_statut,
+                newStatusId: $statusNouvelle,
+                serviceId: $demand->id_service_courant ? (int) $demand->id_service_courant : null,
+                comment: $comment
+            );
 
             return $this->refreshDemandSla($demandId);
         });

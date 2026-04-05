@@ -1,12 +1,16 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     public function up(): void
     {
-        DB::statement('ALTER TABLE historique_actions ALTER COLUMN id_demande DROP NOT NULL');
+        Schema::table('historique_actions', function (Blueprint $table): void {
+            $table->unsignedBigInteger('id_demande')->nullable()->change();
+        });
     }
 
     public function down(): void
@@ -23,6 +27,8 @@ return new class extends Migration {
                 ->delete();
         }
 
-        DB::statement('ALTER TABLE historique_actions ALTER COLUMN id_demande SET NOT NULL');
+        Schema::table('historique_actions', function (Blueprint $table): void {
+            $table->unsignedBigInteger('id_demande')->nullable(false)->change();
+        });
     }
 };
