@@ -135,7 +135,7 @@ class AgentInboxController extends Controller
             $payload = $request->validate([
                 'contenu_reponse' => ['required', 'string', 'min:5'],
                 'pieces_jointes' => ['nullable', 'array', 'max:5'],
-                'pieces_jointes.*' => ['nullable', 'file', 'max:4096'],
+                'pieces_jointes.*' => ['nullable', 'file', 'max:4096', 'mimes:pdf,jpg,jpeg,png'],
             ]);
 
             $draft = $this->workflow->draftResponse(

@@ -240,7 +240,7 @@ class ChefInboxController extends Controller
                 comment: $payload['commentaire'] ?? null
             );
 
-            return redirect()->back()->with('success', 'Demande affectÃƒÂ©e ÃƒÂ  un agent.');
+            return redirect()->back()->with('success', 'Demande affectée à un agent.');
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         } catch (ValidationException $e) {
@@ -264,7 +264,7 @@ class ChefInboxController extends Controller
             $payload = $request->validate([
                 'contenu_reponse' => ['required', 'string', 'min:5'],
                 'pieces_jointes' => ['nullable', 'array', 'max:5'],
-                'pieces_jointes.*' => ['nullable', 'file', 'max:4096'],
+                'pieces_jointes.*' => ['nullable', 'file', 'max:4096', 'mimes:pdf,jpg,jpeg,png'],
             ]);
 
             $demandMeta = DB::table('demandes as d')
@@ -278,7 +278,7 @@ class ChefInboxController extends Controller
             }
 
             if ((int) ($demandMeta->id_agent_traitant ?? 0) > 0) {
-                throw new RuntimeException('Le chef de service ne peut plus repondre directement aprÃƒÂ¨s l affectation ÃƒÂ  un agent.');
+                throw new RuntimeException('Le chef de service ne peut plus répondre directement après l affectation à un agent.');
             }
 
             if (!in_array((string) $demandMeta->statut_code, ['affectee_service', 'reponse_prete'], true)) {
@@ -317,7 +317,7 @@ class ChefInboxController extends Controller
                 'updated_at' => now(),
             ]);
 
-            return redirect()->back()->with('success', 'RÃƒÂ©ponse directe envoyÃƒÂ©e et demande cloturÃƒÂ©e.');
+            return redirect()->back()->with('success', 'Réponse directe envoyée et demande clôturée.');
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         } catch (ValidationException $e) {
@@ -348,7 +348,7 @@ class ChefInboxController extends Controller
                 comment: $payload['commentaire'] ?? null
             );
 
-            return redirect()->back()->with('success', 'Affectation agent annulÃƒÂ©e.');
+            return redirect()->back()->with('success', 'Affectation agent annulée.');
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         } catch (ValidationException $e) {

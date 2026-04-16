@@ -227,13 +227,13 @@ class OverviewApiTest extends TestCase
             'pays' => 'Gabon',
             'etablissement' => '',
             'categorie' => 'Suivi bourse',
-            'objet' => 'Réclamation UCAS pilotage',
+            'objet' => 'RÃƒÂ©clamation UCAS pilotage',
             'message' => 'Je souhaite une prise en charge directe au niveau accueil.',
             'consentement' => 'on',
         ])->assertRedirect('/reclamations/nouvelle');
 
         $trackingNumber = (string) DB::table('demandes')
-            ->where('objet', 'Réclamation UCAS pilotage')
+            ->where('objet', 'RÃƒÂ©clamation UCAS pilotage')
             ->value('numero_suivi');
         $demandId = (int) DB::table('demandes')
             ->where('numero_suivi', $trackingNumber)
@@ -252,7 +252,7 @@ class OverviewApiTest extends TestCase
 
         $this->post("/accueil/demandes/{$demandId}/reponse-directe", [
             '_method' => 'PUT',
-            'contenu_reponse' => "La réponse a été apportée directement à l'accueil pour clôture immédiate.",
+            'contenu_reponse' => "La rÃƒÂ©ponse a ÃƒÂ©tÃƒÂ© apportÃƒÂ©e directement ÃƒÂ  l'accueil pour clÃƒÂ´ture immÃƒÂ©diate.",
         ])->assertRedirect();
 
         $ciqId = (int) DB::table('utilisateurs')
@@ -275,7 +275,7 @@ class OverviewApiTest extends TestCase
         $this->assertNotNull($trackingRow);
         $this->assertSame('UCAS', $trackingRow['service_direction']);
         $this->assertNotNull($traceRow);
-        $this->assertContains('Réponse directe accueil', collect($traceRow['actions'] ?? [])->pluck('action')->all());
+        	$this->assertContains('Reponse directe accueil', collect($traceRow['actions'] ?? [])->pluck('action')->all());
     }
 
     public function test_overview_marks_overdue_direct_accueil_response_as_out_of_time(): void
@@ -290,13 +290,13 @@ class OverviewApiTest extends TestCase
             'pays' => 'Gabon',
             'etablissement' => '',
             'categorie' => 'Suivi bourse',
-            'objet' => 'RÃ©clamation UCAS en retard',
-            'message' => 'Je souhaite une prise en charge directe au niveau accueil mais hors dÃ©lai.',
+            'objet' => 'RÃƒÆ’Ã‚Â©clamation UCAS en retard',
+            'message' => 'Je souhaite une prise en charge directe au niveau accueil mais hors dÃƒÆ’Ã‚Â©lai.',
             'consentement' => 'on',
         ])->assertRedirect('/reclamations/nouvelle');
 
         $trackingNumber = (string) DB::table('demandes')
-            ->where('objet', 'RÃ©clamation UCAS en retard')
+            ->where('objet', 'RÃƒÆ’Ã‚Â©clamation UCAS en retard')
             ->value('numero_suivi');
         $demandId = (int) DB::table('demandes')
             ->where('numero_suivi', $trackingNumber)
@@ -322,7 +322,7 @@ class OverviewApiTest extends TestCase
 
         $this->post("/accueil/demandes/{$demandId}/reponse-directe", [
             '_method' => 'PUT',
-            'contenu_reponse' => "La rÃ©ponse directe accueil a Ã©tÃ© envoyÃ©e aprÃ¨s dÃ©passement du dÃ©lai.",
+            'contenu_reponse' => "La rÃƒÆ’Ã‚Â©ponse directe accueil a ÃƒÆ’Ã‚Â©tÃƒÆ’Ã‚Â© envoyÃƒÆ’Ã‚Â©e aprÃƒÆ’Ã‚Â¨s dÃƒÆ’Ã‚Â©passement du dÃƒÆ’Ã‚Â©lai.",
         ])->assertRedirect();
 
         $ciqId = (int) DB::table('utilisateurs')

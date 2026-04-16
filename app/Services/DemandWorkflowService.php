@@ -14,6 +14,9 @@ use Throwable;
 
 class DemandWorkflowService
 {
+    private const ALLOWED_ATTACHMENT_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png'];
+    private const ALLOWED_ATTACHMENT_MIMES = ['application/pdf', 'image/jpeg', 'image/png'];
+
     public function __construct(
         private readonly WorkingHoursSlaService $slaService,
         private readonly StepAlertService $stepAlerts
@@ -358,6 +361,9 @@ class DemandWorkflowService
                 if (!$file instanceof UploadedFile) {
                     continue;
                 }
+
+                $this->ensureAllowedAttachment($file);
+
                 $path = $file->store('pieces_jointes', 'local');
                 $pieceId = DB::table('pieces_jointes')->insertGetId([
                     'nom_fichier' => $file->getClientOriginalName(),
@@ -427,6 +433,17 @@ class DemandWorkflowService
     private function statusId(string $code): int
     {
         return (int) $this->parameterId('statut_demande', $code);
+    }
+
+    private function ensureAllowedAttachment(UploadedFile $file): void
+    {
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+        $mime = strtolower((string) ($file->getMimeType() ?: ''));
+
+        if (!in_array($extension, self::ALLOWED_ATTACHMENT_EXTENSIONS, true)
+            || !in_array($mime, self::ALLOWED_ATTACHMENT_MIMES, true)) {
+            throw new RuntimeException('Format de pièce jointe non autorisé. Utilisez PDF, JPG ou PNG.');
+        }
     }
 
     private function statusCode(int $statusId): string

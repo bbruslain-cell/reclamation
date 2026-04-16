@@ -17,7 +17,7 @@ class DemandePolicy
     {
         return $this->access->canAccessDemand((int) $user->id_utilisateur, (int) $demande->id_demande)
             ? Response::allow()
-            : Response::deny('Accès refusé sur cette demande.');
+            : Response::deny('Acces refuse sur cette demande.');
     }
 
     public function assignService(Utilisateur $user, Demande $demande): Response
@@ -68,5 +68,4 @@ class DemandePolicy
 
         return $this->view($user, $demande);
     }
-
 }

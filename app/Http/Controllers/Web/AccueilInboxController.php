@@ -248,7 +248,7 @@ class AccueilInboxController extends Controller
                 throw new RuntimeException('Service invalide ou inactif.');
             }
             if ((int) $serviceDirectionId !== (int) $payload['id_direction']) {
-                throw new RuntimeException('Le service selectionnÃƒÂ© n appartient pas a la direction choisie.');
+                throw new RuntimeException('Le service sÃ©lectionnÃ© n appartient pas Ã  la direction choisie.');
             }
 
             $this->workflow->assignDemand(
@@ -282,7 +282,7 @@ class AccueilInboxController extends Controller
             $payload = $request->validate([
                 'contenu_reponse' => ['required', 'string', 'min:5'],
                 'pieces_jointes' => ['nullable', 'array', 'max:5'],
-                'pieces_jointes.*' => ['nullable', 'file', 'max:4096'],
+                'pieces_jointes.*' => ['nullable', 'file', 'max:4096', 'mimes:pdf,jpg,jpeg,png'],
             ]);
 
             $demandMeta = DB::table('demandes as d')
@@ -430,12 +430,12 @@ class AccueilInboxController extends Controller
                 'nouveau_statut_id' => null,
                 'id_service_associe' => $actor->id_service ? (int) $actor->id_service : null,
                 'date_action' => now(),
-                'commentaire' => 'Action accueil desactivée',
+                'commentaire' => 'Action accueil desactivee',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            return redirect()->back()->with('succes', 'Action desactivée.');
+            return redirect()->back()->with('succes', 'Action desactivÃƒÂ©e.');
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('erreur', $e->getMessage());
         } catch (ValidationException $e) {
@@ -467,7 +467,7 @@ class AccueilInboxController extends Controller
                 comment: $payload['commentaire'] ?? null
             );
 
-            return redirect()->back()->with('success', 'Affectation annulée et demande retournée à l accueil.');
+            return redirect()->back()->with('success', 'Affectation annulÃ©e et demande retournÃ©e Ã  l accueil.');
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         } catch (ValidationException $e) {

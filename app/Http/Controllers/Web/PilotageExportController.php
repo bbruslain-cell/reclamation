@@ -105,19 +105,19 @@ class PilotageExportController extends Controller
             'annexe2' => $this->buildAnnexe2Payload($overviewData),
             'function-distribution' => $this->buildFunctionDistributionPayload(
                 $overviewData['annexes_fonctions']['reclamations'] ?? [],
-                "Tableau de rÃƒÂ©partition de l'ensemble des rÃƒÂ©clamations de la cellule par direction.",
+                "Tableau de répartition de l'ensemble des réclamations de la cellule par direction.",
                 'tableau-repartition-reclamations-par-direction'
             ),
             'reclamation-service-distribution' => $this->buildServiceDistributionPayload(
                 $overviewData['annexes_services']['reclamations'] ?? [],
-                'Tableau de rÃƒÂ©partition des rÃƒÂ©clamations par service.',
+                'Tableau de répartition des réclamations par service.',
                 'tableau-repartition-reclamations-par-service'
             ),
             default => abort(404),
         };
     }
 
-        private function buildCiqTrackingPayload(array $overviewData): array
+    private function buildCiqTrackingPayload(array $overviewData): array
     {
         $rows = collect($overviewData['tableau_suivi_annexe'] ?? [])
             ->map(fn (array $row) => [
@@ -137,23 +137,23 @@ class PilotageExportController extends Controller
             ->all();
 
         return [
-            'title' => "Tableau actuel du suivi des r\u{00E9}clamations",
-            'sheet_title' => "Suivi r\u{00E9}clamations",
+            'title' => "Tableau actuel du suivi des réclamations",
+            'sheet_title' => "Suivi réclamations",
             'filename' => 'tableau-suivi-ciq',
             'orientation' => 'landscape',
             'sections' => [[
-                'title' => "Suivi d\u{00E9}taill\u{00E9}",
+                'title' => "Suivi détaillé",
                 'headers' => [
-                    "N\u{00B0}",
-                    "Date de r\u{00E9}ception",
-                    "Exp\u{00E9}diteur",
+                    "N°",
+                    "Date de réception",
+                    "Expéditeur",
                     'Objet',
                     'Date de dispatch',
-                    "D\u{00E9}lais de transmission",
+                    "Délais de transmission",
                     'Service',
-                    "R\u{00E9}alisation",
+                    "Réalisation",
                     'Statut',
-                    "Respect d\u{00E9}lais",
+                    "Respect délais",
                     "Nombre de jours d'attente",
                     'RZ / CS',
                 ],
@@ -162,7 +162,7 @@ class PilotageExportController extends Controller
         ];
     }
 
-        private function buildAnnexe2Payload(array $overviewData): array
+    private function buildAnnexe2Payload(array $overviewData): array
     {
         $repartition = $overviewData['annexe_repartition'] ?? [];
         $reclamationRows = collect($repartition['reclamations'] ?? [])
@@ -173,14 +173,14 @@ class PilotageExportController extends Controller
             ])->all();
 
         return [
-            'title' => "Tableau de la r\u{00E9}partition des r\u{00E9}clamations les plus r\u{00E9}currentes dans la cellule.",
-            'sheet_title' => "R\u{00E9}clamations r\u{00E9}currentes",
-            'filename' => 'Tableau de la repartition des reclamations les plus recurrentes dans la cellule',
+            'title' => "Tableau de la répartition des réclamations les plus récurrentes dans la cellule.",
+            'sheet_title' => "Réclamations récurrentes",
+            'filename' => 'tableau-repartition-reclamations-recurrentes',
             'orientation' => 'landscape',
             'sections' => [
                 [
                     'title' => 'RECLAMATIONS',
-                    'headers' => ["Cat\u{00E9}gorie", 'Nombre de mails', '%'],
+                    'headers' => ["Catégorie", 'Nombre de mails', '%'],
                     'rows' => $reclamationRows,
                     'footer' => [
                         'TOTAL RECLAMATIONS',
@@ -192,7 +192,7 @@ class PilotageExportController extends Controller
         ];
     }
 
-        private function buildFunctionDistributionPayload(array $dataset, string $title, string $filename): array
+    private function buildFunctionDistributionPayload(array $dataset, string $title, string $filename): array
     {
         $rows = collect($dataset['rows'] ?? [])
             ->map(fn (array $row) => [
@@ -210,18 +210,18 @@ class PilotageExportController extends Controller
 
         return [
             'title' => $title,
-            'sheet_title' => "R\u{00E9}clamations direction",
+            'sheet_title' => "Réclamations direction",
             'filename' => $filename,
             'orientation' => 'landscape',
             'sections' => [[
-                'title' => "R\u{00E9}partition par fonction",
+                'title' => "Répartition par fonction",
                 'headers' => [
                     'Fonctions',
                     'Nombre total',
-                    "Nombre trait\u{00E9}",
-                    "Taux d'ex\u{00E9}cution (%)",
-                    "Nombre trait\u{00E9} dans les d\u{00E9}lais",
-                    "Taux de conformit\u{00E9} (72h) (%)",
+                    "Nombre traité",
+                    "Taux d'exécution (%)",
+                    "Nombre traité dans les délais",
+                    "Taux de conformité (72h) (%)",
                     '(A + B) / 2',
                 ],
                 'rows' => $rows,
@@ -238,7 +238,7 @@ class PilotageExportController extends Controller
         ];
     }
 
-        private function buildServiceDistributionPayload(array $dataset, string $title, string $filename): array
+    private function buildServiceDistributionPayload(array $dataset, string $title, string $filename): array
     {
         $rows = collect($dataset['rows'] ?? [])
             ->map(fn (array $row) => [
@@ -256,19 +256,19 @@ class PilotageExportController extends Controller
 
         return [
             'title' => $title,
-            'sheet_title' => "R\u{00E9}clamations service",
+            'sheet_title' => "Réclamations service",
             'filename' => $filename,
             'orientation' => 'landscape',
             'sections' => [[
-                'title' => "R\u{00E9}partition par service",
+                'title' => "Répartition par service",
                 'headers' => [
-                    "Services / Unit\u{00E9}",
+                    "Services / Unité",
                     'Agents',
-                    "Nbre de mails re\u{00E7}us",
-                    "Nbre de mails trait\u{00E9}s",
-                    "Taux d'ex\u{00E9}cution (%) (A)",
-                    "Nbre de mails trait\u{00E9}s dans les d\u{00E9}lais",
-                    "Taux de conformit\u{00E9} (72h) (%) (B)",
+                    "Nbre de mails reçus",
+                    "Nbre de mails traités",
+                    "Taux d'exécution (%) (A)",
+                    "Nbre de mails traités dans les délais",
+                    "Taux de conformité (72h) (%) (B)",
                 ],
                 'rows' => $rows,
                 'footer' => [
@@ -307,5 +307,3 @@ class PilotageExportController extends Controller
         return number_format((int) ($value ?? 0), 0, ',', ' ');
     }
 }
-
-

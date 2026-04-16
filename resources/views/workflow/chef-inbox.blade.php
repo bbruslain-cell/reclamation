@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <title>Chef de service — ANBG</title>
+    <title>Chef de service Ã¢â‚¬â€ ANBG</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -199,7 +199,7 @@
             </form>
         </div>
 
-        {{-- SECTION 1 â Sans agent assignÃ© --}}
+        {{-- SECTION 1 ÃƒÂ¢Ã‚â‚¬Ã‚â€ Sans agent assignÃƒÆ’Ã‚Â© --}}
         <div class="surface-card rounded-[26px] overflow-hidden">
             <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -286,7 +286,7 @@
                             </td>
                         </tr>
 
-                        {{-- DÃ©tail --}}
+                        {{-- DÃƒÆ’Ã‚Â©tail --}}
                         <tr id="detail-p-{{ $demande->id_demande }}" class="detail-row" style="display:none;">
                             <td colspan="7" class="px-4 py-4 bg-[linear-gradient(180deg,#f8fbfe_0%,#f4f7fb_100%)] border-b border-neutral-100">
                                 @php
@@ -306,7 +306,7 @@
                                 @endphp
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-                                    {{-- DÃ©tail demande --}}
+                                    {{-- DÃƒÆ’Ã‚Â©tail demande --}}
                                     <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
                                         <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2">
                                             <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 2h8l4 4v16H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V7h3.5L13 3.5ZM8 11h8v2H8v-2Zm0 4h8v2H8v-2Z" fill="currentColor"/></svg>D&eacute;tail de la demande
@@ -322,19 +322,19 @@
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div>
                                                 <p class="text-xs text-neutral-400">Email</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_email ?: 'â' }}</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_email ?: '-' }}</p>
                                             </div>
                                             <div>
                                                 <p class="text-xs text-neutral-400">Statut usager</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_statut ?: 'â' }}</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_statut ?: '-' }}</p>
                                             </div>
                                             <div>
                                                 <p class="text-xs text-neutral-400">Pays</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_pays ?: 'â' }}</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_pays ?: '-' }}</p>
                                             </div>
                                             <div>
                                                 <p class="text-xs text-neutral-400">&Eacute;tablissement</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_etablissement ?: 'Non renseigné' }}</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_etablissement ?: 'Non renseigne' }}</p>
                                             </div>
                                         </div>
                                         @if($pieces->isNotEmpty())
@@ -429,7 +429,7 @@
                                                         {{ $historyLabels[$entry->type_action] ?? ucfirst(str_replace('_', ' ', (string) $entry->type_action)) }}
                                                     </span>
                                                     <p class="text-sm font-medium text-navy">
-                                                        {{ trim(((string) ($entry->acteur_prenom ?? '')).' '.((string) ($entry->acteur_nom ?? ''))) ?: 'Système' }}
+                                                        {{ trim(((string) ($entry->acteur_prenom ?? '')).' '.((string) ($entry->acteur_nom ?? ''))) ?: 'Systeme' }}
                                                     </p>
                                                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-400">
                                                         <span>{{ \Carbon\Carbon::parse($entry->date_action)->format('d/m/Y H:i') }}</span>
@@ -437,7 +437,7 @@
                                                         <span>Service : {{ $entry->service_code }}</span>
                                                         @endif
                                                         @if(!empty($entry->ancien_statut) || !empty($entry->nouveau_statut))
-                                                        <span>{{ $entry->ancien_statut ?: '—' }} → {{ $entry->nouveau_statut ?: '—' }}</span>
+                                                        <span>{{ $entry->ancien_statut ?: 'Ã¢â‚¬â€' }} Ã¢â€ â€™ {{ $entry->nouveau_statut ?: 'Ã¢â‚¬â€' }}</span>
                                                         @endif
                                                     </div>
                                                 </div>
@@ -479,14 +479,14 @@
             @endif
         </div>
 
-        {{-- SECTION 2 â Avec agent assignÃ© --}}
+        {{-- SECTION 2 ÃƒÂ¢Ã‚â‚¬Ã‚â€ Avec agent assignÃƒÆ’Ã‚Â© --}}
         <div class="surface-card rounded-[26px] overflow-hidden">
             <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <path d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Zm-5 8v-1c0-2.8 2.8-5 5-5s5 2.2 5 5v1H7Zm4-8 1 2 1-2h-2Zm1 3-1.5 5h3L12 15Z" fill="currentColor"/>
                     </svg>
-                    <h2 class="text-sm font-semibold text-navy">Demandes avec agent assigné</h2>
+                    <h2 class="text-sm font-semibold text-navy">Demandes avec agent assigne</h2>
                     <span class="ml-1 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky">
                         {{ $assigned->total() }}
                     </span>
@@ -571,7 +571,7 @@
                             </td>
                         </tr>
 
-                        {{-- DÃ©tail --}}
+                        {{-- DÃƒÆ’Ã‚Â©tail --}}
                         <tr id="detail-a-{{ $demande->id_demande }}" class="detail-row" style="display:none;">
                             <td colspan="7" class="px-4 py-4 bg-[linear-gradient(180deg,#f8fbfe_0%,#f4f7fb_100%)] border-b border-neutral-100">
                                 @php
@@ -591,7 +591,7 @@
                                 @endphp
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-                                    {{-- DÃ©tail demande --}}
+                                    {{-- DÃƒÆ’Ã‚Â©tail demande --}}
                                     <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
                                         <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2">
                                             <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 2h8l4 4v16H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V7h3.5L13 3.5ZM8 11h8v2H8v-2Zm0 4h8v2H8v-2Z" fill="currentColor"/></svg>D&eacute;tail de la demande
@@ -607,19 +607,19 @@
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div>
                                                 <p class="text-xs text-neutral-400">Email</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_email ?: 'â' }}</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_email ?: '-' }}</p>
                                             </div>
                                             <div>
                                                 <p class="text-xs text-neutral-400">Statut usager</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_statut ?: 'â' }}</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_statut ?: '-' }}</p>
                                             </div>
                                             <div>
                                                 <p class="text-xs text-neutral-400">Pays</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_pays ?: 'â' }}</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_pays ?: '-' }}</p>
                                             </div>
                                             <div>
                                                 <p class="text-xs text-neutral-400">&Eacute;tablissement</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_etablissement ?: 'Non renseigné' }}</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_etablissement ?: 'Non renseigne' }}</p>
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-2 bg-sky-50 border border-sky-100 rounded-lg px-3 py-2">
@@ -668,7 +668,7 @@
                                             </form>
                                         </div>
 
-                                        {{-- Annuler / VerrouillÃ© --}}
+                                        {{-- Annuler / VerrouillÃƒÆ’Ã‚Â© --}}
                                         @if($demande->statut_code === 'affectee_agent')
                                         <div class="bg-white border border-red-100 rounded-xl p-4">
                                             <h4 class="text-xs font-medium text-red-500 uppercase tracking-wider border-b border-red-100 pb-2 mb-3">
@@ -727,7 +727,7 @@
                                                         <span>Service : {{ $entry->service_code }}</span>
                                                         @endif
                                                         @if(!empty($entry->ancien_statut) || !empty($entry->nouveau_statut))
-                                                        <span>{{ $entry->ancien_statut ?: 'â' }} â {{ $entry->nouveau_statut ?: 'â' }}</span>
+                                                        <span>{{ $entry->ancien_statut ?: '-' }} -> {{ $entry->nouveau_statut ?: '-' }}</span>
                                                         @endif
                                                     </div>
                                                 </div>
@@ -803,7 +803,7 @@
                             </div>
                             <p class="text-sm font-medium text-navy">{{ $entry->objet }}</p>
                             <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500">
-                                <span>Usager : {{ trim(((string) ($entry->usager_prenom ?? '')).' '.((string) ($entry->usager_nom ?? ''))) ?: '—' }}</span>
+                                <span>Usager : {{ trim(((string) ($entry->usager_prenom ?? '')).' '.((string) ($entry->usager_nom ?? ''))) ?: 'Ã¢â‚¬â€' }}</span>
                                 <span>Acteur : {{ trim(((string) ($entry->acteur_prenom ?? '')).' '.((string) ($entry->acteur_nom ?? ''))) ?: html_entity_decode('Syst&egrave;me', ENT_QUOTES, 'UTF-8') }}</span>
                                 @if(!empty($entry->service_code))
                                 <span>Service : {{ $entry->service_code }}</span>
