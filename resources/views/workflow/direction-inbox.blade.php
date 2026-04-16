@@ -199,7 +199,7 @@
                 <div class="space-y-6">
                     <h1 class="text-2xl font-bold leading-tight sm:text-[2rem]">Supervision transverse de votre direction</h1>
                     <p class="max-w-3xl text-sm leading-6 text-white/78 sm:text-[15px]">
-                        Cette vue donne un suivi global des services rattachés à votre direction : volumes, conformité, retards et lecture détaillée des dossiers sans modifier les réponses usager.
+                        Cette vue donne un suivi global des services rattaches a votre direction : volumes, conformite, retards et lecture detaillee des dossiers sans modifier les reponses usager.
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -220,7 +220,7 @@
                         <svg class="icon-svg text-[#3996d3]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5h-2v6l5 3 1-1.7-4-2.3V7Z" fill="currentColor"/>
                         </svg>
-                        {{ $filtersActifs->isNotEmpty() ? $filtersActifs->implode(' · ') : 'Vue générale sans filtre' }}
+                        {{ $filtersActifs->isNotEmpty() ? $filtersActifs->implode('-') : 'Vue generale sans filtre' }}
                     </span>
                 </div>
             </div>
@@ -492,19 +492,19 @@
                                             </div>
                                             <div>
                                                 <p class="text-xs text-neutral-400">Email</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_email ?? '—' }}</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_email ?? 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â' }}</p>
                                             </div>
                                             <div>
                                                 <p class="text-xs text-neutral-400">Statut usager</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_statut ?? '—' }}</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_statut ?? 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â' }}</p>
                                             </div>
                                             <div>
                                                 <p class="text-xs text-neutral-400">Pays</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_pays ?? '—' }}</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_pays ?? 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â' }}</p>
                                             </div>
                                             <div>
-                                                <p class="text-xs text-neutral-400">Établissement</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_etablissement ?? '—' }}</p>
+                                                <p class="text-xs text-neutral-400">Etablissement</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_etablissement ?? '-' }}</p>
                                             </div>
                                         </div>
 
@@ -549,7 +549,7 @@
                                                 <p class="mt-1 text-sm text-navy">{{ $demande->date_envoi_usager ?? '-' }}</p>
                                             </div>
                                             <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3">
-                                                <p class="text-[11px] text-neutral-400 uppercase tracking-wide">Cloture</p>
+                                                <p class="text-[11px] text-neutral-400 uppercase tracking-wide">ClÃƒÂ´ture</p>
                                                 <p class="mt-1 text-sm text-navy">{{ $demande->date_cloture ?? '-' }}</p>
                                             </div>
                                             <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3">

@@ -1143,7 +1143,7 @@ class OverviewController extends Controller
                     'Interfaces utilisateur',
                     'Gestion des utilisateurs et des droits',
                     'Gestion des reclamations',
-                    'Suivi de lâ€™exÃ©cution et statuts',
+                    'Suivi de l exÃ©cution et statuts',
                     'SLA 72h + alertes',
                     'Tracabilite',
                     'Tableau de bord + exports',
@@ -1489,10 +1489,10 @@ class OverviewController extends Controller
             'affectation_service' => 'Affectation service',
             'affectation_agent' => 'Affectation agent',
             'annulation_affectation_agent' => 'Annulation affectation agent',
-            'reponse_redigee' => 'RÃ©ponse rÃ©digÃ©e',
-            'envoi_reponse' => 'RÃ©ponse finale envoyÃ©e',
-            'reponse_directe_accueil' => 'Réponse directe accueil',
-            'reponse_directe_chef' => 'RÃ©ponse directe chef',
+            'reponse_redigee' => 'Reponse redigee',
+            'envoi_reponse' => 'Reponse finale envoyee',
+            'reponse_directe_accueil' => 'Reponse directe accueil',
+            'reponse_directe_chef' => 'Reponse directe chef',
             default => ucfirst(str_replace('_', ' ', $action)),
         };
     }

@@ -38,6 +38,11 @@ class AuthAndPublicFlowTest extends TestCase
         $row = DB::table('utilisateurs')->where('email', $email)->first();
         $this->assertSame(0, (int) $row->tentatives_echouees);
         $this->assertNotNull($row->bloque_jusqua);
+        $this->assertGreaterThanOrEqual(14 * 60, now()->diffInSeconds($row->bloque_jusqua, false));
+        $this->assertDatabaseHas('historique_actions', [
+            'id_utilisateur' => (int) DB::table('utilisateurs')->where('email', $email)->value('id_utilisateur'),
+            'type_action' => 'AUTH_LOGIN_LOCKOUT',
+        ]);
 
         $this->post('/login', [
             'email' => $email,
@@ -177,9 +182,52 @@ class AuthAndPublicFlowTest extends TestCase
             'password_confirmation' => 'ChangeMe@124',
         ])->assertRedirect('/espace');
 
-        $this->get("/pieces-jointes/{$pieceId}")
+        $response = $this->get("/pieces-jointes/{$pieceId}");
+        $response
             ->assertOk()
-            ->assertHeader('content-type', 'application/pdf');
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('x-content-type-options', 'nosniff');
+
+        $this->assertStringContainsString(
+            'attachment;',
+            (string) $response->headers->get('content-disposition')
+        );
+    }
+
+    public function test_unrelated_agent_cannot_open_attachment_outside_scope(): void
+    {
+        $this->seed();
+        Storage::fake('local');
+        Storage::fake('public');
+
+        $this->post('/reclamations', [
+            'nom' => 'Doe',
+            'prenom' => 'Jane',
+            'email' => 'jane@example.com',
+            'statut_usager' => 'Etudiant',
+            'pays' => 'Gabon',
+            'etablissement' => 'Universite Omar Bongo',
+            'objet' => 'Objet test',
+            'message' => 'Message de test suffisamment long.',
+            'consentement' => 'on',
+            'piece_jointe' => UploadedFile::fake()->create('piece.pdf', 100, 'application/pdf'),
+        ])->assertRedirect('/reclamations/nouvelle');
+
+        $pieceId = (int) DB::table('pieces_jointes')->value('id_piece_jointe');
+
+        $this->post('/login', [
+            'email' => 'agent.daf@anbg.ga',
+            'password' => 'ChangeMe@123',
+        ])->assertRedirect('/mot-de-passe/nouveau');
+
+        $this->post('/mot-de-passe/nouveau', [
+            'ancien_mdp' => 'ChangeMe@123',
+            'password' => 'ChangeMe@124',
+            'password_confirmation' => 'ChangeMe@124',
+        ])->assertRedirect('/espace');
+
+        $this->get("/pieces-jointes/{$pieceId}")
+            ->assertForbidden();
     }
 
     public function test_agent_login_redirects_to_agent_inbox(): void

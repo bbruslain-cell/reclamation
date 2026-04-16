@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -33,7 +34,7 @@ class PublicDemandController extends Controller
             'statut_usager' => ['required', 'string', 'max:100'],
             'pays' => ['required', 'string', 'max:120'],
             'etablissement' => [
-                Rule::requiredIf(fn () => in_array($request->input('statut_usager'), ['Élève', 'Étudiant'], true)),
+                Rule::requiredIf(fn () => in_array($this->normalizeUsagerStatus((string) $request->input('statut_usager')), ['eleve', 'etudiant'], true)),
                 'nullable',
                 'string',
                 'max:255',
@@ -69,10 +70,10 @@ class PublicDemandController extends Controller
             ->value('id_parametre');
 
         $usagerId = $this->createUsagerSnapshot($payload);
-        $tracking = $this->nextTrackingNumber();
 
-        DB::transaction(function () use ($request, $payload, $tracking, $usagerId, $typeId, $statusId, $configSlaId): void {
+        $tracking = DB::transaction(function () use ($request, $payload, $usagerId, $typeId, $statusId, $configSlaId): string {
             $now = now();
+            $tracking = $this->nextTrackingNumber();
 
             $demandId = DB::table('demandes')->insertGetId([
                 'numero_suivi' => $tracking,
@@ -120,6 +121,8 @@ class PublicDemandController extends Controller
 
             $file = $request->file('piece_jointe');
             if ($file) {
+                $this->ensureAllowedAttachment($file);
+
                 $path = $file->store('pieces_jointes', 'local');
                 $pieceId = DB::table('pieces_jointes')->insertGetId([
                     'nom_fichier' => $file->getClientOriginalName(),
@@ -138,10 +141,12 @@ class PublicDemandController extends Controller
                     'id_piece_jointe' => $pieceId,
                 ]);
             }
+
+            return $tracking;
         });
 
         return redirect('/reclamations/nouvelle')
-            ->with('success', "Votre demande est enregistrée avec succès. Numéro de suivi : {$tracking}");
+            ->with('success', "Votre demande est enregistree avec succes. Numero de suivi : {$tracking}");
     }
 
     private function createUsagerSnapshot(array $payload): int
@@ -173,19 +178,60 @@ class PublicDemandController extends Controller
             return sprintf('ANBG-%s-%03d', $year, $next);
         }
 
-        $prefix = "ANBG-{$year}-";
-        $currentMax = DB::table('demandes')
-            ->where('numero_suivi', 'like', $prefix.'%')
-            ->pluck('numero_suivi')
-            ->map(function ($tracking) use ($year) {
-                if (!is_string($tracking) || !preg_match('/^ANBG-'.$year.'-(\d+)$/', $tracking, $matches)) {
-                    return 0;
-                }
+        $counterQuery = DB::table('demandes_numero_compteurs')->where('annee', (int) $year);
+        if (DB::getDriverName() !== 'sqlite') {
+            $counterQuery->lockForUpdate();
+        }
 
-                return (int) $matches[1];
-            })
-            ->max();
+        $counter = $counterQuery->first();
 
-        return sprintf('ANBG-%s-%03d', $year, ((int) $currentMax) + 1);
+        if (!$counter) {
+            DB::table('demandes_numero_compteurs')->insert([
+                'annee' => (int) $year,
+                'valeur' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $counter = DB::table('demandes_numero_compteurs')
+                ->where('annee', (int) $year)
+                ->when(DB::getDriverName() !== 'sqlite', fn ($query) => $query->lockForUpdate())
+                ->first();
+        }
+
+        $next = ((int) ($counter->valeur ?? 0)) + 1;
+
+        DB::table('demandes_numero_compteurs')
+            ->where('annee', (int) $year)
+            ->update([
+                'valeur' => $next,
+                'updated_at' => now(),
+            ]);
+
+        return sprintf('ANBG-%s-%03d', $year, $next);
+    }
+
+    private function normalizeUsagerStatus(string $value): string
+    {
+        return Str::of($value)
+            ->ascii()
+            ->lower()
+            ->trim()
+            ->value();
+    }
+
+    private function ensureAllowedAttachment(UploadedFile $file): void
+    {
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+        $mime = strtolower((string) ($file->getMimeType() ?: ''));
+
+        $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+        $allowedMimes = ['application/pdf', 'image/jpeg', 'image/png'];
+
+        if (!in_array($extension, $allowedExtensions, true) || !in_array($mime, $allowedMimes, true)) {
+            throw ValidationException::withMessages([
+                'piece_jointe' => 'Format de fichier non autorise. Utilisez PDF, JPG ou PNG.',
+            ]);
+        }
     }
 }

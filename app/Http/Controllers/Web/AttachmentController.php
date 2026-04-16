@@ -15,6 +15,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttachmentController extends Controller
 {
+    private const SAFE_MIME_BY_EXTENSION = [
+        'pdf' => 'application/pdf',
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+    ];
+
     public function __construct(private readonly AccessControlService $access)
     {
     }
@@ -54,15 +61,14 @@ class AttachmentController extends Controller
         $disk = $this->resolveAttachmentDisk((string) $piece->chemin_fichier);
         abort_unless($disk !== null, 404);
 
-        $headers = [];
-        if (!empty($piece->type_mime)) {
-            $headers['Content-Type'] = (string) $piece->type_mime;
-        }
-
-        return Storage::disk($disk)->response(
+        return Storage::disk($disk)->download(
             (string) $piece->chemin_fichier,
             (string) $piece->nom_fichier,
-            $headers
+            [
+                'Content-Type' => $this->safeMimeType((string) $piece->nom_fichier, (string) ($piece->type_mime ?? '')),
+                'X-Content-Type-Options' => 'nosniff',
+                'Content-Security-Policy' => "default-src 'none'; sandbox",
+            ]
         );
     }
 
@@ -79,5 +85,20 @@ class AttachmentController extends Controller
         }
 
         return null;
+    }
+
+    private function safeMimeType(string $filename, string $storedMime): string
+    {
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+        if (isset(self::SAFE_MIME_BY_EXTENSION[$extension])) {
+            return self::SAFE_MIME_BY_EXTENSION[$extension];
+        }
+
+        if (in_array($storedMime, self::SAFE_MIME_BY_EXTENSION, true)) {
+            return $storedMime;
+        }
+
+        return 'application/octet-stream';
     }
 }

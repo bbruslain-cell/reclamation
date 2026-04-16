@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Services\AccessControlService;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -14,7 +15,7 @@ use Illuminate\View\View;
 class AuthController extends Controller
 {
     private const MAX_LOGIN_ATTEMPTS = 5;
-    private const LOCK_MINUTES = 1;
+    private const LOCK_MINUTES = 15;
 
     public function __construct(private readonly AccessControlService $access)
     {
@@ -39,6 +40,12 @@ class AuthController extends Controller
 
         $actor = $this->access->findActorByEmail($payload['email']);
         if (!$actor || !$actor->actif) {
+            $this->recordAuthAudit(
+                userId: $actor?->id_utilisateur ? (int) $actor->id_utilisateur : null,
+                actionType: 'AUTH_LOGIN_FAILED',
+                comment: 'Echec de connexion pour '.$payload['email']
+            );
+
             throw ValidationException::withMessages([
                 'email' => 'Identifiants invalides.',
             ]);
@@ -46,6 +53,12 @@ class AuthController extends Controller
 
         if ($actor->bloque_jusqua && now()->lt($actor->bloque_jusqua)) {
             $seconds = max(1, (int) ceil(now()->diffInSeconds($actor->bloque_jusqua)));
+
+            $this->recordAuthAudit(
+                userId: (int) $actor->id_utilisateur,
+                actionType: 'AUTH_LOGIN_BLOCKED',
+                comment: "Tentative pendant verrouillage pour {$actor->email}"
+            );
 
             throw ValidationException::withMessages([
                 'email' => "Compte temporairement bloque. Reessayez dans {$seconds} seconde(s).",
@@ -55,14 +68,26 @@ class AuthController extends Controller
         if (!Hash::check($payload['password'], $actor->password_hash)) {
             $attempts = ((int) ($actor->tentatives_echouees ?? 0)) + 1;
 
+            $this->recordAuthAudit(
+                userId: (int) $actor->id_utilisateur,
+                actionType: 'AUTH_LOGIN_FAILED',
+                comment: "Echec de connexion ({$attempts}/".self::MAX_LOGIN_ATTEMPTS.") pour {$actor->email}"
+            );
+
             if ($attempts >= self::MAX_LOGIN_ATTEMPTS) {
                 $actor->forceFill([
                     'tentatives_echouees' => 0,
                     'bloque_jusqua' => now()->addMinutes(self::LOCK_MINUTES),
                 ])->save();
 
+                $this->recordAuthAudit(
+                    userId: (int) $actor->id_utilisateur,
+                    actionType: 'AUTH_LOGIN_LOCKOUT',
+                    comment: 'Compte verrouille apres trop de tentatives de connexion'
+                );
+
                 throw ValidationException::withMessages([
-                    'email' => 'Trop de tentatives. Compte bloque pendant 1 minute.',
+                    'email' => 'Trop de tentatives. Compte bloque pendant 15 minutes.',
                 ]);
             }
 
@@ -87,6 +112,12 @@ class AuthController extends Controller
             'bloque_jusqua' => null,
         ])->save();
 
+        $this->recordAuthAudit(
+            userId: (int) $actor->id_utilisateur,
+            actionType: 'AUTH_LOGIN_SUCCESS',
+            comment: 'Connexion reussie'
+        );
+
         if ((bool) ($actor->changement_mdp_requis ?? false)) {
             return redirect('/mot-de-passe/nouveau');
         }
@@ -96,6 +127,15 @@ class AuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
+        $actor = $this->access->resolveActor($request);
+        if ($actor) {
+            $this->recordAuthAudit(
+                userId: (int) $actor->id_utilisateur,
+                actionType: 'AUTH_LOGOUT',
+                comment: 'Deconnexion utilisateur'
+            );
+        }
+
         Auth::guard('web')->logout();
         $request->session()->forget('agent_id');
         $request->session()->invalidate();
@@ -103,5 +143,17 @@ class AuthController extends Controller
 
         return redirect('/login');
     }
-   
+
+    private function recordAuthAudit(?int $userId, string $actionType, string $comment): void
+    {
+        DB::table('historique_actions')->insert([
+            'id_demande' => null,
+            'id_utilisateur' => $userId,
+            'type_action' => $actionType,
+            'commentaire' => $comment,
+            'date_action' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
 }
