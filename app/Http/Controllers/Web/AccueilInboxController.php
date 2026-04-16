@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Demande;
 use App\Services\AccessControlService;
 use App\Services\DemandWorkflowService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -10,6 +11,7 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use RuntimeException;
@@ -26,7 +28,7 @@ class AccueilInboxController extends Controller
     public function index(Request $request): View
     {
         $actor = $this->access->requireActor($request);
-        $this->assertCanAccessAccueil((int) $actor->id_utilisateur);
+        Gate::forUser($actor)->authorize('demande.assign');
         $this->alerts->refreshOpenDemandAlerts();
 
         $filters = $request->validate([
@@ -96,14 +98,16 @@ class AccueilInboxController extends Controller
                 'u.nom as usager_nom',
                 'u.prenom as usager_prenom',
                 'u.email as usager_email',
-                'u.telephone as usager_telephone'
+                DB::raw("'' as usager_telephone"),
+                'u.statut_usager as usager_statut',
+                'u.pays as usager_pays',
+                'u.etablissement as usager_etablissement'
             );
 
         $summaryStats = (clone $baseQuery)
             ->selectRaw("
                 COUNT(*) as total_demandes,
                 SUM(CASE WHEN st.code = 'nouvelle' THEN 1 ELSE 0 END) as total_nouvelles,
-                SUM(CASE WHEN td.code = 'demande_information' THEN 1 ELSE 0 END) as total_informations,
                 SUM(CASE WHEN td.code = 'reclamation' THEN 1 ELSE 0 END) as total_reclamations,
                 SUM(CASE WHEN st.code = 'nouvelle' AND d.alerte_accueil = 'orange' THEN 1 ELSE 0 END) as total_a_risque,
                 SUM(CASE WHEN st.code = 'nouvelle' AND d.alerte_accueil = 'rouge' THEN 1 ELSE 0 END) as total_en_retard
@@ -222,7 +226,12 @@ class AccueilInboxController extends Controller
     {
         try {
             $actor = $this->access->requireActor($request);
-            $this->access->assertPermission((int) $actor->id_utilisateur, 'demande.assign');
+            $demand = Demande::query()->find($id);
+            if (!$demand) {
+                throw new RuntimeException('Demande introuvable.');
+            }
+
+            Gate::forUser($actor)->authorize('assignService', $demand);
 
             $payload = $request->validate([
                 'id_direction' => ['required', 'integer', 'exists:directions,id_direction'],
@@ -239,7 +248,7 @@ class AccueilInboxController extends Controller
                 throw new RuntimeException('Service invalide ou inactif.');
             }
             if ((int) $serviceDirectionId !== (int) $payload['id_direction']) {
-                throw new RuntimeException('Le service selectionné n appartient pas a la direction choisie.');
+                throw new RuntimeException('Le service selectionnÃƒÂ© n appartient pas a la direction choisie.');
             }
 
             $this->workflow->assignDemand(
@@ -255,15 +264,20 @@ class AccueilInboxController extends Controller
         } catch (ValidationException $e) {
             throw $e;
         } catch (RuntimeException $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            return redirect()->back()->with('erreur', $e->getMessage());
         }
     }
 
-    public function reponseDirecte(Request $request, int $id): RedirectResponse
+    public function reponseDirecteAccueil(Request $request, int $id): RedirectResponse
     {
         try {
             $actor = $this->access->requireActor($request);
-            $this->access->assertPermission((int) $actor->id_utilisateur, 'demande.reply.send');
+            $demand = Demande::query()->find($id);
+            if (!$demand) {
+                throw new RuntimeException('Demande introuvable.');
+            }
+
+            Gate::forUser($actor)->authorize('reply', $demand);
 
             $payload = $request->validate([
                 'contenu_reponse' => ['required', 'string', 'min:5'],
@@ -282,10 +296,10 @@ class AccueilInboxController extends Controller
                 throw new RuntimeException('Demande introuvable.');
             }
             if ((string) $demandMeta->statut_code !== 'nouvelle') {
-                throw new RuntimeException('Reponse directe impossible pour ce statut.');
+                throw new RuntimeException('Réponse directe impossible pour ce statut.');
             }
-            if ((string) $demandMeta->type_demande_code !== 'demande_information') {
-                throw new RuntimeException('Reponse directe reservée aux demandes d information simples.');
+            if ((string) $demandMeta->type_demande_code !== 'reclamation') {
+                throw new RuntimeException("Seules les réclamations peuvent être clôturées directement à l'accueil.");
             }
 
             if (!$demandMeta->date_affectation_accueil) {
@@ -334,12 +348,12 @@ class AccueilInboxController extends Controller
                 'nouveau_statut_id' => null,
                 'id_service_associe' => $actor->id_service ? (int) $actor->id_service : null,
                 'date_action' => now(),
-                'commentaire' => 'Reponse directe accueil',
+                'commentaire' => "Réponse directe accueil envoyée à l'usager",
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            return redirect()->back()->with('success', 'Réponse directe envoyée et demande cloturée.');
+            return redirect()->back()->with('success', 'Réponse directe envoyée et réclamation clôturée.');
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         } catch (ValidationException $e) {
@@ -349,11 +363,99 @@ class AccueilInboxController extends Controller
         }
     }
 
+    /* Legacy direct-response block kept out of execution.
+    
+    
+
+            $demandMeta = DB::table('demandes as d')
+                ->join('parametres as st', 'st.id_parametre', '=', 'd.id_statut')
+                ->join('parametres as td', 'td.id_parametre', '=', 'd.id_type_demande')
+                ->where('d.id_demande', $id)
+                ->select('st.code as statut_code', 'td.code as type_demande_code', 'd.date_affectation_accueil')
+                ->first();
+
+            if (!$demandMeta) {
+                throw new RuntimeException('Demande introuvable.');
+            }
+            if ((string) $demandMeta->statut_code !== 'nouvelle') {
+                throw new RuntimeException('Reponse directe impossible pour ce statut.');
+            }
+            if ((string) $demandMeta->type_demande_code !== 'legacy_disabled') {
+                throw new RuntimeException('Cette action nest plus disponible.');
+            }
+
+            if (!$demandMeta->date_affectation_accueil) {
+                DB::table('demandes')
+                    ->where('id_demande', $id)
+                    ->update([
+                        'id_agent_accueil' => (int) $actor->id_utilisateur,
+                        'id_service_courant' => $actor->id_service ? (int) $actor->id_service : null,
+                        'date_affectation' => now(),
+                        'date_affectation_accueil' => now(),
+                        'updated_at' => now(),
+                    ]);
+            } elseif ($actor->id_service) {
+                DB::table('demandes')
+                    ->where('id_demande', $id)
+                    ->update([
+                        'id_service_courant' => (int) $actor->id_service,
+                        'updated_at' => now(),
+                    ]);
+            }
+
+            $draft = $this->workflow->draftResponse(
+                actorId: (int) $actor->id_utilisateur,
+                demandId: $id,
+                content: trim($payload['contenu_reponse']),
+                typeCode: 'directe'
+            );
+
+            $files = $request->file('pieces_jointes', []);
+            $this->workflow->attachFilesToResponse(
+                actorId: (int) $actor->id_utilisateur,
+                responseId: (int) $draft['id_reponse'],
+                files: is_array($files) ? $files : []
+            );
+
+            $this->workflow->sendFinalResponse(
+                actorId: (int) $actor->id_utilisateur,
+                demandId: $id
+            );
+
+            DB::table('historique_actions')->insert([
+                'id_demande' => $id,
+                'id_utilisateur' => (int) $actor->id_utilisateur,
+                'type_action' => 'action_accueil_desactivee',
+                'ancien_statut_id' => null,
+                'nouveau_statut_id' => null,
+                'id_service_associe' => $actor->id_service ? (int) $actor->id_service : null,
+                'date_action' => now(),
+                'commentaire' => 'Action accueil desactivée',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return redirect()->back()->with('succes', 'Action desactivée.');
+        } catch (AuthorizationException $e) {
+            return redirect()->back()->with('erreur', $e->getMessage());
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (RuntimeException $e) {
+            return redirect()->back()->with('erreur', $e->getMessage());
+        }
+    }
+
+    */
     public function annulerAffectation(Request $request, int $id): RedirectResponse
     {
         try {
             $actor = $this->access->requireActor($request);
-            $this->access->assertPermission((int) $actor->id_utilisateur, 'demande.assign');
+            $demand = Demande::query()->find($id);
+            if (!$demand) {
+                throw new RuntimeException('Demande introuvable.');
+            }
+
+            Gate::forUser($actor)->authorize('cancelServiceAssignment', $demand);
 
             $payload = $request->validate([
                 'commentaire' => ['nullable', 'string', 'max:2000'],
@@ -372,14 +474,6 @@ class AccueilInboxController extends Controller
             throw $e;
         } catch (RuntimeException $e) {
             return redirect()->back()->with('error', $e->getMessage());
-        }
-    }
-
-
-    private function assertCanAccessAccueil(int $userId): void
-    {
-        if (!$this->access->hasPermission($userId, 'demande.assign')) {
-            throw new AuthorizationException('Acces reservé au role accueil.');
         }
     }
 

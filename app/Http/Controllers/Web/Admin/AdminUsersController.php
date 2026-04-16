@@ -29,7 +29,7 @@ class AdminUsersController extends BaseAdminController
     public function index(Request $request): View
     {
         $actor = $this->access->requireActor($request);
-        $this->assertCanManageUsers((int) $actor->id_utilisateur);
+        $this->assertCanManageUsers($actor);
 
         $utilisateurs = Utilisateur::query()
             ->with(['service.direction', 'roles'])
@@ -137,7 +137,7 @@ class AdminUsersController extends BaseAdminController
             $email = strtolower(trim($payload['email']));
             $plainPassword = $payload['mot_de_passe'] ?: null;
             if (empty($payload['user_id']) && !$plainPassword) {
-                $plainPassword = Str::password(12);
+                $plainPassword = $this->generateReadablePassword();
             }
 
             DB::transaction(function () use ($payload, $email, $plainPassword): void {
@@ -177,7 +177,7 @@ class AdminUsersController extends BaseAdminController
                 throw ValidationException::withMessages(['user' => 'Utilisateur introuvable.']);
             }
 
-            $newPassword = Str::password(12);
+            $newPassword = $this->generateReadablePassword();
             DB::table('utilisateurs')->where('id_utilisateur', $id)->update([
                 'password_hash' => Hash::make($newPassword),
                 'changement_mdp_requis' => true,
@@ -270,6 +270,28 @@ class AdminUsersController extends BaseAdminController
         }
 
         return array_values(array_unique(array_map(static fn ($value) => (int) $value, $roleIds)));
+    }
+
+    private function generateReadablePassword(int $length = 10): string
+    {
+        $uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        $lowercase = 'abcdefghijkmnopqrstuvwxyz';
+        $digits = '23456789';
+        $pool = $uppercase.$lowercase.$digits;
+
+        $characters = [
+            $uppercase[random_int(0, strlen($uppercase) - 1)],
+            $lowercase[random_int(0, strlen($lowercase) - 1)],
+            $digits[random_int(0, strlen($digits) - 1)],
+        ];
+
+        while (count($characters) < $length) {
+            $characters[] = $pool[random_int(0, strlen($pool) - 1)];
+        }
+
+        shuffle($characters);
+
+        return implode('', $characters);
     }
 
     private function forceAccueilService(array $payload, array $roleCodes): array

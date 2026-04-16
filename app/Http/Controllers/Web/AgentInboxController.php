@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\InteractsWithServiceWindow;
+use App\Models\Demande;
 use App\Services\AccessControlService;
 use App\Services\DemandWorkflowService;
 use App\Services\StepAlertService;
@@ -12,6 +13,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use RuntimeException;
@@ -31,7 +33,7 @@ class AgentInboxController extends Controller
     public function index(Request $request): View
     {
         $actor = $this->access->requireActor($request);
-        $this->access->assertPermission((int) $actor->id_utilisateur, 'demande.reply.send');
+        Gate::forUser($actor)->authorize('demande.reply.send');
 
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
@@ -67,7 +69,10 @@ class AgentInboxController extends Controller
                 'u.nom as usager_nom',
                 'u.prenom as usager_prenom',
                 'u.email as usager_email',
-                'u.telephone as usager_telephone'
+                DB::raw("'' as usager_telephone"),
+                'u.statut_usager as usager_statut',
+                'u.pays as usager_pays',
+                'u.etablissement as usager_etablissement'
             );
 
         if ($search !== '') {
@@ -112,7 +117,7 @@ class AgentInboxController extends Controller
             'search' => $search,
             'demandes' => $demandes,
             'piecesByDemand' => $piecesByDemand,
-            'canPilotage' => $this->access->hasPermission((int) $actor->id_utilisateur, 'dashboard.view'),
+            'canPilotage' => Gate::forUser($actor)->allows('dashboard.view'),
         ]);
     }
 
@@ -120,8 +125,12 @@ class AgentInboxController extends Controller
     {
         try {
             $actor = $this->access->requireActor($request);
-            $this->access->assertPermission((int) $actor->id_utilisateur, 'demande.reply.send');
-            $this->access->assertDemandAccess((int) $actor->id_utilisateur, $id);
+            $demand = Demande::query()->find($id);
+            if (!$demand) {
+                throw new RuntimeException('Demande introuvable.');
+            }
+
+            Gate::forUser($actor)->authorize('reply', $demand);
 
             $payload = $request->validate([
                 'contenu_reponse' => ['required', 'string', 'min:5'],
@@ -148,13 +157,13 @@ class AgentInboxController extends Controller
                 demandId: $id
             );
 
-            return redirect()->back()->with('success', 'Reponse envoyee et demande cloturee.');
+            return redirect()->back()->with('success', 'Réponse envoyée et demande cloturée.');
         } catch (AuthorizationException $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            return redirect()->back()->with('erreur', $e->getMessage());
         } catch (ValidationException $e) {
             throw $e;
         } catch (RuntimeException $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            return redirect()->back()->with('erreur', $e->getMessage());
         }
     }
 }

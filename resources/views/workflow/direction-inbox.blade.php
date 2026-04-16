@@ -3,42 +3,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Chef de direction - ANBG</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        navy:    { DEFAULT: '#1c203d', 50: '#ecedf3', 100: '#c5c7d9', 600: '#181b35', 700: '#14162c' },
-                        sky:     { DEFAULT: '#3996d3', 50: '#eaf4fb', 100: '#cae4f5', 600: '#2e7fb8' },
-                        leaf:    { DEFAULT: '#8fc043', 50: '#f3f9ea' },
-                        gold:    { DEFAULT: '#f9b13c', 50: '#fff8ee' },
-                        neutral: { 50:'#f8f9fa',100:'#f1f3f5',200:'#e9ecef',300:'#dee2e6',400:'#adb5bd',500:'#6c757d',600:'#495057',700:'#343a40' },
-                    },
-                    fontFamily: { sans: ['"Inter"', 'system-ui', 'sans-serif'] },
-                    boxShadow: {
-                        'card': '0 1px 3px rgba(28,32,61,0.05), 0 4px 16px rgba(28,32,61,0.07)',
-                    }
-                }
-            }
-        }
-    </script>
+    <title>Chef de direction | ANBG</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        .field:focus {
-            outline: none;
-            border-color: #3996d3;
-            box-shadow: 0 0 0 3px rgba(57,150,211,0.18);
-            background: #fff;
-        }
-        .trow:hover td { background: #f8fafd; }
-        .detail-row { transition: opacity 0.15s ease; }
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: #f1f3f5; }
-        ::-webkit-scrollbar-thumb { background: #c5c7d9; border-radius: 99px; }
         i[class*='fa-'] {
             display: inline-block;
             width: 1.14em;
@@ -229,7 +199,7 @@
                 <div class="space-y-6">
                     <h1 class="text-2xl font-bold leading-tight sm:text-[2rem]">Supervision transverse de votre direction</h1>
                     <p class="max-w-3xl text-sm leading-6 text-white/78 sm:text-[15px]">
-                        Cette vue donne un suivi global des services rattaches a votre direction : volumes, conformite, retards et lecture detaillee des dossiers sans modifier les reponses usager.
+                        Cette vue donne un suivi global des services rattachés à votre direction : volumes, conformité, retards et lecture détaillée des dossiers sans modifier les réponses usager.
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -250,7 +220,7 @@
                         <svg class="icon-svg text-[#3996d3]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5h-2v6l5 3 1-1.7-4-2.3V7Z" fill="currentColor"/>
                         </svg>
-                        {{ $filtersActifs->isNotEmpty() ? $filtersActifs->implode(' · ') : 'Vue generale sans filtre' }}
+                        {{ $filtersActifs->isNotEmpty() ? $filtersActifs->implode(' · ') : 'Vue générale sans filtre' }}
                     </span>
                 </div>
             </div>
@@ -511,7 +481,7 @@
                                             <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap max-h-44 overflow-y-auto">{{ $demande->message }}</div>
                                         </div>
 
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                             <div>
                                                 <p class="text-xs text-neutral-400">Usager</p>
                                                 <p class="text-sm text-navy">{{ trim(($demande->usager_prenom ?? '').' '.($demande->usager_nom ?? '')) }}</p>
@@ -519,6 +489,22 @@
                                             <div>
                                                 <p class="text-xs text-neutral-400">Type</p>
                                                 <p class="text-sm text-navy">{{ $demande->type_demande }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-neutral-400">Email</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_email ?? '—' }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-neutral-400">Statut usager</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_statut ?? '—' }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-neutral-400">Pays</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_pays ?? '—' }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-neutral-400">Établissement</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_etablissement ?? '—' }}</p>
                                             </div>
                                         </div>
 

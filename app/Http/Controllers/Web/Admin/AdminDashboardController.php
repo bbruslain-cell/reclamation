@@ -14,7 +14,7 @@ class AdminDashboardController extends BaseAdminController
     public function index(Request $request): View
     {
         $actor = $this->access->requireActor($request);
-        $this->assertCanManageAdmin((int) $actor->id_utilisateur);
+        $this->assertCanManageAdmin($actor);
 
         $utilisateursCount = DB::table('utilisateurs')->count();
         $directionsCount = DB::table('directions')->count();
@@ -65,7 +65,7 @@ class AdminDashboardController extends BaseAdminController
     public function uploadAvatar(Request $request): RedirectResponse
     {
         $actor = $this->access->requireActor($request);
-        $this->assertCanManageAdmin((int) $actor->id_utilisateur);
+        $this->assertCanManageAdmin($actor);
 
         $request->validate([
             'avatar' => ['required', 'image', 'max:2048'],
@@ -91,7 +91,7 @@ class AdminDashboardController extends BaseAdminController
     public function removeAvatar(Request $request): RedirectResponse
     {
         $actor = $this->access->requireActor($request);
-        $this->assertCanManageAdmin((int) $actor->id_utilisateur);
+        $this->assertCanManageAdmin($actor);
 
         $current = DB::table('utilisateurs')->where('id_utilisateur', $actor->id_utilisateur)->value('avatar_path');
 

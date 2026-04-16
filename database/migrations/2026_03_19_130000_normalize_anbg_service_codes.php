@@ -7,17 +7,17 @@ return new class extends Migration {
     public function up(): void
     {
         $this->normalizeCatalog([
-            ['direction' => 'DG', 'old' => 'UCAS', 'new' => 'UCAS', 'libelle' => 'Unite Courrier, Accueil et Securite'],
-            ['direction' => 'DG', 'old' => 'SCIQ', 'new' => 'SCIQ', 'libelle' => 'Service Controle Interne et Qualite'],
+            ['direction' => 'DG', 'old' => 'UCAS', 'new' => 'UCAS', 'libelle' => 'Unité Courrier, Accueil et Sécurité'],
+            ['direction' => 'DG', 'old' => 'SCIQ', 'new' => 'SCIQ', 'libelle' => 'Service Contrôle Interne et Qualité'],
             ['direction' => 'DG', 'old' => 'CABINET_DG', 'new' => 'CABINET_DG', 'libelle' => 'Cabinet - DG'],
-            ['direction' => 'DSIC', 'old' => 'SSIRS', 'new' => 'CS_SIRS', 'libelle' => 'Systemes d Informations, Reseaux et Securite'],
+            ['direction' => 'DSIC', 'old' => 'SSIRS', 'new' => 'CS_SIRS', 'libelle' => 'Systèmes d Informations, Réseaux et Sécurité'],
             ['direction' => 'DSIC', 'old' => 'SCRP', 'new' => 'CS_JSP', 'libelle' => 'Communication et Relation Publique'],
             ['direction' => 'DSIC', 'old' => 'SGDS', 'new' => 'CS_GDS', 'libelle' => 'Gestion Documentaire et Statistiques'],
             ['direction' => 'DAF', 'old' => 'SAJARH', 'new' => 'CS_AJARH', 'libelle' => 'Affaires Juridiques et RH'],
             ['direction' => 'DAF', 'old' => 'SFC', 'new' => 'CS_FC', 'libelle' => 'Financier et Comptable'],
-            ['direction' => 'DAF', 'old' => 'SAMG', 'new' => 'CS_AMG', 'libelle' => 'Approvisionnement et Moyens Generaux'],
-            ['direction' => 'DS', 'old' => 'ETUD_NON_BOURS', 'new' => 'CS_SNB', 'libelle' => 'Etudiants non Boursiers'],
-            ['direction' => 'DS', 'old' => 'ETUD_BOURS', 'new' => 'CS_SENB', 'libelle' => 'Etudiants Boursiers'],
+            ['direction' => 'DAF', 'old' => 'SAMG', 'new' => 'CS_AMG', 'libelle' => 'Approvisionnement et Moyens Généraux'],
+            ['direction' => 'DS', 'old' => 'ETUD_NON_BOURS', 'new' => 'CS_SNB', 'libelle' => 'Étudiants non Boursiers'],
+            ['direction' => 'DS', 'old' => 'ETUD_BOURS', 'new' => 'CS_SENB', 'libelle' => 'Étudiants Boursiers'],
             ['direction' => 'DS', 'old' => 'PLANIF', 'new' => 'CS_P', 'libelle' => 'Planification'],
         ]);
 
@@ -34,17 +34,17 @@ return new class extends Migration {
     public function down(): void
     {
         $this->normalizeCatalog([
-            ['direction' => 'DG', 'old' => 'UCAS', 'new' => 'UCAS', 'libelle' => 'Unite Courrier, Accueil et Securite'],
-            ['direction' => 'DG', 'old' => 'SCIQ', 'new' => 'SCIQ', 'libelle' => 'Systeme Controle Interne et Qualite'],
+            ['direction' => 'DG', 'old' => 'UCAS', 'new' => 'UCAS', 'libelle' => 'Unité Courrier, Accueil et Sécurité'],
+            ['direction' => 'DG', 'old' => 'SCIQ', 'new' => 'SCIQ', 'libelle' => 'Système Contrôle Interne et Qualité'],
             ['direction' => 'DG', 'old' => 'CABINET_DG', 'new' => 'CABINET_DG', 'libelle' => 'Cabinet DG'],
-            ['direction' => 'DSIC', 'old' => 'CS_SIRS', 'new' => 'SSIRS', 'libelle' => 'Service des Systemes d Informations Reseaux et Securite'],
+            ['direction' => 'DSIC', 'old' => 'CS_SIRS', 'new' => 'SSIRS', 'libelle' => 'Service des Systèmes d Informations Réseaux et Sécurité'],
             ['direction' => 'DSIC', 'old' => 'CS_JSP', 'new' => 'SCRP', 'libelle' => 'Service Communication et Relations Publiques'],
             ['direction' => 'DSIC', 'old' => 'CS_GDS', 'new' => 'SGDS', 'libelle' => 'Service Gestion Documentaires des Statistiques'],
             ['direction' => 'DAF', 'old' => 'CS_AJARH', 'new' => 'SAJARH', 'libelle' => 'Service des Affaires Juridiques Administratives et Ressources Humaines'],
             ['direction' => 'DAF', 'old' => 'CS_FC', 'new' => 'SFC', 'libelle' => 'Service Financier et Comptable'],
-            ['direction' => 'DAF', 'old' => 'CS_AMG', 'new' => 'SAMG', 'libelle' => 'Service Approvisionnement et Moyens Generaux'],
-            ['direction' => 'DS', 'old' => 'CS_SNB', 'new' => 'ETUD_NON_BOURS', 'libelle' => 'Service Etudiants non Boursiers'],
-            ['direction' => 'DS', 'old' => 'CS_SENB', 'new' => 'ETUD_BOURS', 'libelle' => 'Service Etudiants Boursiers'],
+            ['direction' => 'DAF', 'old' => 'CS_AMG', 'new' => 'SAMG', 'libelle' => 'Service Approvisionnement et Moyens Généraux'],
+            ['direction' => 'DS', 'old' => 'CS_SNB', 'new' => 'ETUD_NON_BOURS', 'libelle' => 'Service Étudiants non Boursiers'],
+            ['direction' => 'DS', 'old' => 'CS_SENB', 'new' => 'ETUD_BOURS', 'libelle' => 'Service Étudiants Boursiers'],
             ['direction' => 'DS', 'old' => 'CS_P', 'new' => 'PLANIF', 'libelle' => 'Service Planification'],
         ]);
 

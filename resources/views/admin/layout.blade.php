@@ -4,42 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ANBG - Administration - @yield('title', 'Accueil')</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        navy: { DEFAULT: '#1c203d', 700: '#14162c' },
-                        sky: { DEFAULT: '#3996d3', 50: '#eef6fb', 100: '#d7ebf8', 600: '#2e7fb8' },
-                        leaf: { DEFAULT: '#8fc043', 50: '#f3f9ea' },
-                        gold: { DEFAULT: '#f9b13c', 50: '#fff8ee' },
-                        neutral: {
-                            25: '#fcfcfd',
-                            50: '#f8fafc',
-                            100: '#eef2f6',
-                            200: '#dde5ee',
-                            300: '#c4d0dd',
-                            400: '#8fa0b3',
-                            500: '#627487',
-                            600: '#435467',
-                            700: '#2d3a4a',
-                            800: '#1e293b'
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['"Inter"', 'system-ui', 'sans-serif']
-                    },
-                    boxShadow: {
-                        shell: '0 10px 35px rgba(28, 32, 61, 0.08)',
-                        soft: '0 1px 2px rgba(28, 32, 61, 0.06)'
-                    }
-                }
-            }
-        };
-    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">

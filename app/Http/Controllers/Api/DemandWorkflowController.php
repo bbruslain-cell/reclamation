@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Demande;
 use App\Services\AccessControlService;
 use App\Services\DemandWorkflowService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
@@ -23,12 +25,13 @@ class DemandWorkflowController extends Controller
     public function index(Request $request): JsonResponse
     {
         $actor = $this->access->requireActor($request);
-        $canViewAll = $this->access->hasPermission((int) $actor->id_utilisateur, 'demande.view.all');
         $userId = (int) $actor->id_utilisateur;
-        $agentOnly = $this->access->hasPermission($userId, 'demande.reply.send')
-            && !$this->access->hasPermission($userId, 'demande.assign')
-            && !$this->access->hasPermission($userId, 'demande.assign.agent')
-            && !$this->access->hasPermission($userId, 'demande.view.all');
+        $userGate = Gate::forUser($actor);
+        $canViewAll = $userGate->allows('demande.view.all');
+        $agentOnly = $userGate->allows('demande.reply.send')
+            && !$userGate->allows('demande.assign')
+            && !$userGate->allows('demande.assign.agent')
+            && !$canViewAll;
 
         $query = DB::table('demandes as d')
             ->join('parametres as st', 'st.id_parametre', '=', 'd.id_statut')
@@ -86,7 +89,12 @@ class DemandWorkflowController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         $actor = $this->access->requireActor($request);
-        $this->access->assertDemandAccess((int) $actor->id_utilisateur, $id);
+        $demandModel = Demande::query()->find($id);
+        if (!$demandModel) {
+            return response()->json(['message' => 'Demande introuvable'], 404);
+        }
+
+        Gate::forUser($actor)->authorize('view', $demandModel);
 
         $demand = DB::table('demandes as d')
             ->join('parametres as st', 'st.id_parametre', '=', 'd.id_statut')
@@ -104,7 +112,7 @@ class DemandWorkflowController extends Controller
                 'u.nom as usager_nom',
                 'u.prenom as usager_prenom',
                 'u.email as usager_email',
-                'u.telephone as usager_telephone'
+                DB::raw("'' as usager_telephone")
             )
             ->first();
 
@@ -147,7 +155,12 @@ class DemandWorkflowController extends Controller
     {
         try {
             $actor = $this->access->requireActor($request);
-            $this->access->assertPermission((int) $actor->id_utilisateur, 'demande.assign');
+            $demand = Demande::query()->find($id);
+            if (!$demand) {
+                throw new RuntimeException('Demande introuvable.');
+            }
+
+            Gate::forUser($actor)->authorize('assignService', $demand);
 
             $payload = $request->validate([
                 'id_service' => ['required', 'integer', 'exists:services,id_service'],
@@ -175,7 +188,12 @@ class DemandWorkflowController extends Controller
     {
         try {
             $actor = $this->access->requireActor($request);
-            $this->access->assertPermission((int) $actor->id_utilisateur, 'demande.assign.agent');
+            $demandModel = Demande::query()->find($id);
+            if (!$demandModel) {
+                throw new RuntimeException('Demande introuvable.');
+            }
+
+            Gate::forUser($actor)->authorize('assignAgent', $demandModel);
 
             $payload = $request->validate([
                 'id_agent' => ['required', 'integer', 'exists:utilisateurs,id_utilisateur'],
@@ -226,8 +244,12 @@ class DemandWorkflowController extends Controller
     {
         try {
             $actor = $this->access->requireActor($request);
-            $this->access->assertPermission((int) $actor->id_utilisateur, 'demande.assign.agent');
-            $this->access->assertDemandAccess((int) $actor->id_utilisateur, $id);
+            $demand = Demande::query()->find($id);
+            if (!$demand) {
+                throw new RuntimeException('Demande introuvable.');
+            }
+
+            Gate::forUser($actor)->authorize('assignAgent', $demand);
 
             $payload = $request->validate([
                 'commentaire' => ['nullable', 'string', 'max:2000'],
@@ -254,11 +276,12 @@ class DemandWorkflowController extends Controller
         try {
             $actor = $this->access->requireActor($request);
             $userId = (int) $actor->id_utilisateur;
-            if (!$this->access->hasPermission($userId, 'demande.reply.draft') &&
-                !$this->access->hasPermission($userId, 'demande.reply.send')) {
-                throw new AuthorizationException('Permission requise: demande.reply.draft');
+            $demand = Demande::query()->find($id);
+            if (!$demand) {
+                throw new RuntimeException('Demande introuvable.');
             }
-            $this->access->assertDemandAccess((int) $actor->id_utilisateur, $id);
+
+            Gate::forUser($actor)->authorize('draftReply', $demand);
             $this->assertChefDirectReplyAllowed($userId, $id);
 
             $payload = $request->validate([
@@ -288,8 +311,12 @@ class DemandWorkflowController extends Controller
         try {
             $actor = $this->access->requireActor($request);
             $userId = (int) $actor->id_utilisateur;
-            $this->access->assertPermission($userId, 'demande.reply.send');
-            $this->access->assertDemandAccess($userId, $id);
+            $demand = Demande::query()->find($id);
+            if (!$demand) {
+                throw new RuntimeException('Demande introuvable.');
+            }
+
+            Gate::forUser($actor)->authorize('reply', $demand);
             $this->assertChefDirectReplyAllowed($userId, $id);
 
             $result = $this->workflow->sendFinalResponse(
@@ -300,33 +327,6 @@ class DemandWorkflowController extends Controller
             return response()->json(['message' => 'Reponse envoyee et demande cloturee', 'result' => $result]);
         } catch (AuthorizationException $e) {
             return response()->json(['message' => $e->getMessage()], 403);
-        } catch (RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 400);
-        }
-    }
-
-    public function reouvrir(Request $request, int $id): JsonResponse
-    {
-        try {
-            $actor = $this->access->requireActor($request);
-            $this->access->assertPermission((int) $actor->id_utilisateur, 'demande.reopen');
-            $this->access->assertDemandAccess((int) $actor->id_utilisateur, $id);
-
-            $payload = $request->validate([
-                'commentaire' => ['nullable', 'string', 'max:2000'],
-            ]);
-
-            $result = $this->workflow->reopenDemand(
-                actorId: (int) $actor->id_utilisateur,
-                demandId: $id,
-                comment: $payload['commentaire'] ?? null
-            );
-
-            return response()->json(['message' => 'Demande remise au statut Recu', 'result' => $result]);
-        } catch (AuthorizationException $e) {
-            return response()->json(['message' => $e->getMessage()], 403);
-        } catch (ValidationException $e) {
-            return response()->json(['message' => 'Validation invalide', 'errors' => $e->errors()], 422);
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 400);
         }

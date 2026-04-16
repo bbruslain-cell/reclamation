@@ -4,26 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Choix de l'espace | ANBG</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        navy: { DEFAULT: '#1c203d', 50: '#ecedf3', 100: '#c5c7d9', 600: '#181b35' },
-                        sky: { DEFAULT: '#3996d3', 50: '#eaf4fb', 100: '#cae4f5', 600: '#2e7fb8' },
-                        leaf: { DEFAULT: '#8fc043', 50: '#f3f9ea' },
-                        gold: { DEFAULT: '#f9b13c', 50: '#fff8ee' },
-                        neutral: { 50:'#f8f9fa',100:'#f1f3f5',200:'#e9ecef',300:'#dee2e6',400:'#adb5bd',500:'#6c757d',700:'#343a40' },
-                    },
-                    fontFamily: { sans: ['"Inter"', 'system-ui', 'sans-serif'] },
-                    boxShadow: {
-                        card: '0 12px 35px rgba(28,32,61,0.08)',
-                    }
-                }
-            }
-        };
-    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -92,7 +73,7 @@
                     <p class="text-xs uppercase tracking-[0.22em] text-sky-100/70">Connexion multi-role</p>
                     <h1 class="mt-2 text-2xl sm:text-3xl font-medium">Plusieurs espaces sont disponibles pour votre compte.</h1>
                     <p class="mt-3 max-w-3xl text-sm sm:text-base text-sky-100/90 leading-relaxed">
-                        Choisissez l'espace dans lequel vous souhaitez travailler maintenant. Vos autres droits restent actifs pendant la session.
+                        Choisissez l'espace dans lequel vous souhaitez travailler maintenant. Vos autres droits restent actifs pendant la séssion.
                     </p>
                     <div class="mt-4 flex flex-wrap gap-2">
                         @foreach($roles as $role)

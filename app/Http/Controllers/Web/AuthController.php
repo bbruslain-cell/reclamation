@@ -13,6 +13,9 @@ use Illuminate\View\View;
 
 class AuthController extends Controller
 {
+    private const MAX_LOGIN_ATTEMPTS = 5;
+    private const LOCK_MINUTES = 1;
+
     public function __construct(private readonly AccessControlService $access)
     {
     }
@@ -35,9 +38,42 @@ class AuthController extends Controller
         ]);
 
         $actor = $this->access->findActorByEmail($payload['email']);
-        if (!$actor || !$actor->actif || !Hash::check($payload['password'], $actor->password_hash)) {
+        if (!$actor || !$actor->actif) {
             throw ValidationException::withMessages([
                 'email' => 'Identifiants invalides.',
+            ]);
+        }
+
+        if ($actor->bloque_jusqua && now()->lt($actor->bloque_jusqua)) {
+            $seconds = max(1, (int) ceil(now()->diffInSeconds($actor->bloque_jusqua)));
+
+            throw ValidationException::withMessages([
+                'email' => "Compte temporairement bloque. Reessayez dans {$seconds} seconde(s).",
+            ]);
+        }
+
+        if (!Hash::check($payload['password'], $actor->password_hash)) {
+            $attempts = ((int) ($actor->tentatives_echouees ?? 0)) + 1;
+
+            if ($attempts >= self::MAX_LOGIN_ATTEMPTS) {
+                $actor->forceFill([
+                    'tentatives_echouees' => 0,
+                    'bloque_jusqua' => now()->addMinutes(self::LOCK_MINUTES),
+                ])->save();
+
+                throw ValidationException::withMessages([
+                    'email' => 'Trop de tentatives. Compte bloque pendant 1 minute.',
+                ]);
+            }
+
+            $actor->forceFill([
+                'tentatives_echouees' => $attempts,
+            ])->save();
+
+            $remainingAttempts = self::MAX_LOGIN_ATTEMPTS - $attempts;
+
+            throw ValidationException::withMessages([
+                'email' => "Identifiants invalides. Il reste {$remainingAttempts} tentative(s).",
             ]);
         }
 

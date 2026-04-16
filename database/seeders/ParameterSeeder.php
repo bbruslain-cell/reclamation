@@ -10,8 +10,7 @@ class ParameterSeeder extends Seeder
     public function run(): void
     {
         $rows = [
-            ['famille' => 'type_demande', 'code' => 'demande_information', 'libelle' => 'Demande d\'information', 'ordre_affichage' => 1],
-            ['famille' => 'type_demande', 'code' => 'reclamation', 'libelle' => 'Reclamation', 'ordre_affichage' => 2],
+            ['famille' => 'type_demande', 'code' => 'reclamation', 'libelle' => 'Reclamation', 'ordre_affichage' => 1],
 
             ['famille' => 'statut_demande', 'code' => 'nouvelle', 'libelle' => 'Recu', 'ordre_affichage' => 1],
             ['famille' => 'statut_demande', 'code' => 'affectee_service', 'libelle' => 'Affectee au service', 'ordre_affichage' => 2],
@@ -87,6 +86,22 @@ class ParameterSeeder extends Seeder
             'reponse_prete',
             'cloturee',
         ];
+
+        DB::table('parametres')
+            ->where('famille', 'type_demande')
+            ->where('code', 'reclamation')
+            ->update([
+                'actif' => true,
+                'updated_at' => now(),
+            ]);
+
+        DB::table('parametres')
+            ->where('famille', 'type_demande')
+            ->where('code', 'demande_information')
+            ->update([
+                'actif' => false,
+                'updated_at' => now(),
+            ]);
 
         DB::table('parametres')
             ->where('famille', 'statut_demande')

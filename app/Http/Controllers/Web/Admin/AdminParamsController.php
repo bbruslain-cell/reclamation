@@ -23,7 +23,7 @@ class AdminParamsController extends BaseAdminController
     public function index(Request $request): View
     {
         $actor = $this->access->requireActor($request);
-        $this->assertCanManageParams((int) $actor->id_utilisateur);
+        $this->assertCanManageParams($actor);
 
         $configSla = DB::table('config_sla')->where('actif', true)->first();
 

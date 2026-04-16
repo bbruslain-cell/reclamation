@@ -3,88 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Plateforme réclamations — ANBG</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        /* ── Charte ANBG ── */
-                        navy: {
-                            50:  '#ecedf3',
-                            100: '#c5c7d9',
-                            200: '#9ea1bf',
-                            300: '#777ba5',
-                            400: '#50558b',
-                            500: '#1c203d', /* Principal #1c203d */
-                            600: '#181b35',
-                            700: '#14162c',
-                            800: '#101223',
-                            900: '#0c0d1a',
-                        },
-                        sky: {
-                            50:  '#eaf4fb',
-                            100: '#cae4f5',
-                            200: '#9acbeb',
-                            300: '#65b0e0',
-                            400: '#3996d3', /* Accent #3996d3 */
-                            500: '#2e7fb8',
-                            600: '#246898',
-                            700: '#1a5178',
-                            800: '#103a58',
-                            900: '#072338',
-                        },
-                        leaf: {
-                            400: '#8fc043', /* Vert charte */
-                            500: '#76a335',
-                        },
-                        gold: {
-                            300: '#f8e932', /* Jaune charte */
-                            400: '#f9b13c', /* Orange/flamme charte */
-                            500: '#e09428',
-                        },
-                        neutral: {
-                            50:  '#f8f9fa',
-                            100: '#f1f3f5',
-                            200: '#e9ecef',
-                            300: '#dee2e6',
-                            400: '#adb5bd',
-                            500: '#6c757d',
-                            600: '#495057',
-                            700: '#343a40',
-                            800: '#212529',
-                            900: '#111317',
-                        }
-                    },
-                    fontFamily: {
-                        sans:    ['"Inter"', 'system-ui', 'sans-serif'],
-                        display: ['"Inter"', 'system-ui', 'sans-serif'],
-                    },
-                    boxShadow: {
-                        'card':        '0 1px 3px rgba(28,32,61,0.06), 0 8px 24px rgba(28,32,61,0.09)',
-                        'btn':         '0 4px 16px rgba(57,150,211,0.32)',
-                        'btn-hover':   '0 6px 24px rgba(57,150,211,0.46)',
-                        'input-focus': '0 0 0 3px rgba(57,150,211,0.20)',
-                    },
-                    backgroundImage: {
-                        'hero-pattern': "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%233996d3' fill-opacity='0.07'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
-                    },
-                    keyframes: {
-                        'fade-in-up': {
-                            '0%': { opacity: '0', transform: 'translateY(15px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        }
-                    },
-                    animation: {
-                        'fade-in-up': 'fade-in-up 0.6s ease-out forwards',
-                        'fade-in-up-1': 'fade-in-up 0.6s ease-out 0.1s forwards',
-                        'fade-in-up-2': 'fade-in-up 0.6s ease-out 0.2s forwards',
-                    }
-                }
-            }
-        }
-    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <title>Plateforme réclamations - ANBG</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -150,10 +70,10 @@
 
     </style>
 </head>
-<body class="bg-neutral-50 font-sans text-navy-500 antialiased">
+<body class="bg-white font-sans text-navy-500 antialiased">
 
 <div id="app" v-cloak>
-    <!-- ═══════════════════════ NAVBAR ═══════════════════════ -->
+    <!-- NAVBAR -->
     <header class="bg-navy-500 sticky top-0 z-50 shadow-md">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
             <!-- Logo + Nom -->
@@ -168,7 +88,7 @@
                             Agence Nationale des Bourses du Gabon
                         </span>
                         <div class="text-sky-300 text-[9px] sm:text-xs font-light tracking-wider uppercase mt-0.5 sm:mt-0">
-                            Plateforme Réclamations
+                            Plateforme Reclamation
                         </div>
                     </div> 
                 </a>
@@ -184,8 +104,8 @@
         </div>
     </header>
 
-    <!-- ═══════════════════════ HERO BANNER ═══════════════════════ -->
-    <section class="bg-navy-500 bg-hero-pattern border-b border-navy-600 pb-10 pt-8">
+    <!-- HERO BANNER -->
+    <section class="bg-navy-500 border-b border-navy-600 pb-10 pt-8">
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
             <div class="flex items-start gap-4">
                 <div class="mt-1 w-10 h-10 rounded-full bg-sky-400/20 flex items-center justify-center flex-shrink-0 opacity-0 animate-[fade-in-up_0.6s_ease-out_forwards]">
@@ -196,10 +116,10 @@
                 </div>
                 <div>
                     <h1 class="font-medium text-white text-xl sm:text-2xl leading-snug mb-1 tracking-wide opacity-0 animate-fade-in-up">
-                        Bienvenue sur la Plateforme Réclamations de l'ANBG
+                        Bienvenue sur la Plateforme Réclamation de l'ANBG
                     </h1>
                     <p class="text-sky-200 text-sm sm:text-base leading-relaxed max-w-2xl font-light opacity-0 animate-fade-in-up-1">
-                        Soumettez vos préoccupations, réclamations ou  demandes d'informations relatives à la gestion des bourses. Chaque requête est enregistrée et traitée par nos équipes. Une réponse vous sera apportée dans un delai maximum de<strong class="text-white font-medium"> 72 heures ouvrées.</strong>.
+                        Soumettez votre réclamation relative à la gestion des bourses. Chaque demande est enregistrée et traitée par nos équipes. Une réponse vous sera apportée dans un délai maximum de<strong class="text-white font-medium"> 72 heures ouvrées.</strong>.
                     </p>
                     <!-- Badges SLA -->
                     <div class="mt-3 flex flex-wrap gap-2 opacity-0 animate-fade-in-up-2">
@@ -221,7 +141,7 @@
         </div>
     </section>
 
-    <!-- ═══════════════════════ MAIN CONTENT ═══════════════════════ -->
+    <!-- MAIN CONTENT -->
     <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
 
         <!-- Success Message -->
@@ -252,33 +172,34 @@
         </div>
         @endif
 
-        <!-- ── FORM CARD ── -->
+        <!-- FORM CARD -->
         <div class="bg-white rounded-2xl shadow-card overflow-hidden border border-neutral-100">
 
             <!-- Card header -->
-            <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-gradient-to-r from-neutral-50 to-white">
-                <div>
-                    <h2 class="font-medium text-navy-500 text-base tracking-wide">Formulaire usager</h2>
-                    <p class="text-neutral-500 text-xs mt-0.5">Les champs marqués d'un <span class="text-red-500 font-bold">*</span> sont obligatoires.</p>
-                </div>
-                <div class="hidden sm:flex items-center gap-1.5 text-xs text-neutral-400 bg-neutral-50 border border-neutral-200 px-3 py-1.5 rounded-full">
-                    <svg class="icon-svg text-neutral-400 text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <rect x="6" y="11" width="12" height="8" rx="2" stroke="currentColor" stroke-width="2"/>
-                        <path d="M9 11V8.5A3 3 0 0 1 12 5.5a3 3 0 0 1 3 3V11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                    Formulaire sécurisé
-                </div>
-            </div>
+            <div class="px-6 py-5 border-b border-neutral-100 flex flex-col items-center justify-center text-center bg-gradient-to-r from-neutral-200 to-white">
+    
+           <div class="w-full">
+               <h2 class="font-semibold text-navy-500 text-2xl tracking-wide">
+                   Remplissez le Formulaire Relative à Votre Réclamation.
+               </h2>
+                      <p class="text-neutral-500 text-sm mt-1">
+                   Les champs marqués d'un <span class="text-red-500 font-bold">*</span> sont obligatoires.
+               </p>
+           </div>
+
+   
+
+        </div>
 
             <!-- FORM -->
             <form method="post" action="/reclamations" enctype="multipart/form-data" class="divide-y divide-neutral-100">
 
                 @csrf
 
-                <!-- ── SECTION 1 : Identité ── -->
+                <!-- SECTION 1 : Identité -->
                 <div class="px-6 py-6">
                     <div class="flex items-center gap-2 mb-5">
-                        <div class="w-6 h-6 rounded-full bg-navy-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">1</div>
+                        <div class="w-6 h-6 rounded-full bg-navy-500 flex items-center justify-center text-white text-xs flex-shrink-0">1</div>
                         <h3 class="font-medium text-neutral-700 text-xs uppercase tracking-widest">Vos informations</h3>
                     </div>
 
@@ -342,53 +263,26 @@
                             </p>
                         </div>
 
-                        <!-- Téléphone -->
+                        <!-- Statut usager -->
                         <div class="field-group">
-                            <label for="telephone" class="block text-sm font-medium text-navy-500 mb-1.5">
-                                Téléphone <span class="text-neutral-400 font-normal text-xs">(optionnel)</span>
-                            </label>
-                            <div class="relative">
-                                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-sm pointer-events-none">
-                                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                        <path d="M7.5 4.8h2.1l1.1 3.1-1.6 1.6a13 13 0 0 0 5.4 5.4l1.6-1.6 3.1 1.1v2.1a1.8 1.8 0 0 1-1.8 1.8h-.7C10.2 18.3 5.7 13.8 5.7 8.3v-.7A1.8 1.8 0 0 1 7.5 4.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                                    </svg>
-                                </span>
-                                <input
-                                    id="telephone" name="telephone" type="tel"
-                                    v-model="form.telephone" autocomplete="tel"
-                                    placeholder="+241 XX XX XX XX"
-                                    class="w-full pl-9 pr-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
-                                           focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150"
-                                >
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ── SECTION 2 : Nature de la demande ── -->
-                <div class="px-6 py-6">
-                    <div class="flex items-center gap-2 mb-5">
-                        <div class="w-6 h-6 rounded-full bg-navy-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">2</div>
-                        <h3 class="font-medium text-neutral-700 text-xs uppercase tracking-widest">Nature de la demande</h3>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                        <!-- Type de demande -->
-                        <div class="field-group">
-                            <label for="type_demande_code" class="block text-sm font-medium text-navy-500 mb-1.5">
-                                Type de demande <span class="text-red-500">*</span>
+                            <label for="statut_usager" class="block text-sm font-medium text-navy-500 mb-1.5">
+                                Statut <span class="text-red-500">*</span>
                             </label>
                             <div class="relative">
                                 <select
-                                    id="type_demande_code" name="type_demande_code"
-                                    v-model="form.type_demande_code" required
-                                    @change="fillCategories(); clearError('type_demande_code')"
+                                    id="statut_usager" name="statut_usager"
+                                    v-model="form.statut_usager" required
+                                    @change="handleStatutUsagerChange"
                                     class="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 appearance-none
                                            focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150 cursor-pointer"
                                 >
-                                    <option value="">— Sélectionner —</option>
-                                    <option value="demande_information">Demande d'information</option>
-                                    <option value="reclamation">Réclamation</option>
+                                    <option value="">- Sélectionner -</option>
+                                    <option value="Élève">Élève</option>
+                                    <option value="Étudiant">Étudiant</option>
+                                    <option value="Parent / Tuteur">Parent / Tuteur</option>
+                                    <option value="Enseignant">Enseignant</option>
+                                    <option value="Professionnel">Professionnel</option>
+                                    <option value="Autre">Autre</option>
                                 </select>
                                 <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none text-xs">
                                     <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -396,10 +290,89 @@
                                     </svg>
                                 </span>
                             </div>
-                            <p class="mt-1.5 text-xs text-neutral-400">Choisissez d'abord le type pour filtrer les catégories.</p>
-                            <p v-if="errors.type_demande_code" class="mt-1 text-xs text-red-500 flex items-center gap-1">
-                                <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.type_demande_code }}
+                            <p v-if="errors.statut_usager" class="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                                <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.statut_usager }}
                             </p>
+                        </div>
+
+                        <!-- Pays -->
+                        <div class="field-group">
+                            <label for="pays" class="block text-sm font-medium text-navy-500 mb-1.5">
+                                Pays <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-sm pointer-events-none">
+                                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/>
+                                        <path d="M4 12h16M12 4a12 12 0 0 1 0 16M12 4a12 12 0 0 0 0 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                    </svg>
+                                </span>
+                                <input
+                                    id="pays" name="pays" type="text"
+                                    v-model="form.pays" @input="clearError('pays')" required autocomplete="country-name"
+                                    placeholder="Ex. : Gabon"
+                                    class="w-full pl-9 pr-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
+                                           focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150"
+                                >
+                            </div>
+                            <p v-if="errors.pays" class="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                                <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.pays }}
+                            </p>
+                        </div>
+
+                        <!-- Établissement -->
+                        <div class="field-group">
+                            <div class="flex items-center justify-between gap-3 mb-1.5">
+                                <label for="etablissement" class="block text-sm font-medium text-navy-500">
+                                    Établissement <span v-if="requiresEtablissement" class="text-red-500">*</span>
+                                </label>
+                                <span
+                                    class="text-[11px] font-medium"
+                                    :class="requiresEtablissement ? 'text-amber-600' : 'text-neutral-400'"
+                                >
+                                    @{{ requiresEtablissement ? 'Obligatoire pour les élèves et étudiants' : 'Optionnel pour les autres statuts' }}
+                                </span>
+                            </div>
+                            <div class="relative">
+                                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-sm pointer-events-none">
+                                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M4.5 9 12 5l7.5 4v8.5a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1V9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                        <path d="M9 18.5v-5h6v5M8 10.5h.01M12 10.5h.01M16 10.5h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </span>
+                                <input
+                                    id="etablissement" name="etablissement" type="text"
+                                    v-model="form.etablissement" @input="clearError('etablissement')"
+                                    :required="requiresEtablissement" autocomplete="organization"
+                                    placeholder="Nom de votre établissement"
+                                    class="w-full pl-9 pr-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
+                                           focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150"
+                                >
+                            </div>
+                            <p v-if="errors.etablissement" class="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                                <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.etablissement }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 2 : Nature de la demande -->
+                <div class="px-6 py-6">
+                    <div class="flex items-center gap-2 mb-5">
+                        <div class="w-6 h-6 rounded-full bg-navy-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">2</div>
+                        <h3 class="font-medium text-neutral-700 text-xs uppercase tracking-widest">Nature de la demande</h3>
+                    </div>
+
+                    <input type="hidden" name="type_demande_code" value="reclamation">
+
+                    <div class="grid grid-cols-1 gap-4 mb-4">
+                        <div class="field-group">
+                            <label class="block text-sm font-medium text-navy-500 mb-1.5">
+                                Type de demande
+                            </label>
+                            <div class="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-100 text-navy-500 font-medium">
+                                Réclamation
+                            </div>
                         </div>
 
                         <!-- Catégorie -->
@@ -415,7 +388,7 @@
                                     class="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 appearance-none
                                            focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150 cursor-pointer"
                                 >
-                                    <option value="">— Sélectionner —</option>
+                                    <option value="">- Sélectionner -</option>
                                     <option v-for="cat in categories" :key="cat" :value="cat">@{{ cat }}</option>
                                 </select>
                                 <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none text-xs">
@@ -445,7 +418,7 @@
                     </div>
                 </div>
 
-                <!-- ── SECTION 3 : Message ── -->
+                <!-- SECTION 3 : Message -->
                 <div class="px-6 py-6">
                     <div class="flex items-center gap-2 mb-5">
                         <div class="w-6 h-6 rounded-full bg-navy-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">3</div>
@@ -473,7 +446,7 @@
                     </div>
                 </div>
 
-                <!-- ── SECTION 4 : Pièce jointe ── -->
+                <!-- SECTION 4 : Pièce jointe -->
                 <div class="px-6 py-6">
                     <div class="flex items-center gap-2 mb-5">
                         <div class="w-6 h-6 rounded-full bg-navy-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">4</div>
@@ -510,7 +483,7 @@
                     </p>
                 </div>
 
-                <!-- ── SECTION 5 : Consentement + Soumettre ── -->
+                <!-- SECTION 5 : Consentement + Soumettre -->
                 <div class="px-6 py-6 bg-neutral-50/60">
 
                     <!-- Consentement RGPD -->
@@ -520,7 +493,7 @@
                             v-model="form.consentement" @change="clearError('consentement')" required
                         >
                         <label for="consentement" class="text-sm text-navy-500 leading-relaxed cursor-pointer">
-                            <span class="font-medium">J'accepte le traitement de mes données personnelles</span> conformément au RGPD, pour la gestion de ma demande par l'ANBG.
+                            <span class="font-medium">J'accepte le traitement de mes données personnelles</span>, pour la gestion de ma demande par l'ANBG.
                             <span class="text-neutral-400 text-xs block mt-0.5">Ces informations ne seront utilisées qu'à des fins de traitement et de réponse à votre sollicitation.</span>
                         </label>
                     </div>
@@ -531,10 +504,7 @@
                     <!-- Submit button -->
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <p class="text-xs text-neutral-400 flex items-center gap-1.5">
-                            <svg class="icon-svg text-neutral-300" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <path d="M12 4.5 18 7v4.4c0 3.3-2.1 6.2-6 8.1-3.9-1.9-6-4.8-6-8.1V7l6-2.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                            </svg>
-                            Formulaire protégé — transmission chiffrée HTTPS
+                           
                         </p>
                         <button
                             type="submit"
@@ -556,61 +526,18 @@
         
     </main>
 
-    <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+    <!-- FOOTER -->
     <footer class="mt-8 border-t border-neutral-100 bg-white">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-neutral-400">
             <span>© {{ date('Y') }} Agence Nationale des Bourses du Gabon.</span>
-            <a href="/login" >
-                Constructeur d'avenir </i>
-            </a>
+            <span>Constructeur d'avenir</span>
         </div>
     </footer>
 
 </div><!-- #app -->
 
 <script>
-    const legacyCategoriesByType = {
-        demande_information: [
-            "Demande de billets (rapatriement / stage) et remboursements",
-            "Nombre de mails",
-            "Demande de modifications des informations dans les comptes eBourse",
-            "Demande de traitement et/ou validation des dossiers de bourses",
-            "Demande d'information sur le paiement de la bourse",
-            "Demande d'informations sur la réorientation de bourse",
-            "Demande d'informations sur le traitement des dossiers par la commission technique",
-            "Demande d'infos création compte ou de demande de bourse",
-            "Demande d'infos sur les bourses de coopération",
-            "Demande d'infos sur les critères d'attributions ou de maintien de bourses",
-            "Demande d'infos sur le changement de catégorie",
-            "Identifiant et mot de passe oublié",
-            "Demande d'informations diverses"
-        ],
-        reclamation: [
-            "Retard de paiement",
-            "Montant incorrect",
-            "Changement de compte bancaire",
-            "Perte d'accès / mot de passe",
-            "Erreur d'état civil",
-            "Autre réclamation"
-        ],
-        autre: ["Autre"]
-    };
-
     const categoriesByType = {
-        demande_information: [
-            "Demande de billets (rapatriement et stage) et remboursements",
-            "Demande de modifications des informations dans les comptes eBourse",
-            "Demande de traitement et/ou validation des dossiers de bourses",
-            "Demande d'information sur le paiement de la bourse",
-            "Demande d'informations sur la reorientation de bourse",
-            "Demande d'informations sur le traitement des dossiers par la commission technique",
-            "Demande d'infos creation compte ou de demande de bourse",
-            "Demande d'infos sur les bourses de cooperation",
-            "Demande d'infos sur les criteres d'attributions ou de maintien de bourses",
-            "Demande d'infos sur le changement de categorie",
-            "Identifiant et mot de passe oublie",
-            "Demande d'informations diverses"
-        ],
         reclamation: [
             "Demande de modification d'attestation d'attribution de bourse ou maintien",
             "Reclamation du paiement des frais de scolarite",
@@ -628,8 +555,10 @@
                     nom:               @json(old('nom', '')),
                     prenom:            @json(old('prenom', '')),
                     email:             @json(old('email', '')),
-                    telephone:         @json(old('telephone', '')),
-                    type_demande_code: @json(old('type_demande_code', '')),
+                    statut_usager:     @json(old('statut_usager', '')),
+                    pays:              @json(old('pays', '')),
+                    etablissement:     @json(old('etablissement', '')),
+                    type_demande_code: 'reclamation',
                     categorie:         @json(old('categorie', '')),
                     objet:             @json(old('objet', '')),
                     message:           @json(old('message', '')),
@@ -639,7 +568,9 @@
                     nom:               @json($errors->first('nom')),
                     prenom:            @json($errors->first('prenom')),
                     email:             @json($errors->first('email')),
-                    type_demande_code: @json($errors->first('type_demande_code')),
+                    statut_usager:     @json($errors->first('statut_usager')),
+                    pays:              @json($errors->first('pays')),
+                    etablissement:     @json($errors->first('etablissement')),
                     objet:             @json($errors->first('objet')),
                     message:           @json($errors->first('message')),
                     piece_jointe:      @json($errors->first('piece_jointe')),
@@ -649,15 +580,26 @@
             };
         },
         mounted() {
+            this.form.type_demande_code = 'reclamation';
             this.fillCategories();
             this.setupDropzone();
         },
+        computed: {
+            requiresEtablissement() {
+                return ['Élève', 'Étudiant'].includes(this.form.statut_usager);
+            }
+        },
         methods: {
             fillCategories() {
-                const key = (this.form.type_demande_code || 'autre').toLowerCase();
-                this.categories = categoriesByType[key] || categoriesByType.autre;
+                this.categories = categoriesByType.reclamation;
                 if (!this.categories.includes(this.form.categorie)) {
                     this.form.categorie = '';
+                }
+            },
+            handleStatutUsagerChange() {
+                this.clearError('statut_usager');
+                if (!this.requiresEtablissement) {
+                    this.clearError('etablissement');
                 }
             },
             applyCategory() {

@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Demande;
 use App\Services\AccessControlService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -41,22 +43,41 @@ class AttachmentController extends Controller
         abort_if(!$piece || !$piece->id_demande, 404);
 
         try {
-            $this->access->assertDemandAccess((int) $actor->id_utilisateur, (int) $piece->id_demande);
+            $demand = Demande::query()->find((int) $piece->id_demande);
+            abort_if(!$demand, 404);
+
+            Gate::forUser($actor)->authorize('view', $demand);
         } catch (AuthorizationException $e) {
             abort(403, $e->getMessage());
         }
 
-        abort_unless(Storage::disk('public')->exists($piece->chemin_fichier), 404);
+        $disk = $this->resolveAttachmentDisk((string) $piece->chemin_fichier);
+        abort_unless($disk !== null, 404);
 
         $headers = [];
         if (!empty($piece->type_mime)) {
             $headers['Content-Type'] = (string) $piece->type_mime;
         }
 
-        return Storage::disk('public')->response(
+        return Storage::disk($disk)->response(
             (string) $piece->chemin_fichier,
             (string) $piece->nom_fichier,
             $headers
         );
+    }
+
+    private function resolveAttachmentDisk(string $path): ?string
+    {
+        if ($path === '') {
+            return null;
+        }
+
+        foreach (['local', 'public'] as $disk) {
+            if (Storage::disk($disk)->exists($path)) {
+                return $disk;
+            }
+        }
+
+        return null;
     }
 }

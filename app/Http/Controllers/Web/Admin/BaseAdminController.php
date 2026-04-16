@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Web\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Utilisateur;
 use App\Services\AccessControlService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 abstract class BaseAdminController extends Controller
@@ -35,9 +37,9 @@ abstract class BaseAdminController extends Controller
             $userId = (int) $actor->id_utilisateur;
 
             match ($permission) {
-                'users' => $this->assertCanManageUsers($userId),
-                'params' => $this->assertCanManageParams($userId),
-                default => $this->assertCanManageAdmin($userId),
+                'users' => $this->assertCanManageUsers($actor),
+                'params' => $this->assertCanManageParams($actor),
+                default => $this->assertCanManageAdmin($actor),
             };
 
             $action();
@@ -81,26 +83,23 @@ abstract class BaseAdminController extends Controller
         ]);
     }
 
-    protected function assertCanManageAdmin(int $userId): void
+    protected function assertCanManageAdmin(Utilisateur $actor): void
     {
-        $hasUsers = $this->access->hasPermission($userId, 'admin.users.manage');
-        $hasParams = $this->access->hasPermission($userId, 'admin.parameters.manage');
-
-        if (!$hasUsers && !$hasParams) {
+        if (Gate::forUser($actor)->denies('admin.access')) {
             throw new AuthorizationException('Acces admin refuse.');
         }
     }
 
-    protected function assertCanManageUsers(int $userId): void
+    protected function assertCanManageUsers(Utilisateur $actor): void
     {
-        if (!$this->access->hasPermission($userId, 'admin.users.manage')) {
+        if (Gate::forUser($actor)->denies('admin.users.manage')) {
             throw new AuthorizationException('Acces refuse : gestion des utilisateurs requise.');
         }
     }
 
-    protected function assertCanManageParams(int $userId): void
+    protected function assertCanManageParams(Utilisateur $actor): void
     {
-        if (!$this->access->hasPermission($userId, 'admin.parameters.manage')) {
+        if (Gate::forUser($actor)->denies('admin.parameters.manage')) {
             throw new AuthorizationException('Acces refuse : gestion des parametres requise.');
         }
     }

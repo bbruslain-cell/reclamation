@@ -109,7 +109,7 @@ class BusinessSlaRulesTest extends TestCase
         $configId = (int) DB::table('config_sla')->where('actif', true)->value('id_config_sla');
         $typeId = (int) DB::table('parametres')
             ->where('famille', 'type_demande')
-            ->where('code', 'demande_information')
+            ->where('code', 'reclamation')
             ->value('id_parametre');
         $usagerId = (int) DB::table('usagers')->value('id_usager');
 

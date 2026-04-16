@@ -55,11 +55,33 @@ class DemandResponseMail extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         return collect($this->responseAttachments)
-            ->filter(static fn (array $attachment): bool => Storage::disk('public')->exists($attachment['path']))
-            ->map(static fn (array $attachment): Attachment => Attachment::fromStorageDisk('public', $attachment['path'])
-                ->as($attachment['name'])
-                ->withMime($attachment['mime'] ?: 'application/octet-stream'))
+            ->map(function (array $attachment): ?Attachment {
+                $disk = $this->resolveAttachmentDisk((string) ($attachment['path'] ?? ''));
+                if ($disk === null) {
+                    return null;
+                }
+
+                return Attachment::fromStorageDisk($disk, $attachment['path'])
+                    ->as($attachment['name'])
+                    ->withMime($attachment['mime'] ?: 'application/octet-stream');
+            })
+            ->filter()
             ->values()
             ->all();
+    }
+
+    private function resolveAttachmentDisk(string $path): ?string
+    {
+        if ($path === '') {
+            return null;
+        }
+
+        foreach (['local', 'public'] as $disk) {
+            if (Storage::disk($disk)->exists($path)) {
+                return $disk;
+            }
+        }
+
+        return null;
     }
 }

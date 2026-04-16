@@ -16,10 +16,6 @@ class DemoDemandSeeder extends Seeder
             return;
         }
 
-        $typeInfo = DB::table('parametres')
-            ->where('famille', 'type_demande')
-            ->where('code', 'demande_information')
-            ->value('id_parametre');
         $typeReclamation = DB::table('parametres')
             ->where('famille', 'type_demande')
             ->where('code', 'reclamation')
@@ -54,10 +50,10 @@ class DemoDemandSeeder extends Seeder
         $agentDsic = DB::table('utilisateurs')->where('email', 'agent.dsic@anbg.ga')->value('id_utilisateur');
 
         $usagerRows = [
-            ['nom' => 'MBOUMBA', 'prenom' => 'Aline', 'email' => 'aline@example.com', 'qualite' => 'Etudiante'],
-            ['nom' => 'OBIANG', 'prenom' => 'Kevin', 'email' => 'kevin@example.com', 'qualite' => 'Etudiant'],
-            ['nom' => 'MVEMBA', 'prenom' => 'Sarah', 'email' => 'sarah@example.com', 'qualite' => 'Parent'],
-            ['nom' => 'NZE', 'prenom' => 'Mickael', 'email' => 'mickael@example.com', 'qualite' => 'Etudiant'],
+            ['nom' => 'MBOUMBA', 'prenom' => 'Aline', 'email' => 'aline@example.com', 'statut_usager' => 'Étudiant', 'pays' => 'Gabon', 'etablissement' => 'Université Omar Bongo'],
+            ['nom' => 'OBIANG', 'prenom' => 'Kevin', 'email' => 'kevin@example.com', 'statut_usager' => 'Étudiant', 'pays' => 'Gabon', 'etablissement' => 'Université des Sciences et Techniques de Masuku'],
+            ['nom' => 'MVEMBA', 'prenom' => 'Sarah', 'email' => 'sarah@example.com', 'statut_usager' => 'Parent / Tuteur', 'pays' => 'Gabon', 'etablissement' => null],
+            ['nom' => 'NZE', 'prenom' => 'Mickael', 'email' => 'mickael@example.com', 'statut_usager' => 'Élève', 'pays' => 'Gabon', 'etablissement' => 'Lycée national Léon Mba'],
         ];
 
         $usagerIds = [];
@@ -80,12 +76,12 @@ class DemoDemandSeeder extends Seeder
             [
                 'numero_suivi' => 'ANBG-2026-0001',
                 'id_usager' => $usagerIds[0],
-                'id_type_demande' => $typeInfo,
+                'id_type_demande' => $typeReclamation,
                 'id_statut' => $statutNouvelle,
                 'id_service_courant' => null,
-                'objet' => 'Information paiement bourse',
-                'categorie' => 'Demande d information sur le paiement de la bourse',
-                'message' => 'Je souhaite connaitre la date du prochain paiement.',
+                'objet' => 'Retard de paiement de bourse',
+                'categorie' => 'Reclamation diverses',
+                'message' => 'Je signale un retard de paiement sur ma bourse et souhaite une verification.',
                 'date_soumission' => $now->copy()->subHours(8),
                 'delai_alerte' => 'dans_les_delais',
             ],
@@ -128,13 +124,13 @@ class DemoDemandSeeder extends Seeder
             [
                 'numero_suivi' => 'ANBG-2026-0004',
                 'id_usager' => $usagerIds[3],
-                'id_type_demande' => $typeInfo,
+                'id_type_demande' => $typeReclamation,
                 'id_statut' => $statutCloturee,
                 'id_service_courant' => $serviceDsic,
                 'id_agent_traitant' => $agentDsic,
-                'objet' => 'Reinitialisation compte eBourse',
-                'categorie' => 'Identifiant et mot de passe oublie',
-                'message' => 'Je ne parviens plus a acceder a mon compte.',
+                'objet' => 'Reclamation acces compte eBourse',
+                'categorie' => 'Reclamation diverses',
+                'message' => 'Je ne parviens plus a acceder a mon compte eBourse malgre plusieurs tentatives.',
                 'id_agent_accueil' => $accueilId,
                 'date_soumission' => $now->copy()->subDays(4),
                 'date_affectation' => $now->copy()->subDays(4)->addHours(2),
