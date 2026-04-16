@@ -13,7 +13,7 @@ class AdminRolesController extends BaseAdminController
     public function index(Request $request): View
     {
         $actor = $this->access->requireActor($request);
-        $this->assertCanManageUsers((int) $actor->id_utilisateur);
+        $this->assertCanManageUsers($actor);
 
         $roles = DB::table('roles')->where('actif', true)->orderBy('code')->get();
         

@@ -9,6 +9,8 @@ use App\Services\AccessControlService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,16 +26,26 @@ class PilotageExportController extends Controller
             abort(401);
         }
 
-        $access->assertPermission((int) $actor->id_utilisateur, 'dashboard.view');
+        Gate::forUser($actor)->authorize('dashboard.export');
 
         $overviewData = app(ApiOverviewController::class)->index($request, $access)->getData(true);
         $payload = $this->buildPayload($section, $overviewData);
+        $extension = $format === 'xlsx' ? 'xlsx' : 'pdf';
+        $downloadName = $payload['filename'].'.'.$extension;
 
         if ($format === 'xlsx') {
-            return Excel::download(
-                new PilotageTableExport($payload['sections'], $payload['title']),
-                $payload['filename'].'.xlsx'
+            $response = Excel::download(
+                new PilotageTableExport(
+                    $payload['sections'],
+                    $payload['title'],
+                    $payload['sheet_title'] ?? $payload['filename']
+                ),
+                $downloadName
             );
+
+            $this->traceExport($actor, $format, $downloadName, $section, $request);
+
+            return $response;
         }
 
         $pdf = Pdf::loadView('exports.pilotage.tables', [
@@ -42,7 +54,48 @@ class PilotageExportController extends Controller
             'forPdf' => true,
         ])->setPaper('a4', $payload['orientation'] ?? 'landscape');
 
-        return $pdf->download($payload['filename'].'.pdf');
+        $response = $pdf->download($downloadName);
+
+        $this->traceExport($actor, $format, $downloadName, $section, $request);
+
+        return $response;
+    }
+
+    private function traceExport(object $actor, string $format, string $downloadName, string $section, Request $request): void
+    {
+        $formatCode = $format === 'xlsx' ? 'excel' : $format;
+        $formatId = DB::table('parametres')
+            ->where('famille', 'format_export')
+            ->where('code', $formatCode)
+            ->value('id_parametre');
+
+        if (!$formatId) {
+            $formatId = DB::table('parametres')->insertGetId([
+                'famille' => 'format_export',
+                'code' => $formatCode,
+                'libelle' => strtoupper($formatCode),
+                'ordre_affichage' => $formatCode === 'excel' ? 1 : 2,
+                'actif' => true,
+                'date_debut_validite' => now()->toDateString(),
+                'metadata_json' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ], 'id_parametre');
+        }
+
+        DB::table('exports')->insert([
+            'id_utilisateur' => (int) $actor->id_utilisateur,
+            'id_format_export' => (int) $formatId,
+            'fichier_export' => $downloadName,
+            'filtres_appliques' => json_encode([
+                'section' => $section,
+                'format' => $format,
+                'query' => $request->query(),
+            ], JSON_UNESCAPED_UNICODE),
+            'date_generation' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     private function buildPayload(string $section, array $overviewData): array
@@ -51,35 +104,20 @@ class PilotageExportController extends Controller
             'ciq-tracking' => $this->buildCiqTrackingPayload($overviewData),
             'annexe2' => $this->buildAnnexe2Payload($overviewData),
             'function-distribution' => $this->buildFunctionDistributionPayload(
-                $overviewData['annexes_fonctions']['global'] ?? [],
-                "Tableau de repartition de l'ensemble des reclamations de la cellule par direction.",
-                'tableau-repartition-reclamations-par-direction'
-            ),
-            'information-function-distribution' => $this->buildFunctionDistributionPayload(
-                $overviewData['annexes_fonctions']['informations'] ?? [],
-                "Tableau de repartition des demandes d'information par direction et par service.",
-                'tableau-repartition-demandes-information-par-direction-service'
-            ),
-            'information-service-distribution' => $this->buildServiceDistributionPayload(
-                $overviewData['annexes_services']['informations'] ?? [],
-                "Tableau de repartition des demandes d'information par service.",
-                'tableau-repartition-demandes-information-par-service'
-            ),
-            'reclamation-function-distribution' => $this->buildFunctionDistributionPayload(
                 $overviewData['annexes_fonctions']['reclamations'] ?? [],
-                'Tableau de repartition des reclamations par direction et par service.',
-                'tableau-repartition-reclamations-par-direction-service'
+                "Tableau de rÃƒÂ©partition de l'ensemble des rÃƒÂ©clamations de la cellule par direction.",
+                'tableau-repartition-reclamations-par-direction'
             ),
             'reclamation-service-distribution' => $this->buildServiceDistributionPayload(
                 $overviewData['annexes_services']['reclamations'] ?? [],
-                'Tableau de repartition des reclamations par service.',
+                'Tableau de rÃƒÂ©partition des rÃƒÂ©clamations par service.',
                 'tableau-repartition-reclamations-par-service'
             ),
             default => abort(404),
         };
     }
 
-    private function buildCiqTrackingPayload(array $overviewData): array
+        private function buildCiqTrackingPayload(array $overviewData): array
     {
         $rows = collect($overviewData['tableau_suivi_annexe'] ?? [])
             ->map(fn (array $row) => [
@@ -99,22 +137,23 @@ class PilotageExportController extends Controller
             ->all();
 
         return [
-            'title' => 'Tableau actuel du suivi des reclamations',
+            'title' => "Tableau actuel du suivi des r\u{00E9}clamations",
+            'sheet_title' => "Suivi r\u{00E9}clamations",
             'filename' => 'tableau-suivi-ciq',
             'orientation' => 'landscape',
             'sections' => [[
-                'title' => 'Suivi detaille',
+                'title' => "Suivi d\u{00E9}taill\u{00E9}",
                 'headers' => [
-                    'N°',
-                    'Date de reception',
-                    'Expediteur',
+                    "N\u{00B0}",
+                    "Date de r\u{00E9}ception",
+                    "Exp\u{00E9}diteur",
                     'Objet',
                     'Date de dispatch',
-                    'Delais de transmission',
+                    "D\u{00E9}lais de transmission",
                     'Service',
-                    'Realisation',
+                    "R\u{00E9}alisation",
                     'Statut',
-                    'Respect delais',
+                    "Respect d\u{00E9}lais",
                     "Nombre de jours d'attente",
                     'RZ / CS',
                 ],
@@ -123,15 +162,9 @@ class PilotageExportController extends Controller
         ];
     }
 
-    private function buildAnnexe2Payload(array $overviewData): array
+        private function buildAnnexe2Payload(array $overviewData): array
     {
         $repartition = $overviewData['annexe_repartition'] ?? [];
-        $informationRows = collect($repartition['informations'] ?? [])
-            ->map(fn (array $row) => [
-                $row['categorie'] ?? '-',
-                $this->intValue($row['nombre_mails'] ?? 0),
-                $this->percent($row['pourcentage'] ?? 0),
-            ])->all();
         $reclamationRows = collect($repartition['reclamations'] ?? [])
             ->map(fn (array $row) => [
                 $row['categorie'] ?? '-',
@@ -140,23 +173,14 @@ class PilotageExportController extends Controller
             ])->all();
 
         return [
-            'title' => "Tableau de la repartition des demandes d'informations et reclamations les plus recurrentes dans la cellule.",
-            'filename' => "Tableau de la repartition des demandes d'informations et reclamations les plus recurrentes dans la cellule",
+            'title' => "Tableau de la r\u{00E9}partition des r\u{00E9}clamations les plus r\u{00E9}currentes dans la cellule.",
+            'sheet_title' => "R\u{00E9}clamations r\u{00E9}currentes",
+            'filename' => 'Tableau de la repartition des reclamations les plus recurrentes dans la cellule',
             'orientation' => 'landscape',
             'sections' => [
                 [
-                    'title' => "Demande d'informations sur eBourse, les bourses & accessoires de bourse",
-                    'headers' => ['Categorie', 'Nombre de mails', '%'],
-                    'rows' => $informationRows,
-                    'footer' => [
-                        'TOTAL DEMANDES D INFORMATIONS',
-                        $this->intValue($repartition['total_informations'] ?? 0),
-                        '',
-                    ],
-                ],
-                [
                     'title' => 'RECLAMATIONS',
-                    'headers' => ['Categorie', 'Nombre de mails', '%'],
+                    'headers' => ["Cat\u{00E9}gorie", 'Nombre de mails', '%'],
                     'rows' => $reclamationRows,
                     'footer' => [
                         'TOTAL RECLAMATIONS',
@@ -168,7 +192,7 @@ class PilotageExportController extends Controller
         ];
     }
 
-    private function buildFunctionDistributionPayload(array $dataset, string $title, string $filename): array
+        private function buildFunctionDistributionPayload(array $dataset, string $title, string $filename): array
     {
         $rows = collect($dataset['rows'] ?? [])
             ->map(fn (array $row) => [
@@ -186,17 +210,18 @@ class PilotageExportController extends Controller
 
         return [
             'title' => $title,
+            'sheet_title' => "R\u{00E9}clamations direction",
             'filename' => $filename,
             'orientation' => 'landscape',
             'sections' => [[
-                'title' => 'Repartition par fonction',
+                'title' => "R\u{00E9}partition par fonction",
                 'headers' => [
                     'Fonctions',
                     'Nombre total',
-                    'Nombre traite',
-                    "Taux d'execution (%)",
-                    'Nombre traite dans les delais',
-                    'Taux de conformite (72h) (%)',
+                    "Nombre trait\u{00E9}",
+                    "Taux d'ex\u{00E9}cution (%)",
+                    "Nombre trait\u{00E9} dans les d\u{00E9}lais",
+                    "Taux de conformit\u{00E9} (72h) (%)",
                     '(A + B) / 2',
                 ],
                 'rows' => $rows,
@@ -213,7 +238,7 @@ class PilotageExportController extends Controller
         ];
     }
 
-    private function buildServiceDistributionPayload(array $dataset, string $title, string $filename): array
+        private function buildServiceDistributionPayload(array $dataset, string $title, string $filename): array
     {
         $rows = collect($dataset['rows'] ?? [])
             ->map(fn (array $row) => [
@@ -231,18 +256,19 @@ class PilotageExportController extends Controller
 
         return [
             'title' => $title,
+            'sheet_title' => "R\u{00E9}clamations service",
             'filename' => $filename,
             'orientation' => 'landscape',
             'sections' => [[
-                'title' => 'Repartition par service',
+                'title' => "R\u{00E9}partition par service",
                 'headers' => [
-                    'Services / Unite',
+                    "Services / Unit\u{00E9}",
                     'Agents',
-                    'Nbre de mails recus',
-                    'Nbre de mails traites',
-                    "Taux d'execution (%) (A)",
-                    'Nbre de mails traites dans les delais',
-                    'Taux de conformite (72h) (%) (B)',
+                    "Nbre de mails re\u{00E7}us",
+                    "Nbre de mails trait\u{00E9}s",
+                    "Taux d'ex\u{00E9}cution (%) (A)",
+                    "Nbre de mails trait\u{00E9}s dans les d\u{00E9}lais",
+                    "Taux de conformit\u{00E9} (72h) (%) (B)",
                 ],
                 'rows' => $rows,
                 'footer' => [
@@ -281,3 +307,5 @@ class PilotageExportController extends Controller
         return number_format((int) ($value ?? 0), 0, ',', ' ');
     }
 }
+
+

@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Demande;
 use App\Services\AccessControlService;
 use App\Services\StepAlertService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class DirectionInboxController extends Controller
@@ -118,7 +120,11 @@ class DirectionInboxController extends Controller
                 's.code as service_code',
                 's.libelle as service',
                 'u.nom as usager_nom',
-                'u.prenom as usager_prenom'
+                'u.prenom as usager_prenom',
+                'u.email as usager_email',
+                'u.statut_usager as usager_statut',
+                'u.pays as usager_pays',
+                'u.etablissement as usager_etablissement'
             );
 
         $demandes = $query->orderByDesc('d.date_soumission')->paginate(20)->withQueryString();
@@ -169,7 +175,7 @@ class DirectionInboxController extends Controller
                 ->whereIn('code', $allowedStatusCodes)
                 ->orderBy('ordre_affichage')
                 ->get(['code', 'libelle']),
-            'canPilotage' => $this->access->hasPermission((int) $actor->id_utilisateur, 'dashboard.view'),
+            'canPilotage' => Gate::forUser($actor)->allows('dashboard.view'),
         ]);
     }
 
@@ -178,7 +184,13 @@ class DirectionInboxController extends Controller
         try {
             $actor = $this->access->requireActor($request);
             $this->assertChefDirectionAccess((int) $actor->id_utilisateur);
-            $this->access->assertDemandAccess((int) $actor->id_utilisateur, $id);
+
+            $demand = Demande::query()->find($id);
+            if (!$demand) {
+                throw new AuthorizationException('Demande introuvable.');
+            }
+
+            Gate::forUser($actor)->authorize('view', $demand);
 
             throw new AuthorizationException('Le chef de direction dispose d un acces en consultation uniquement.');
         } catch (AuthorizationException $e) {
@@ -197,3 +209,5 @@ class DirectionInboxController extends Controller
         throw new AuthorizationException('Acces reserve au chef de direction.');
     }
 }
+
+

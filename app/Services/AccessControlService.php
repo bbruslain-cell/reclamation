@@ -12,14 +12,18 @@ class AccessControlService
 {
     public function resolveActor(Request $request): ?Utilisateur
     {
-        $userId = (int) ($request->header('X-User-Id') ?: $request->input('as_user_id', 0));
-        if ($userId > 0) {
-            return Utilisateur::query()->find($userId);
-        }
+        // These shortcuts are kept only for automated tests.
+        // In the real application, authentication must come from the Laravel session.
+        if (app()->environment('testing')) {
+            $userId = (int) ($request->header('X-User-Id') ?: $request->input('as_user_id', 0));
+            if ($userId > 0) {
+                return Utilisateur::query()->find($userId);
+            }
 
-        $email = $request->header('X-User-Email') ?: $request->input('as_user_email');
-        if ($email) {
-            return Utilisateur::query()->where('email', $email)->first();
+            $email = $request->header('X-User-Email') ?: $request->input('as_user_email');
+            if ($email) {
+                return Utilisateur::query()->where('email', $email)->first();
+            }
         }
 
         $authUser = Auth::guard('web')->user();

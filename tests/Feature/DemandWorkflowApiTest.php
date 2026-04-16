@@ -165,38 +165,4 @@ class DemandWorkflowApiTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_reopen_returns_demand_to_nouvelle_without_reouverte_status(): void
-    {
-        $this->seed();
-
-        $demandeId = (int) DB::table('demandes')->where('numero_suivi', 'ANBG-2026-0004')->value('id_demande');
-        $accueilId = (int) DB::table('utilisateurs')->where('email', 'accueil@anbg.ga')->value('id_utilisateur');
-
-        $this->withHeader('X-User-Id', (string) $accueilId)
-            ->putJson("/api/demandes/{$demandeId}/reouvrir", [
-                'commentaire' => 'Retour en file accueil',
-            ])
-            ->assertOk()
-            ->assertJsonPath('message', 'Demande remise au statut Recu');
-
-        $row = DB::table('demandes as d')
-            ->join('parametres as st', 'st.id_parametre', '=', 'd.id_statut')
-            ->where('d.id_demande', $demandeId)
-            ->select(
-                'st.code as statut_code',
-                'd.id_service_courant',
-                'd.id_agent_traitant',
-                'd.date_affectation_accueil',
-                'd.date_envoi_usager',
-                'd.date_cloture'
-            )
-            ->first();
-
-        $this->assertSame('nouvelle', $row->statut_code);
-        $this->assertNull($row->id_service_courant);
-        $this->assertNull($row->id_agent_traitant);
-        $this->assertNull($row->date_affectation_accueil);
-        $this->assertNull($row->date_envoi_usager);
-        $this->assertNull($row->date_cloture);
-    }
 }

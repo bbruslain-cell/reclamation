@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Utilisateur;
 use App\Services\AccessControlService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class AgentPortalController extends Controller
@@ -19,7 +21,7 @@ class AgentPortalController extends Controller
         $actor = $this->access->requireActor($request);
         $userId = (int) $actor->id_utilisateur;
         $roles = $this->access->roleCodes($userId);
-        $spaces = $this->availableSpaces($userId, $roles);
+        $spaces = $this->availableSpaces($actor, $roles);
         $defaultSpace = $this->resolveDefaultSpace($spaces);
 
         if (count($roles) > 1 && count($spaces) > 1) {
@@ -38,12 +40,11 @@ class AgentPortalController extends Controller
         return redirect('/login');
     }
 
-    private function availableSpaces(int $userId, array $roles): array
+    private function availableSpaces(Utilisateur $actor, array $roles): array
     {
         $spaces = [];
 
-        if ($this->access->hasPermission($userId, 'admin.users.manage') ||
-            $this->access->hasPermission($userId, 'admin.parameters.manage')) {
+        if (Gate::forUser($actor)->allows('admin.access')) {
             $spaces['admin'] = [
                 'code' => 'admin',
                 'title' => 'Administration',
@@ -67,7 +68,7 @@ class AgentPortalController extends Controller
             $spaces['chef'] = [
                 'code' => 'chef',
                 'title' => 'Chef de service',
-                'description' => 'Piloter le traitement du service, affecter les agents et suivre le delai partage.',
+                'description' => 'Piloter le traitement du service, affecter les demandes aux  agents et suivre le delai partager.',
                 'href' => '/chef/inbox',
                 'badge' => 'Operationnel',
             ];
@@ -87,7 +88,7 @@ class AgentPortalController extends Controller
             $spaces['agent'] = [
                 'code' => 'agent',
                 'title' => 'Agent',
-                'description' => 'Traiter les demandes qui vous sont affectees et envoyer la reponse finale.',
+                'description' => 'Traiter les demandes qui vous sont affectées et envoyer la reponse finale.',
                 'href' => '/agent/inbox',
                 'badge' => 'Traitement',
             ];
@@ -97,7 +98,7 @@ class AgentPortalController extends Controller
             $spaces['pilotage'] = [
                 'code' => 'pilotage',
                 'title' => 'Pilotage',
-                'description' => 'Consulter les indicateurs, la supervision globale et les vues synthetiques.',
+                'description' => 'Consulter les indicateurs, la supervision globale et les vues synthétiques.',
                 'href' => '/pilotage',
                 'badge' => 'Tableaux de bord',
             ];

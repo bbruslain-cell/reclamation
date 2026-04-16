@@ -4,33 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Accueil — Traitement des demandes | ANBG</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        navy:    { DEFAULT: '#1c203d', 50: '#ecedf3', 100: '#c5c7d9', 600: '#181b35', 700: '#14162c' },
-                        sky:     { DEFAULT: '#3996d3', 50: '#eaf4fb', 100: '#cae4f5', 200: '#9acbeb', 600: '#2e7fb8' },
-                        leaf:    { DEFAULT: '#8fc043', 50: '#f3f9ea' },
-                        gold:    { DEFAULT: '#f9b13c', 50: '#fff8ee' },
-                        neutral: {
-                            50: '#f8f9fa', 100: '#f1f3f5', 200: '#e9ecef',
-                            300: '#dee2e6', 400: '#adb5bd', 500: '#6c757d',
-                            600: '#495057', 700: '#343a40', 800: '#212529',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['"Inter"', 'system-ui', 'sans-serif'],
-                    },
-                    boxShadow: {
-                        'card':  '0 1px 3px rgba(28,32,61,0.05), 0 4px 16px rgba(28,32,61,0.07)',
-                        'badge': '0 2px 6px rgba(28,32,61,0.10)',
-                    }
-                }
-            }
-        }
-    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -49,13 +23,6 @@
                 linear-gradient(180deg, #fff 0%, #fff 100%);
         }
 
-        /* Input / select focus ring */
-        .field:focus {
-            outline: none;
-            border-color: #3996d3;
-            box-shadow: 0 0 0 3px rgba(57,150,211,0.18);
-            background: #fff;
-        }
         .surface-card {
             background: rgba(255, 255, 255, 0.92);
             border: 1px solid rgba(197, 203, 217, 0.55);
@@ -118,21 +85,6 @@
         .table-head th {
             color: rgba(255, 255, 255, 0.92);
         }
-        .icon-svg {
-            display: inline-block;
-            width: 1em;
-            height: 1em;
-            vertical-align: middle;
-            flex-shrink: 0;
-        }
-        /* Table row hover */
-        .demand-row:hover td { background: #f4f8fc; }
-        /* Detail row animation */
-        .detail-row { transition: opacity 0.18s ease; }
-        /* Scrollbar fin */
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: #f1f3f5; }
-        ::-webkit-scrollbar-thumb { background: #c5c7d9; border-radius: 99px; }
     </style>
 </head>
 <body class="text-navy font-sans min-h-screen">
@@ -223,7 +175,6 @@
         $summary = (object) [
             'total_demandes' => (int) ($summaryStats->total_demandes ?? 0),
             'total_nouvelles' => (int) ($summaryStats->total_nouvelles ?? 0),
-            'total_informations' => (int) ($summaryStats->total_informations ?? 0),
             'total_reclamations' => (int) ($summaryStats->total_reclamations ?? 0),
             'total_a_risque' => (int) ($summaryStats->total_a_risque ?? 0),
             'total_en_retard' => (int) ($summaryStats->total_en_retard ?? 0),
@@ -241,9 +192,8 @@
             <div class="space-y-4">
                 
                 <div class="space-y-6">
-                    <h1 class="text-2xl font-bold leading-tight sm:text-[2rem]">Pilotage opérationnel des demandes entrantes</h1>
+                    <h1 class="text-2xl font-bold leading-tight sm:text-[2rem]">Pilotage opérationnel des demandes</h1>
                     <p class="max-w-3xl text-sm leading-6 text-white/78 sm:text-[15px]">
-                        L’accueil reçoit toutes les demandes, oriente chaque demande vers la bonne direction/service et répond directement aux demandes d’information.
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -268,7 +218,7 @@
                             <path d="M7 12h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
                             <path d="M10 18h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
                         </svg>
-                        {{ $filtersActifs->isNotEmpty() ? $filtersActifs->implode(' · ') : 'Vue generale sans filtre' }}
+                        {{ $filtersActifs->isNotEmpty() ? $filtersActifs->implode(' · ') : 'Vue générale sans filtre' }}
                     </span>
                 </div>
             </div>
@@ -306,21 +256,6 @@
             </div>
         </article>
 
-        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#8fc043_0%,#45661c_115%)] px-4 py-4 text-white shadow-card">
-            <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
-                <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/12">
-                    <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/>
-                        <path d="M12 11.5v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                        <circle cx="12" cy="8.5" r="1" fill="currentColor"/>
-                    </svg>
-                </span>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/72">Pour Accueil</p>
-                <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_informations }}">0</p>
-                <p class="text-xs text-white/68">Demandes d’information</p>
-            </div>
-        </article>
-
         <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#f8e932_0%,#d9a90a_110%)] px-4 py-4 text-[#1c203d] shadow-card">
             <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
                 <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/35">
@@ -333,7 +268,7 @@
                 </span>
                 <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1c203d]/72">Pour Directions</p>
                 <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_reclamations }}">0</p>
-                <p class="text-xs text-[#1c203d]/72">Reclamations</p>
+                <p class="text-xs text-[#1c203d]/72">Réclamations</p>
             </div>
         </article>
 
@@ -346,7 +281,7 @@
                         <circle cx="12" cy="15.8" r="1" fill="currentColor"/>
                     </svg>
                 </span>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8a5b00]/72">SLA accueil</p>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8a5b00]/72">Délai pour l'accueil</p>
                 <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_a_risque }}">0</p>
                 <p class="text-xs text-[#8a5b00]/72">Demandes à risque</p>
             </div>
@@ -469,7 +404,7 @@
                     {{ $nouvelles->total() }}
                 </span>
             </div>
-            <p class="text-xs text-neutral-400 hidden sm:block">Affecter à une direction/service ou répondez directement.</p>
+            <p class="text-xs text-neutral-400 hidden sm:block">Affecter chaque réclamation à la bonne direction ou au bon service.</p>
         </div>
 
         <div class="overflow-x-auto">
@@ -564,14 +499,22 @@
                                         <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">{{ $demande->message }}</div>
                                     </div>
 
-                                    <div class="flex flex-wrap gap-x-6 gap-y-1">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
                                             <p class="text-xs text-neutral-400">Email</p>
                                             <p class="text-sm text-navy">{{ $demande->usager_email ?? '—' }}</p>
                                         </div>
                                         <div>
-                                            <p class="text-xs text-neutral-400">Téléphone</p>
-                                            <p class="text-sm text-navy">{{ $demande->usager_telephone ?? '—' }}</p>
+                                            <p class="text-xs text-neutral-400">Statut usager</p>
+                                            <p class="text-sm text-navy">{{ $demande->usager_statut ?? '—' }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-neutral-400">Pays</p>
+                                            <p class="text-sm text-navy">{{ $demande->usager_pays ?? '—' }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-neutral-400">Établissement</p>
+                                            <p class="text-sm text-navy">{{ $demande->usager_etablissement ?? '—' }}</p>
                                         </div>
                                     </div>
 
@@ -633,52 +576,75 @@
                                         </form>
                                     </div>
 
-                                    <!-- Box réponse directe -->
-                                    <div class="bg-white border border-neutral-200 rounded-xl p-4">
+                                    <div class="bg-white border border-leaf/25 rounded-xl p-4">
                                         <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2 mb-3">
-                                            <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                <path d="M9 8 4 12l5 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                <path d="M20 18c0-4.4-3.6-8-8-8H4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                            </svg>Réponse directe à l’usager
+                                            <svg class="icon-svg text-leaf mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <path d="M4 12.5 8.5 17 20 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>Réponse directe accueil
                                         </h4>
-                                        @if($demande->type_demande_code === 'demande_information')
-                                            <form method="post" action="/accueil/demandes/{{ $demande->id_demande }}/reponse-directe" enctype="multipart/form-data" class="space-y-2.5">
-                                                @csrf
-                                                @method('put')
-                                                <textarea name="contenu_reponse" required rows="4"
-                                                    placeholder="Saisir la réponse directe…"
-                                                    class="field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy placeholder-neutral-400 resize-y transition-all duration-150"></textarea>
-                                                <div class="relative">
-                                                    <label class="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-neutral-200 hover:border-sky rounded-lg p-3 cursor-pointer transition-colors duration-150 bg-neutral-50 hover:bg-sky-50">
-                                                        <svg class="icon-svg text-neutral-400 text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                            <path d="M8 16.5h8a3.5 3.5 0 0 0 .4-7A5.2 5.2 0 0 0 6.1 10 3.2 3.2 0 0 0 8 16.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                                                            <path d="m12 8.5 2.5 2.5M12 8.5 9.5 11M12 8.5v7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        </svg>
-                                                        <span class="text-xs text-neutral-400">Pièces jointes (optionnelles)</span>
-                                                        <input type="file" name="pieces_jointes[]" multiple class="hidden">
-                                                    </label>
+                                        <p class="text-xs text-neutral-500 mb-3">
+                                            Utiliser cette action si la réclamation peut être traitée immédiatement au niveau accueil, sans affectation vers une direction.
+                                        </p>
+                                        <form method="post" action="/accueil/demandes/{{ $demande->id_demande }}/reponse-directe" enctype="multipart/form-data" class="space-y-3 anbg-upload-form">
+                                            @csrf
+                                            @method('put')
+                                            <textarea
+                                                name="contenu_reponse"
+                                                rows="4"
+                                                required
+                                                placeholder="Rédiger la réponse transmise directement à l’usager…"
+                                                class="field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy placeholder-neutral-400 transition-all duration-150"
+                                            >{{ old('contenu_reponse') }}</textarea>
+                                            <div class="anbg-upload-widget space-y-2">
+                                                <input
+                                                    type="file"
+                                                    name="pieces_jointes[]"
+                                                    multiple
+                                                    class="hidden"
+                                                    data-upload-input
+                                                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                                                >
+                                                <div
+                                                    class="anbg-dropzone px-5 py-8 cursor-pointer"
+                                                    data-upload-dropzone
+                                                    role="button"
+                                                    tabindex="0"
+                                                    aria-label="Joindre des pièces à la réponse directe"
+                                                >
+                                                    <div class="flex flex-col items-center text-center gap-2.5">
+                                                        <span class="anbg-dropzone-icon">
+                                                            <svg class="icon-svg text-lg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                                <path d="M8 16.5h8a3.5 3.5 0 0 0 .4-7A5.2 5.2 0 0 0 6.1 10 3.2 3.2 0 0 0 8 16.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                                                <path d="m12 8.5 2.5 2.5M12 8.5 9.5 11M12 8.5v7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                                            </svg>
+                                                        </span>
+                                                        <div class="space-y-1">
+                                                            <p class="text-base font-medium text-navy">Glissez-déposez votre fichier ici</p>
+                                                            <p class="text-sm text-neutral-400">
+                                                                ou
+                                                                <span class="text-sky font-medium underline underline-offset-2">cliquez pour parcourir</span>
+                                                            </p>
+                                                        </div>
+                                                        <div class="flex flex-wrap justify-center gap-2 text-[11px]">
+                                                            <span class="rounded-lg bg-neutral-100 px-2.5 py-1 text-neutral-500 font-medium">PDF</span>
+                                                            <span class="rounded-lg bg-neutral-100 px-2.5 py-1 text-neutral-500 font-medium">JPG</span>
+                                                            <span class="rounded-lg bg-neutral-100 px-2.5 py-1 text-neutral-500 font-medium">PNG</span>
+                                                            <span class="rounded-lg bg-neutral-100 px-2.5 py-1 text-neutral-500 font-medium">Max 4 Mo</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <button type="submit"
-                                                    class="w-full flex items-center justify-center gap-2 bg-sky hover:bg-sky-600 text-white text-sm font-medium py-2.5 rounded-lg transition-colors duration-150">
-                                                    <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                        <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-7Z" stroke="currentColor" stroke-width="2"/>
-                                                        <path d="m6 9 6 4 6-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        <path d="m9 13.8 1.8 1.8 3.4-3.4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                    </svg>
-                                                    Envoyer maintenant
-                                                </button>
-                                            </form>
-                                        @else
-                                            <div class="flex items-start gap-2.5 bg-neutral-50 border border-neutral-200 rounded-lg px-3 py-2.5">
-                                                <svg class="icon-svg text-neutral-400 text-xs mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                    <rect x="6" y="11" width="12" height="8" rx="2" stroke="currentColor" stroke-width="2"/>
-                                                    <path d="M9 11V8.5A3 3 0 0 1 12 5.5a3 3 0 0 1 3 3V11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                </svg>
-                                                <p class="text-xs text-neutral-500 leading-relaxed">
-                                                    Réponse directe désactivée — cette demande doit être traitée par une direction/service.
-                                                </p>
+                                                <div class="hidden flex flex-wrap gap-2" data-upload-list></div>
                                             </div>
-                                        @endif
+                                            <button
+                                                type="submit"
+                                                class="w-full flex items-center justify-center gap-2 bg-leaf hover:bg-green-600 text-white text-sm font-medium py-2.5 rounded-lg transition-colors duration-150"
+                                            >
+                                                <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <path d="M4 12.5 8.5 17 20 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                                Envoyer la réponse directe
+                                            </button>
+                                        </form>
                                     </div>
 
                                 </div>
@@ -786,16 +752,14 @@
                                 $historyLabels = [
                                     'soumission_usager' => 'Soumission usager',
                                     'soumission' => 'Soumission',
-                                    'categorie_usager' => 'Categorie choisie',
+                                    'categorie_usager' => 'Catégorie choisie',
                                     'affectation_service' => 'Affectation service',
                                     'annulation_affectation_service' => 'Annulation affectation service',
                                     'affectation_agent' => 'Affectation agent',
                                     'annulation_affectation_agent' => 'Annulation affectation agent',
-                                    'reponse_redigee' => 'Reponse redigee',
-                                    'reponse_directe_accueil' => 'Réponse directe accueil',
+                                    'reponse_redigee' => 'Réponse rédigée',
                                     'reponse_directe_chef' => 'Réponse directe chef',
-                                    'envoi_reponse' => 'Envoi reponse',
-                                    'reouverture' => 'Reouverture',
+                                    'envoi_reponse' => 'Envoi réponse',
                                 ];
                             @endphp
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -819,14 +783,22 @@
                                         <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">{{ $demande->message }}</div>
                                     </div>
 
-                                    <div class="flex flex-wrap gap-x-6 gap-y-1">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
                                             <p class="text-xs text-neutral-400">Email</p>
                                             <p class="text-sm text-navy">{{ $demande->usager_email ?? '—' }}</p>
                                         </div>
                                         <div>
-                                            <p class="text-xs text-neutral-400">Téléphone</p>
-                                            <p class="text-sm text-navy">{{ $demande->usager_telephone ?? '—' }}</p>
+                                            <p class="text-xs text-neutral-400">Statut usager</p>
+                                            <p class="text-sm text-navy">{{ $demande->usager_statut ?? '—' }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-neutral-400">Pays</p>
+                                            <p class="text-sm text-navy">{{ $demande->usager_pays ?? '—' }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-neutral-400">Établissement</p>
+                                            <p class="text-sm text-navy">{{ $demande->usager_etablissement ?? '—' }}</p>
                                         </div>
                                     </div>
 
@@ -941,7 +913,7 @@
                     $actionLabels = [
                         'affectation_service' => 'Affectation service',
                         'annulation_affectation_service' => 'Annulation affectation',
-                        'reponse_directe_accueil' => 'Réponse directe',
+                        'reponse_directe_accueil' => 'Réponse directe accueil',
                     ];
                 @endphp
                 @forelse($recentAccueilActions as $entry)
@@ -950,8 +922,8 @@
                             {{ \Illuminate\Support\Carbon::parse($entry->date_action)->format('d/m/Y H:i') }}
                         </td>
                         <td class="px-4 py-3">
-                            <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full {{ $entry->type_action === 'reponse_directe_accueil' ? 'bg-sky-50 text-sky border border-sky-200' : ($entry->type_action === 'annulation_affectation_service' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-navy-50 text-navy border border-navy-100') }}">
-                                <span class="w-1.5 h-1.5 rounded-full {{ $entry->type_action === 'reponse_directe_accueil' ? 'bg-sky' : ($entry->type_action === 'annulation_affectation_service' ? 'bg-red-500' : 'bg-navy') }}"></span>
+                            <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full {{ $entry->type_action === 'annulation_affectation_service' ? 'bg-red-50 text-red-700 border border-red-200' : ($entry->type_action === 'reponse_directe_accueil' ? 'bg-leaf-50 text-green-700 border border-green-200' : 'bg-navy-50 text-navy border border-navy-100') }}">
+                                <span class="w-1.5 h-1.5 rounded-full {{ $entry->type_action === 'annulation_affectation_service' ? 'bg-red-500' : ($entry->type_action === 'reponse_directe_accueil' ? 'bg-leaf' : 'bg-navy') }}"></span>
                                 {{ $actionLabels[$entry->type_action] ?? ucfirst(str_replace('_', ' ', (string) $entry->type_action)) }}
                             </span>
                         </td>
@@ -1047,6 +1019,81 @@
         };
         dirSel.addEventListener('change', refresh);
         refresh();
+    });
+
+    document.addEventListener('dragover', (event) => {
+        event.preventDefault();
+    });
+
+    document.addEventListener('drop', (event) => {
+        event.preventDefault();
+    });
+
+    const formatBytes = (bytes) => {
+        if (!Number.isFinite(bytes) || bytes <= 0) return '';
+        if (bytes < 1024 * 1024) {
+            return `${Math.max(1, Math.round(bytes / 1024))} Ko`;
+        }
+
+        return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo`;
+    };
+
+    document.querySelectorAll('.anbg-upload-widget').forEach((widget) => {
+        const input = widget.querySelector('[data-upload-input]');
+        const dropzone = widget.querySelector('[data-upload-dropzone]');
+        const list = widget.querySelector('[data-upload-list]');
+        if (!input || !dropzone || !list) return;
+
+        const renderFiles = () => {
+            const files = Array.from(input.files || []);
+            list.innerHTML = '';
+
+            if (!files.length) {
+                list.classList.add('hidden');
+                return;
+            }
+
+            list.classList.remove('hidden');
+            files.forEach((file) => {
+                const item = document.createElement('div');
+                item.className = 'anbg-file-chip';
+                item.innerHTML = `
+                    <svg class="icon-svg text-sky text-[13px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M8 3.5h5l4 4V18a2 2 0 0 1-2 2H8A2 2 0 0 1 6 18V5.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                        <path d="M13 3.5V8h4.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    </svg>
+                    <strong>${file.name}</strong>
+                    <span class="text-neutral-500">${formatBytes(file.size)}</span>
+                `;
+                list.appendChild(item);
+            });
+        };
+
+        dropzone.addEventListener('click', () => input.click());
+        dropzone.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                input.click();
+            }
+        });
+        input.addEventListener('change', renderFiles);
+        dropzone.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            dropzone.classList.add('is-dragover');
+        });
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('is-dragover');
+        });
+        dropzone.addEventListener('drop', (event) => {
+            event.preventDefault();
+            dropzone.classList.remove('is-dragover');
+            const files = event.dataTransfer?.files;
+            if (!files || !files.length) return;
+            const transfer = new DataTransfer();
+            Array.from(files).forEach((file) => transfer.items.add(file));
+            input.files = transfer.files;
+            renderFiles();
+        });
     });
 
     /* ── Toggle détail ── */

@@ -1,8 +1,9 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="fr">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <title>Pilotage ANBG - CIQ</title>
     <style>
         :root {
@@ -332,7 +333,7 @@
 
     <section class="section" id="annexe-section">
         <div class="section-head">
-            <h2>Annexe 1 - tableau actuel du suivi des reclamations</h2>
+            <h2> tableau actuel du suivi des reclamations</h2>
             <button type="button" class="export-btn" data-export="annexe-section">PDF</button>
         </div>
         <div class="table-wrap">
@@ -360,7 +361,7 @@
 
     <section class="section" id="annexe2-section">
         <div class="section-head">
-            <h2>Annexe 2 - repartition des demandes les plus recurrentes</h2>
+            <h2> repartition des demandes les plus recurrentes</h2>
             <button type="button" class="export-btn" data-export="annexe2-section">PDF</button>
         </div>
         <div class="table-wrap">
@@ -966,15 +967,6 @@
 
             const annexeRepartition = data.annexe_repartition || {};
             const infoRows = annexeRepartition.informations || [];
-            renderRows('annexe2InfoBody', infoRows, 3, (row) => `
-                <tr>
-                    <td>${row.objet || '-'}</td>
-                    <td>${row.nombre_mails ?? 0}</td>
-                    <td>${row.pourcentage ?? 0}%</td>
-                </tr>
-            `);
-            document.getElementById('annexe2InfoTotal').textContent = annexeRepartition.total_informations ?? 0;
-
             const reclamationRows = annexeRepartition.reclamations || [];
             renderRows('annexe2RecBody', reclamationRows, 3, (row) => `
                 <tr>

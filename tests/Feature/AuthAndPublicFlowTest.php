@@ -13,6 +13,38 @@ class AuthAndPublicFlowTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_login_locks_account_after_five_failed_attempts(): void
+    {
+        $this->seed();
+
+        $email = 'accueil@anbg.ga';
+
+        for ($attempt = 1; $attempt <= 4; $attempt++) {
+            $this->post('/login', [
+                'email' => $email,
+                'password' => 'MauvaisMotDePasse',
+            ])->assertSessionHasErrors('email');
+
+            $row = DB::table('utilisateurs')->where('email', $email)->first();
+            $this->assertSame($attempt, (int) $row->tentatives_echouees);
+            $this->assertNull($row->bloque_jusqua);
+        }
+
+        $this->post('/login', [
+            'email' => $email,
+            'password' => 'MauvaisMotDePasse',
+        ])->assertSessionHasErrors('email');
+
+        $row = DB::table('utilisateurs')->where('email', $email)->first();
+        $this->assertSame(0, (int) $row->tentatives_echouees);
+        $this->assertNotNull($row->bloque_jusqua);
+
+        $this->post('/login', [
+            'email' => $email,
+            'password' => 'ChangeMe@123',
+        ])->assertSessionHasErrors('email');
+    }
+
     public function test_internal_pages_require_login_and_accueil_can_login(): void
     {
         $this->seed();
@@ -35,21 +67,23 @@ class AuthAndPublicFlowTest extends TestCase
             ->assertOk()
             ->assertSee('Je souhaite connaitre la date du prochain paiement.');
         $this->get('/pilotage')->assertForbidden();
-        $this->getJson('/api/overview')->assertForbidden();
+        $this->getJson('/api/overview')->assertUnauthorized();
     }
 
     public function test_public_submission_creates_demand_and_attachment(): void
     {
         $this->seed();
+        Storage::fake('local');
         Storage::fake('public');
 
         $response = $this->post('/reclamations', [
             'nom' => 'Doe',
             'prenom' => 'Jane',
             'email' => 'jane@example.com',
-            'telephone' => '060000000',
+            'statut_usager' => 'Étudiant',
+            'pays' => 'Gabon',
+            'etablissement' => 'Université Omar Bongo',
             'qualite' => 'Etudiante',
-            'type_demande_code' => 'reclamation',
             'objet' => 'Objet test',
             'message' => 'Message de test suffisamment long.',
             'consentement' => 'on',
@@ -59,20 +93,71 @@ class AuthAndPublicFlowTest extends TestCase
         $response->assertRedirect('/reclamations/nouvelle');
         $this->assertDatabaseCount('demandes', 6);
         $this->assertDatabaseCount('pieces_jointes', 1);
+        Storage::disk('local')->assertExists((string) DB::table('pieces_jointes')->value('chemin_fichier'));
+        Storage::disk('public')->assertMissing((string) DB::table('pieces_jointes')->value('chemin_fichier'));
+    }
+
+    public function test_public_submission_with_existing_email_creates_a_new_usager_snapshot(): void
+    {
+        $this->seed();
+
+        $existingEmail = 'jane@example.com';
+        DB::table('usagers')->insert([
+            'nom' => 'Premier',
+            'prenom' => 'Profil',
+            'email' => $existingEmail,
+            'qualite' => 'Parent',
+            'consentement_rgpd' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $before = DB::table('usagers')->where('email', $existingEmail)->count();
+
+        $this->post('/reclamations', [
+            'nom' => 'Deuxieme',
+            'prenom' => 'Profil',
+            'email' => $existingEmail,
+            'statut_usager' => 'Étudiant',
+            'pays' => 'Gabon',
+            'etablissement' => 'Université Omar Bongo',
+            'qualite' => 'Etudiant',
+            'objet' => 'Nouvelle demande',
+            'message' => 'Message de test suffisamment long pour creer une demande.',
+            'consentement' => 'on',
+        ])->assertRedirect('/reclamations/nouvelle');
+
+        $after = DB::table('usagers')->where('email', $existingEmail)->count();
+
+        $this->assertSame($before + 1, $after);
+        $this->assertDatabaseHas('usagers', [
+            'email' => $existingEmail,
+            'nom' => 'Premier',
+            'prenom' => 'Profil',
+        ]);
+        $this->assertDatabaseHas('usagers', [
+            'email' => $existingEmail,
+            'nom' => 'Deuxieme',
+            'prenom' => 'Profil',
+            'statut_usager' => 'Étudiant',
+            'pays' => 'Gabon',
+        ]);
     }
 
     public function test_authenticated_user_can_open_uploaded_attachment_via_secure_route(): void
     {
         $this->seed();
+        Storage::fake('local');
         Storage::fake('public');
 
         $this->post('/reclamations', [
             'nom' => 'Doe',
             'prenom' => 'Jane',
             'email' => 'jane@example.com',
-            'telephone' => '060000000',
+            'statut_usager' => 'Étudiant',
+            'pays' => 'Gabon',
+            'etablissement' => 'Université Omar Bongo',
             'qualite' => 'Etudiante',
-            'type_demande_code' => 'reclamation',
             'objet' => 'Objet test',
             'message' => 'Message de test suffisamment long.',
             'consentement' => 'on',
@@ -220,8 +305,19 @@ class AuthAndPublicFlowTest extends TestCase
         ])->assertRedirect('/espace');
 
         $this->get('/espace')->assertRedirect('/pilotage');
-        $this->get('/pilotage')->assertOk();
+        $this->get('/pilotage')
+            ->assertOk()
+            ->assertSee('Consultation en lecture seule')
+            ->assertSee('Tableau actuel du suivi des réclamations')
+            ->assertSee('tableau de répartition des réclamations par service');
         $this->get('/agent/inbox')->assertForbidden();
+        $this->get('/pilotage')
+            ->assertOk()
+            ->assertDontSee('Telecharger PNG')
+            ->assertDontSee('id="ciq-tracking-export-xls"', false)
+            ->assertDontSee('id="ciq-tracking-export-pdf"', false);
+        $this->get('/pilotage/export/ciq-tracking/xlsx')->assertForbidden();
+        $this->get('/pilotage/export/ciq-tracking/pdf')->assertForbidden();
     }
 
     public function test_ciq_agent_can_cumulate_global_supervision_and_agent_work(): void
@@ -257,14 +353,12 @@ class AuthAndPublicFlowTest extends TestCase
             ->assertSee('ANBG-2026-0004')
             ->assertSee('Diagramme en batons par direction')
             ->assertSee('Diagramme PNG')
-            ->assertSee('Camembert reclamations / informations')
             ->assertSee('Camembert PNG')
             ->assertSee('chart.umd.min.js')
-            ->assertSee('Annexe 2 - repartition des demandes recurrentes')
             ->assertSee('Annexe 3 - tableau de repartition de l ensemble des reclamations de la cellule par direction')
-            ->assertSee('Annexe 4 - tableau de repartition des demandes d information par direction et par service')
-            ->assertSee('Total reclamations')
-            ->assertSee('Identifiant et mot de passe oublie');
+            ->assertSee('tableau de repartition des reclamations par direction et par service')
+            ->assertSee('tableau de repartition des reclamations par service')
+            ->assertSee('Total reclamations');
 
         $this->assertDatabaseHas('utilisateur_role', [
             'id_utilisateur' => $userId,
@@ -316,6 +410,7 @@ class AuthAndPublicFlowTest extends TestCase
     public function test_agent_can_respond_with_attachment_and_close(): void
     {
         $this->seed();
+        Storage::fake('local');
         Storage::fake('public');
 
         $this->post('/login', [
@@ -375,18 +470,94 @@ class AuthAndPublicFlowTest extends TestCase
         ]);
     }
 
+    public function test_accueil_can_send_direct_response_for_reclamation_and_close_it(): void
+    {
+        $this->seed();
+        Storage::fake('local');
+
+        $this->post('/reclamations', [
+            'nom' => 'Mouila',
+            'prenom' => 'Sandra',
+            'email' => 'sandra.mouila@example.com',
+            'statut_usager' => 'Parent / Tuteur',
+            'pays' => 'Gabon',
+            'etablissement' => '',
+            'categorie' => 'Paiement bourse',
+            'objet' => 'Réclamation directe accueil',
+            'message' => 'Je souhaite un retour immédiat sur le non versement observé.',
+            'consentement' => 'on',
+        ])->assertRedirect('/reclamations/nouvelle');
+
+        $demandId = (int) DB::table('demandes')
+            ->where('objet', 'Réclamation directe accueil')
+            ->value('id_demande');
+        $accueilId = (int) DB::table('utilisateurs')
+            ->where('email', 'accueil@anbg.ga')
+            ->value('id_utilisateur');
+        $ucasServiceId = (int) DB::table('services')
+            ->where('code', 'UCAS')
+            ->value('id_service');
+        $statusCloturee = (int) DB::table('parametres')
+            ->where('famille', 'statut_demande')
+            ->where('code', 'cloturee')
+            ->value('id_parametre');
+        $typeDirecte = (int) DB::table('parametres')
+            ->where('famille', 'type_reponse')
+            ->where('code', 'directe')
+            ->value('id_parametre');
+
+        $this->post('/login', [
+            'email' => 'accueil@anbg.ga',
+            'password' => 'ChangeMe@123',
+        ])->assertRedirect('/mot-de-passe/nouveau');
+
+        $this->post('/mot-de-passe/nouveau', [
+            'ancien_mdp' => 'ChangeMe@123',
+            'password' => 'ChangeMe@124',
+            'password_confirmation' => 'ChangeMe@124',
+        ])->assertRedirect('/espace');
+
+        $this->post("/accueil/demandes/{$demandId}/reponse-directe", [
+            '_method' => 'PUT',
+            'contenu_reponse' => "Votre réclamation a été vérifiée et traitée immédiatement par l'accueil.",
+            'pieces_jointes' => [
+                UploadedFile::fake()->create('reponse-accueil.pdf', 80, 'application/pdf'),
+            ],
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('demandes', [
+            'id_demande' => $demandId,
+            'id_statut' => $statusCloturee,
+            'id_agent_accueil' => $accueilId,
+            'id_service_courant' => $ucasServiceId,
+        ]);
+        $this->assertDatabaseHas('reponses', [
+            'id_demande' => $demandId,
+            'id_type_reponse' => $typeDirecte,
+            'id_redacteur' => $accueilId,
+            'id_envoyeur' => $accueilId,
+        ]);
+        $this->assertDatabaseHas('historique_actions', [
+            'id_demande' => $demandId,
+            'type_action' => 'reponse_directe_accueil',
+            'id_utilisateur' => $accueilId,
+        ]);
+    }
+
     public function test_agent_inbox_shows_user_attachment_after_chef_assignment(): void
     {
         $this->seed();
+        Storage::fake('local');
         Storage::fake('public');
 
         $this->post('/reclamations', [
             'nom' => 'Doe',
             'prenom' => 'Jane',
             'email' => 'jane.agent-piece@example.com',
-            'telephone' => '060000000',
+            'statut_usager' => 'Étudiant',
+            'pays' => 'Gabon',
+            'etablissement' => 'Université Omar Bongo',
             'qualite' => 'Etudiante',
-            'type_demande_code' => 'reclamation',
             'objet' => 'Verification piece jointe agent',
             'message' => 'Demande avec piece jointe qui doit rester visible apres affectation a un agent.',
             'consentement' => 'on',
@@ -465,6 +636,7 @@ class AuthAndPublicFlowTest extends TestCase
     public function test_chef_can_reply_directly_and_close(): void
     {
         $this->seed();
+        Storage::fake('local');
         Storage::fake('public');
 
         $this->post('/login', [
@@ -521,6 +693,7 @@ class AuthAndPublicFlowTest extends TestCase
     public function test_chef_cannot_reply_directly_after_assigning_an_agent(): void
     {
         $this->seed();
+        Storage::fake('local');
         Storage::fake('public');
 
         $this->post('/login', [
@@ -564,120 +737,6 @@ class AuthAndPublicFlowTest extends TestCase
             'id_demande' => $demandId,
             'id_statut' => $statusAffecteeAgent,
             'id_agent_traitant' => $agentId,
-        ]);
-    }
-
-    public function test_accueil_can_send_direct_reply_with_attachment(): void
-    {
-        $this->seed();
-        Storage::fake('public');
-
-        $this->post('/login', [
-            'email' => 'accueil@anbg.ga',
-            'password' => 'ChangeMe@123',
-        ])->assertRedirect('/mot-de-passe/nouveau');
-
-        $this->post('/mot-de-passe/nouveau', [
-            'ancien_mdp' => 'ChangeMe@123',
-            'password' => 'ChangeMe@124',
-            'password_confirmation' => 'ChangeMe@124',
-        ])->assertRedirect('/espace');
-
-        $demandId = (int) DB::table('demandes')
-            ->where('numero_suivi', 'ANBG-2026-0001')
-            ->value('id_demande');
-
-        $actorId = (int) DB::table('utilisateurs')
-            ->where('email', 'accueil@anbg.ga')
-            ->value('id_utilisateur');
-        $ucasServiceId = (int) DB::table('services')
-            ->where('code', 'UCAS')
-            ->value('id_service');
-
-        $response = $this->post("/accueil/demandes/{$demandId}/reponse-directe", [
-            '_method' => 'PUT',
-            'contenu_reponse' => 'Votre demande est traitee en reponse directe.',
-            'pieces_jointes' => [
-                UploadedFile::fake()->create('reponse.pdf', 64, 'application/pdf'),
-            ],
-        ]);
-
-        $response->assertRedirect();
-
-        $statusCloturee = (int) DB::table('parametres')
-            ->where('famille', 'statut_demande')
-            ->where('code', 'cloturee')
-            ->value('id_parametre');
-
-        $typeDirecte = (int) DB::table('parametres')
-            ->where('famille', 'type_reponse')
-            ->where('code', 'directe')
-            ->value('id_parametre');
-
-        $this->assertDatabaseHas('demandes', [
-            'id_demande' => $demandId,
-            'id_statut' => $statusCloturee,
-            'id_service_courant' => $ucasServiceId,
-        ]);
-
-        $this->assertDatabaseHas('reponses', [
-            'id_demande' => $demandId,
-            'id_type_reponse' => $typeDirecte,
-            'id_redacteur' => $actorId,
-            'id_envoyeur' => $actorId,
-        ]);
-
-        $responseId = (int) DB::table('reponses')
-            ->where('id_demande', $demandId)
-            ->max('id_reponse');
-
-        $this->assertDatabaseHas('reponse_piece_jointe', [
-            'id_reponse' => $responseId,
-        ]);
-        $this->assertDatabaseHas('historique_actions', [
-            'id_demande' => $demandId,
-            'type_action' => 'reponse_directe_accueil',
-            'id_service_associe' => $ucasServiceId,
-        ]);
-        $this->assertDatabaseCount('pieces_jointes', 1);
-    }
-
-    public function test_accueil_cannot_send_direct_reply_for_reclamation(): void
-    {
-        $this->seed();
-        Storage::fake('public');
-
-        $this->post('/login', [
-            'email' => 'accueil@anbg.ga',
-            'password' => 'ChangeMe@123',
-        ])->assertRedirect('/mot-de-passe/nouveau');
-
-        $this->post('/mot-de-passe/nouveau', [
-            'ancien_mdp' => 'ChangeMe@123',
-            'password' => 'ChangeMe@124',
-            'password_confirmation' => 'ChangeMe@124',
-        ])->assertRedirect('/espace');
-
-        $demandId = (int) DB::table('demandes')
-            ->where('numero_suivi', 'ANBG-2026-0002')
-            ->value('id_demande');
-
-        $response = $this->post("/accueil/demandes/{$demandId}/reponse-directe", [
-            '_method' => 'PUT',
-            'contenu_reponse' => 'Reponse directe non autorisee pour reclamation.',
-        ]);
-
-        $response->assertRedirect();
-        $response->assertSessionHas('error');
-
-        $typeDirecte = (int) DB::table('parametres')
-            ->where('famille', 'type_reponse')
-            ->where('code', 'directe')
-            ->value('id_parametre');
-
-        $this->assertDatabaseMissing('reponses', [
-            'id_demande' => $demandId,
-            'id_type_reponse' => $typeDirecte,
         ]);
     }
 

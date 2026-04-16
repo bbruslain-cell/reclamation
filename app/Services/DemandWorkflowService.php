@@ -342,54 +342,6 @@ class DemandWorkflowService
         });
     }
 
-    public function reopenDemand(int $actorId, int $demandId, ?string $comment): array
-    {
-        return DB::transaction(function () use ($actorId, $demandId, $comment) {
-            $demand = DB::table('demandes')->where('id_demande', $demandId)->lockForUpdate()->first();
-            if (!$demand) {
-                throw new RuntimeException('Demande introuvable.');
-            }
-
-            if ($this->statusCode((int) $demand->id_statut) !== 'cloturee') {
-                throw new RuntimeException('Seules les demandes cloturees peuvent etre reouvertes.');
-            }
-
-            $statusNouvelle = $this->statusId('nouvelle');
-            $now = now();
-
-            DB::table('demandes')
-                ->where('id_demande', $demandId)
-                ->update([
-                    'id_statut' => $statusNouvelle,
-                    'id_service_courant' => null,
-                    'id_agent_accueil' => null,
-                    'id_agent_direction' => null,
-                    'id_agent_traitant' => null,
-                    'date_affectation' => null,
-                    'date_affectation_accueil' => null,
-                    'date_affectation_agent' => null,
-                    'date_reponse_direction' => null,
-                    'date_envoi_usager' => null,
-                    'date_cloture' => null,
-                    'heures_ouvrees_cloture' => null,
-                    'updated_at' => $now,
-                ]);
-
-            $this->logAction(
-                demandId: $demandId,
-                userId: $actorId,
-                type: 'reouverture',
-                oldStatusId: (int) $demand->id_statut,
-                newStatusId: $statusNouvelle,
-                serviceId: $demand->id_service_courant ? (int) $demand->id_service_courant : null,
-                comment: $comment
-            );
-
-            return $this->refreshDemandSla($demandId);
-        });
-    }
-
-
     /**
      * @param UploadedFile[] $files
      */
@@ -406,7 +358,7 @@ class DemandWorkflowService
                 if (!$file instanceof UploadedFile) {
                     continue;
                 }
-                $path = $file->store('pieces_jointes', 'public');
+                $path = $file->store('pieces_jointes', 'local');
                 $pieceId = DB::table('pieces_jointes')->insertGetId([
                     'nom_fichier' => $file->getClientOriginalName(),
                     'chemin_fichier' => $path,

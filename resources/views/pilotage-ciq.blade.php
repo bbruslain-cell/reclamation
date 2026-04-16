@@ -12,20 +12,29 @@
 
     $pageTitle = 'Pilotage';
     $pageSubtitle = 'Lecture globale, supervision et reporting.';
-    $canViewScopedCiqTables = in_array('ciq', $roleCodes, true) || in_array('chef_direction', $roleCodes, true);
+    $canViewScopedCiqTables = in_array('ciq', $roleCodes, true)
+        || in_array('chef_direction', $roleCodes, true)
+        || in_array('chef_service', $roleCodes, true)
+        || in_array('lecture_seule', $roleCodes, true);
+    $canExportPilotage = isset($actor) && $actor
+        ? \Illuminate\Support\Facades\Gate::forUser($actor)->allows('dashboard.export')
+        : false;
 
     if (in_array('ciq', $roleCodes, true)) {
-        $pageTitle = 'Controle interne et qualite';
-        $pageSubtitle = 'Statistiques de volume et d activite sur la periode selectionnee.';
+        $pageTitle = 'Contrôle interne et qualité';
+        $pageSubtitle = 'Statistiques de volume et d activité sur la période sélectionnée.';
     } elseif (in_array('chef_direction', $roleCodes, true)) {
         $pageTitle = 'Pilotage de direction';
-        $pageSubtitle = 'Tableaux de supervision limites aux services de votre direction.';
+        $pageSubtitle = 'Tableaux de supervision limités aux services de votre direction.';
+    } elseif (in_array('chef_service', $roleCodes, true)) {
+        $pageTitle = 'Pilotage de service';
+        $pageSubtitle = 'Tableaux de supervision limités à votre service.';
     } elseif (in_array('dg', $roleCodes, true)) {
-        $pageTitle = 'Direction generale';
-        $pageSubtitle = 'Statistiques de volume et d activite sur la periode selectionnee.';
+        $pageTitle = 'Direction générale';
+        $pageSubtitle = 'Statistiques de volume et d activité sur la période sélectionnée.';
     } elseif (in_array('lecture_seule', $roleCodes, true)) {
         $pageTitle = 'Consultation en lecture seule';
-        $pageSubtitle = 'Statistiques de volume et d activite sur la periode selectionnee.';
+        $pageSubtitle = 'Statistiques de volume et d activité sur la période sélectionnée.';
     }
 
     $formatPercent = function ($value) {
@@ -33,7 +42,7 @@
     };
 
     $periodLabels = [
-        'all' => 'Toute periode',
+        'all' => 'Toute période',
         'today' => 'Aujourd hui',
         'week' => 'Cette semaine',
         'month' => 'Ce mois',
@@ -45,47 +54,29 @@
     $selectedPeriod = (string) ($filters['periode'] ?? 'month');
     $selectedDirectionId = (string) ($filters['direction_id'] ?? '');
     $selectedServiceId = (string) ($filters['service_id'] ?? '');
-    $selectedTypeCode = (string) ($filters['type_code'] ?? '');
     $selectedStatusCode = (string) ($filters['statut_code'] ?? '');
     $selectedApplicationState = (string) ($filters['application_state'] ?? '');
     $dateFromValue = isset($filters['date_from']) && $filters['date_from'] ? substr((string) $filters['date_from'], 0, 10) : '';
     $dateToValue = isset($filters['date_to']) && $filters['date_to'] ? substr((string) $filters['date_to'], 0, 10) : '';
 
     $totalReclamations = (int) ($typeTotals['reclamation']['total'] ?? 0);
-    $totalInformations = (int) ($typeTotals['demande_information']['total'] ?? 0);
-    $typeGrandTotal = max(0, $totalReclamations + $totalInformations);
+    $typeGrandTotal = max(0, $totalReclamations);
 
     $annexeRepartition = $overviewData['annexe_repartition'] ?? [];
-    $annexeInformationsRows = collect($annexeRepartition['informations'] ?? []);
     $annexeReclamationsRows = collect($annexeRepartition['reclamations'] ?? []);
-    $annexeInformationsTotal = (int) ($annexeRepartition['total_informations'] ?? 0);
     $annexeReclamationsTotal = (int) ($annexeRepartition['total_reclamations'] ?? 0);
-    $functionDistribution = $overviewData['annexes_fonctions']['global'] ?? [];
+    $functionDistribution = $overviewData['annexes_fonctions']['reclamations'] ?? [];
     $functionDistributionRows = collect($functionDistribution['rows'] ?? []);
     $functionDistributionTotals = $functionDistribution['totaux'] ?? [];
-    $informationFunctionDistribution = $overviewData['annexes_fonctions']['informations'] ?? [];
-    $informationFunctionDistributionRows = collect($informationFunctionDistribution['rows'] ?? []);
-    $informationFunctionDistributionTotals = $informationFunctionDistribution['totaux'] ?? [];
-    $informationServiceDistribution = $overviewData['annexes_services']['informations'] ?? [];
-    $informationServiceDistributionRows = collect($informationServiceDistribution['rows'] ?? []);
-    $informationServiceDistributionTotals = $informationServiceDistribution['totaux'] ?? [];
-    $reclamationFunctionDistribution = $overviewData['annexes_fonctions']['reclamations'] ?? [];
-    $reclamationFunctionDistributionRows = collect($reclamationFunctionDistribution['rows'] ?? []);
-    $reclamationFunctionDistributionTotals = $reclamationFunctionDistribution['totaux'] ?? [];
     $reclamationServiceDistribution = $overviewData['annexes_services']['reclamations'] ?? [];
     $reclamationServiceDistributionRows = collect($reclamationServiceDistribution['rows'] ?? []);
     $reclamationServiceDistributionTotals = $reclamationServiceDistribution['totaux'] ?? [];
 
     $typeChartEntries = collect([
         [
-            'label' => 'Reclamations',
+            'label' => 'Réclamations',
             'total' => $totalReclamations,
             'color' => '#3996d3',
-        ],
-        [
-            'label' => 'Demandes d information',
-            'total' => $totalInformations,
-            'color' => '#8fc043',
         ],
     ])->filter(fn (array $entry) => $entry['total'] > 0)
       ->values()
@@ -93,7 +84,7 @@
 
     $statusChartEntries = [
         [
-            'label' => 'Dans les delais',
+            'label' => 'Dans les délais',
             'total' => (int) ($kpis['global_dans_les_delais'] ?? 0),
             'color' => '#8fc043',
         ],
@@ -177,30 +168,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <title>{{ $pageTitle }} - ANBG</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        navy:    { DEFAULT: '#1c203d', 50: '#ecedf3', 100: '#c5c7d9', 600: '#181b35', 700: '#14162c' },
-                        sky:     { DEFAULT: '#3996d3', 50: '#eaf4fb', 100: '#cae4f5', 600: '#2e7fb8' },
-                        leaf:    { DEFAULT: '#8fc043', 50: '#f3f9ea' },
-                        gold:    { DEFAULT: '#f9b13c', 50: '#fff8ee' },
-                        neutral: { 50:'#f8f9fa',100:'#f1f3f5',200:'#e9ecef',300:'#dee2e6',400:'#adb5bd',500:'#6c757d',600:'#495057',700:'#343a40' },
-                    },
-                    fontFamily: { sans: ['"Inter"', 'system-ui', 'sans-serif'] },
-                    boxShadow: {
-                        'card': '0 1px 3px rgba(28,32,61,0.05), 0 4px 16px rgba(28,32,61,0.07)',
-                    }
-                }
-            }
-        }
-    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -221,7 +193,7 @@
         .hero-shell {
             position: relative;
             overflow: hidden;
-            background: linear-gradient(135deg, rgba(28, 32, 61, 0.98) 0%, rgba(34, 56, 107, 0.94) 54%, rgba(57, 150, 211, 0.94) 100%);
+            background: #1c203d;
         }
         .hero-shell::before {
             content: '';
@@ -435,6 +407,18 @@
             line-height: 1.35rem;
             word-break: break-word;
         }
+        .ciq-surface .text-neutral-400 {
+            color: #667085 !important;
+        }
+        .ciq-surface .text-neutral-500 {
+            color: #475467 !important;
+        }
+        .ciq-surface .text-neutral-600 {
+            color: #344054 !important;
+        }
+        .ciq-surface .text-neutral-700 {
+            color: #1f2937 !important;
+        }
     </style>
 </head>
 <body class="font-sans text-navy min-h-screen">
@@ -505,7 +489,7 @@
                             <svg class="icon-svg text-[#8fc043]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                 <path d="M3 4h18v16H3V4Zm2 2v3h14V6H5Zm0 5v3h4v-3H5Zm6 0v3h8v-3h-8Zm-6 5v2h4v-2H5Zm6 0v2h8v-2h-8Z" fill="currentColor"/>
                             </svg>
-                            Reporting CIQ et direction
+                            Reporting de direction
                         </span>
                     </div>
                 </div>
@@ -517,11 +501,11 @@
         <section class="ciq-surface rounded-2xl overflow-hidden">
             <div class="px-5 py-4 border-b border-sky/10">
                 <h2 class="ciq-section-title text-sm font-medium text-navy">Filtres de supervision</h2>
-                <p class="text-xs text-neutral-400 mt-1">Choisissez une periode predefinie ou definissez une plage via le calendrier.</p>
+                <p class="text-xs text-neutral-400 mt-1">Choisissez une période prédéfinie ou définissez une plage via le calendrier.</p>
             </div>
             <form method="get" class="p-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 items-end">
                 <div>
-                    <label for="periode" class="block text-xs text-neutral-500 mb-1">Periode</label>
+                    <label for="periode" class="block text-xs text-neutral-500 mb-1">Période</label>
                     <select id="periode" name="periode" class="field w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy">
                         @foreach($periodLabels as $code => $label)
                         <option value="{{ $code }}" @selected($selectedPeriod === $code)>{{ $label }}</option>
@@ -569,15 +553,6 @@
                     </select>
                 </div>
                 <div>
-                    <label for="type_code" class="block text-xs text-neutral-500 mb-1">Type</label>
-                    <select id="type_code" name="type_code" class="field w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy">
-                        <option value="">Tous les types</option>
-                        @foreach(($catalogues['types'] ?? []) as $type)
-                        <option value="{{ $type['code'] }}" @selected($selectedTypeCode === (string) $type['code'])>{{ $type['libelle'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
                     <label for="statut_code" class="block text-xs text-neutral-500 mb-1">Statut</label>
                     <select id="statut_code" name="statut_code" class="field w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy">
                         <option value="">Tous les statuts</option>
@@ -610,55 +585,51 @@
                     </a>
                 </div>
                 <div class="md:col-span-2 xl:col-span-4">
-                    <p class="text-xs text-neutral-400">Si vous choisissez une date de debut ou de fin, la periode passe automatiquement en mode personnalise. Si vous revenez sur `Aujourd hui`, `Semaine`, `Mois` ou `Annee`, la plage manuelle est effacee.</p>
+                    <p class="text-xs text-neutral-400">Si vous choisissez une date de début ou de fin, la période passe automatiquement en mode personnalisée. Si vous revenez sur `Aujourd hui`, `Semaine`, `Mois` ou `Annee`, la plage manuelle est effacée.</p>
                 </div>
             </form>
         </section>
 
+        @if ($canViewScopedCiqTables)
         <section class="space-y-5">
             <div>
                 <h2 class="ciq-section-title text-sm font-medium text-navy">Volume & activite</h2>
-                <p class="text-xs text-neutral-400 mt-1">Vue d ensemble du volume recu, du traitement et de l etat global sur la periode selectionnee.</p>
+                <p class="text-xs text-neutral-400 mt-1">Vue d ensemble du volume reçu, du traitement et de l état global sur la période sélectionnée.</p>
             </div>
 
             <div class="flex gap-4 overflow-x-auto pb-2">
                 <div class="ciq-kpi-card ciq-kpi-card--navy">
-                    <p class="ciq-kpi-label">Total mails recus</p>
+                    <p class="ciq-kpi-label">Total mails reçus</p>
                     <p class="ciq-kpi-value" data-countup="{{ (int) ($kpis['total_demandes'] ?? 0) }}">{{ number_format((int) ($kpis['total_demandes'] ?? 0), 0, ',', ' ') }}</p>
                     <p class="ciq-kpi-meta">Toutes demandes confondues</p>
                 </div>
                 <div class="ciq-kpi-card ciq-kpi-card--sky">
-                    <p class="ciq-kpi-label">Reclamations recues</p>
+                    <p class="ciq-kpi-label">Réclamations reçues</p>
                     <p class="ciq-kpi-value" data-countup="{{ $totalReclamations }}">{{ number_format($totalReclamations, 0, ',', ' ') }}</p>
                     <p class="ciq-kpi-meta">Volume filtre courant</p>
                 </div>
-                <div class="ciq-kpi-card ciq-kpi-card--gradient">
-                    <p class="ciq-kpi-label">Demandes d information</p>
-                    <p class="ciq-kpi-value" data-countup="{{ $totalInformations }}">{{ number_format($totalInformations, 0, ',', ' ') }}</p>
-                    <p class="ciq-kpi-meta">Volume filtre courant</p>
-                </div>
                 <div class="ciq-kpi-card ciq-kpi-card--mist">
-                    <p class="ciq-kpi-label">Cloturees</p>
+                    <p class="ciq-kpi-label">Clôturées</p>
                     <p class="ciq-kpi-value" data-countup="{{ (int) ($kpis['total_traitees'] ?? 0) }}">{{ number_format((int) ($kpis['total_traitees'] ?? 0), 0, ',', ' ') }}</p>
-                    <p class="ciq-kpi-meta">Demandes cloturees</p>
+                    <p class="ciq-kpi-meta">Demandes clôturées</p>
                 </div>
                 <div class="ciq-kpi-card ciq-kpi-card--mist">
                     <p class="ciq-kpi-label">En attente</p>
                     <p class="ciq-kpi-value" data-countup="{{ (int) ($kpis['total_ouvertes'] ?? 0) }}">{{ number_format((int) ($kpis['total_ouvertes'] ?? 0), 0, ',', ' ') }}</p>
-                    <p class="ciq-kpi-meta">Demandes non cloturees</p>
+                    <p class="ciq-kpi-meta">Demandes non clôturées</p>
                 </div>
                 <div class="ciq-kpi-card ciq-kpi-card--alert">
                     <p class="ciq-kpi-label">En retard</p>
                     <p class="ciq-kpi-value" data-countup="{{ (int) ($kpis['global_en_retard'] ?? 0) }}">{{ number_format((int) ($kpis['global_en_retard'] ?? 0), 0, ',', ' ') }}</p>
-                    <p class="ciq-kpi-meta">Depassement du delai global</p>
+                    <p class="ciq-kpi-meta">Dépassement du délai global</p>
                 </div>
                 <div class="ciq-kpi-card ciq-kpi-card--gradient">
-                    <p class="ciq-kpi-label">Taux dans les delais</p>
+                    <p class="ciq-kpi-label">Taux dans les délais</p>
                     <p class="ciq-kpi-value" data-countup="{{ (float) ($kpis['taux_traitement_dans_delais'] ?? 0) }}" data-decimals="1" data-suffix="%">{{ $formatPercent($kpis['taux_traitement_dans_delais'] ?? 0) }}</p>
-                    <p class="ciq-kpi-meta">Sur les mails traites</p>
+                    <p class="ciq-kpi-meta">Sur les mails traités</p>
                 </div>
                 <div class="ciq-kpi-card ciq-kpi-card--warm">
-                    <p class="ciq-kpi-label">Delai moyen traitement</p>
+                    <p class="ciq-kpi-label">Délai moyen traitement</p>
                     <p class="ciq-kpi-value">
                         @if(($kpis['delai_moyen_traitement_heures'] ?? null) !== null)
                             <span data-countup="{{ (float) $kpis['delai_moyen_traitement_heures'] }}" data-decimals="2" data-suffix=" h">{{ number_format((float) $kpis['delai_moyen_traitement_heures'], 2, ',', ' ') }} h</span>
@@ -666,7 +637,7 @@
                             -
                         @endif
                     </p>
-                    <p class="ciq-kpi-meta">Moyenne en heures ouvrees sur les mails clotures</p>
+                    <p class="ciq-kpi-meta">Moyenne en heures ouvrées sur les mails clôturés</p>
                 </div>
             </div>
         </section>
@@ -681,6 +652,7 @@
                 <div class="px-5 py-4 border-b border-sky/10 space-y-4">
                     <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <h3 class="text-sm font-medium text-navy">Vue graphique</h3>
+                        @if ($canExportPilotage)
                         <div class="flex flex-wrap gap-2">
                             <button type="button" id="download-chart-png" class="ciq-export-button ciq-export-button--png inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
                                 <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -695,9 +667,10 @@
                                 <span>Telecharger PDF</span>
                             </button>
                         </div>
+                        @endif
                     </div>
                     <div>
-                        <p class="text-xs text-neutral-400">Les boutons ci-dessous affichent un seul graphique a la fois.</p>
+                        <p class="text-xs text-neutral-400">Les boutons ci-dessous affichent un seul graphique à la fois.</p>
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <button type="button" data-chart-target="type" class="performance-tab inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
@@ -730,8 +703,8 @@
                 <div class="p-5">
                     <section data-chart-panel="type" class="performance-panel hidden space-y-4">
                         <div>
-                            <h4 class="text-sm font-medium text-navy">Reclamations / demandes d information</h4>
-                            <p class="text-xs text-neutral-400 mt-1">Repartition du volume par type avec pourcentage.</p>
+                            <h4 class="text-sm font-medium text-navy">Réclamations</h4>
+                            <p class="text-xs text-neutral-400 mt-1">Répartition du volume par type avec pourcentage.</p>
                         </div>
                         <div class="grid grid-cols-1 xl:grid-cols-[16rem_1fr] gap-5 items-start">
                             <div class="mx-auto w-full max-w-[16rem]">
@@ -752,11 +725,11 @@
                                         </div>
                                         <p class="text-sm font-semibold text-navy">{{ number_format((int) $entry['total'], 0, ',', ' ') }}</p>
                                     </div>
-                                    <p class="mt-2 text-xs text-neutral-400">{{ $formatPercent($entryPercent) }} du volume total filtre</p>
+                                    <p class="mt-2 text-xs text-neutral-400">{{ $formatPercent($entryPercent) }} du volume total filtré</p>
                                 </div>
                                 @empty
                                 <div class="rounded-xl border border-dashed border-sky/20 bg-white/70 px-4 py-8 text-center text-sm text-neutral-400">
-                                    Aucune donnee disponible pour cette repartition.
+                                    Aucune donnée disponible pour cette répartition.
                                 </div>
                                 @endforelse
                             </div>
@@ -766,7 +739,7 @@
                     <section data-chart-panel="status" class="performance-panel hidden space-y-4">
                         <div>
                             <h4 class="text-sm font-medium text-navy">Traitement global des demandes</h4>
-                            <p class="text-xs text-neutral-400 mt-1">Comparaison des demandes dans les delais, a risque et en retard.</p>
+                            <p class="text-xs text-neutral-400 mt-1">Comparaison des demandes dans les délais, à risque et en retard.</p>
                         </div>
                         <div class="space-y-4">
                             <div class="h-72">
@@ -789,7 +762,7 @@
                     <section data-chart-panel="timeline" class="performance-panel hidden space-y-4">
                         <div>
                             <h4 class="text-sm font-medium text-navy">Evolution temporelle</h4>
-                            <p class="text-xs text-neutral-400 mt-1">Suivi compare des reclamations recues, des demandes d information recues et des demandes cloturees par {{ $temporalGranularityLabel }}.</p>
+                            <p class="text-xs text-neutral-400 mt-1">Suivi comparé des réclamations reçues et des demandes clôturées par {{ $temporalGranularityLabel }}.</p>
                         </div>
                         <div class="space-y-4">
                             <div class="h-80">
@@ -799,21 +772,14 @@
                                 <div class="ciq-inner-card rounded-xl p-4">
                                     <div class="flex items-center gap-2">
                                         <span class="w-3 h-3 rounded-full bg-sky"></span>
-                                        <p class="text-sm font-medium text-navy">Reclamations recues</p>
+                                        <p class="text-sm font-medium text-navy">Réclamations reçues</p>
                                     </div>
                                     <p class="mt-3 text-2xl font-semibold text-navy">{{ number_format(array_sum($temporalSeries['reclamations_recues'] ?? []), 0, ',', ' ') }}</p>
                                 </div>
                                 <div class="ciq-inner-card rounded-xl p-4">
                                     <div class="flex items-center gap-2">
-                                        <span class="w-3 h-3 rounded-full bg-leaf"></span>
-                                        <p class="text-sm font-medium text-navy">Demandes d information</p>
-                                    </div>
-                                    <p class="mt-3 text-2xl font-semibold text-navy">{{ number_format(array_sum($temporalSeries['informations_recues'] ?? []), 0, ',', ' ') }}</p>
-                                </div>
-                                <div class="ciq-inner-card rounded-xl p-4">
-                                    <div class="flex items-center gap-2">
                                         <span class="w-3 h-3 rounded-full bg-gold"></span>
-                                        <p class="text-sm font-medium text-navy">Demandes cloturees</p>
+                                        <p class="text-sm font-medium text-navy">Demandes clôturées</p>
                                     </div>
                                     <p class="mt-3 text-2xl font-semibold text-navy">{{ number_format(array_sum($temporalSeries['demandes_cloturees'] ?? []), 0, ',', ' ') }}</p>
                                 </div>
@@ -824,7 +790,7 @@
                     <section data-chart-panel="direction" class="performance-panel hidden space-y-4">
                         <div>
                             <h4 class="text-sm font-medium text-navy">Directions qui traitent le plus de demandes</h4>
-                            <p class="text-xs text-neutral-400 mt-1">Le donut montre la part de demandes cloturees traitee par chaque direction.</p>
+                            <p class="text-xs text-neutral-400 mt-1">Le donut montre la part de demandes clôturées traitée par chaque direction.</p>
                         </div>
                         <div class="grid grid-cols-1 xl:grid-cols-[16rem_1fr] gap-5 items-start">
                             <div class="mx-auto w-full max-w-[16rem]">
@@ -840,14 +806,14 @@
                                         <p class="text-sm font-semibold text-navy">{{ number_format((int) $entry['appliquees'], 0, ',', ' ') }}</p>
                                     </div>
                                     <div class="mt-2 flex flex-wrap gap-4 text-xs text-neutral-500">
-                                        <span>Traitees : {{ number_format((int) $entry['appliquees'], 0, ',', ' ') }}</span>
-                                        <span>Dans les delais : {{ number_format((int) $entry['dans_delais'], 0, ',', ' ') }}</span>
-                                        <span>Conformite : {{ $formatPercent($entry['taux_dans_delais']) }}</span>
+                                        <span>Traitées : {{ number_format((int) $entry['appliquees'], 0, ',', ' ') }}</span>
+                                        <span>Dans les délais : {{ number_format((int) $entry['dans_delais'], 0, ',', ' ') }}</span>
+                                        <span>Conformité : {{ $formatPercent($entry['taux_dans_delais']) }}</span>
                                     </div>
                                 </div>
                                 @empty
                                 <div class="rounded-xl border border-dashed border-sky/20 bg-white/70 px-4 py-8 text-center text-sm text-neutral-400">
-                                    Aucune demande traitee disponible sur cette periode.
+                                    Aucune demande traitée disponible sur cette période.
                                 </div>
                                 @endforelse
                             </div>
@@ -891,16 +857,24 @@
                                         <p id="ciq-modal-email" class="mt-1 text-sm font-medium text-neutral-700 break-all">-</p>
                                     </div>
                                     <div class="rounded-xl bg-white border border-neutral-200 p-4">
-                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Telephone</p>
-                                        <p id="ciq-modal-telephone" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Statut usager</p>
+                                        <p id="ciq-modal-statut-usager" class="mt-1 text-sm font-medium text-neutral-700">-</p>
                                     </div>
                                     <div class="rounded-xl bg-white border border-neutral-200 p-4">
                                         <p class="text-xs uppercase tracking-wide text-neutral-400">Type de demande</p>
                                         <p id="ciq-modal-type" class="mt-1 text-sm font-medium text-neutral-700">-</p>
                                     </div>
                                     <div class="rounded-xl bg-white border border-neutral-200 p-4">
-                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Categorie</p>
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Catégorie</p>
                                         <p id="ciq-modal-categorie" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                    </div>
+                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Pays</p>
+                                        <p id="ciq-modal-pays" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                    </div>
+                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Établissement</p>
+                                        <p id="ciq-modal-etablissement" class="mt-1 text-sm font-medium text-neutral-700">-</p>
                                     </div>
                                 </div>
                                 <div class="mt-4 rounded-xl bg-white border border-neutral-200 p-4">
@@ -915,9 +889,9 @@
                                     <p id="ciq-modal-message" class="mt-2 text-sm leading-6 text-neutral-700 whitespace-pre-line">-</p>
                                 </div>
                                 <div class="mt-4 rounded-xl bg-white border border-neutral-200 p-4">
-                                    <p class="text-xs uppercase tracking-wide text-neutral-400">Pieces jointes</p>
+                                    <p class="text-xs uppercase tracking-wide text-neutral-400">Pièces jointes</p>
                                     <div id="ciq-modal-pieces" class="mt-3 flex flex-wrap gap-2">
-                                        <span class="inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-500">Aucune piece jointe</span>
+                                        <span class="inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-500">Aucune pièce jointe</span>
                                     </div>
                                 </div>
                             </section>
@@ -945,7 +919,7 @@
                                         <p id="ciq-modal-statut" class="mt-1 text-sm font-medium text-neutral-700">-</p>
                                     </div>
                                     <div class="rounded-xl bg-white border border-neutral-200 p-4">
-                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Respect delais</p>
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Respect délais</p>
                                         <p id="ciq-modal-respect" class="mt-1 text-sm font-medium text-neutral-700">-</p>
                                     </div>
                                     <div class="rounded-xl bg-white border border-neutral-200 p-4">
@@ -963,9 +937,13 @@
         @if ($canViewScopedCiqTables)
         <section class="space-y-5">
             <div>
-                <h2 class="ciq-section-title text-sm font-medium text-navy">Tableau actuel du suivi des reclamations</h2>
+                <h2 class="ciq-section-title text-sm font-medium text-navy">Tableau actuel du suivi des réclamations</h2>
                 <p class="text-xs text-neutral-400 mt-1">
-                    {{ in_array('chef_direction', $roleCodes, true) ? 'Presentation alignee sur le modele CIQ, limitee a votre perimetre de services.' : 'Presentation alignee sur le modele bureautique CIQ : reception, dispatch, service, realisation et respect des delais.' }}
+                    {{ in_array('chef_direction', $roleCodes, true)
+                        ? 'Presentation alignee sur le modele CIQ, limitee a votre perimetre de services.'
+                        : (in_array('chef_service', $roleCodes, true)
+                            ? 'Présentation alignée sur le modèle CIQ, limitée aux réclamations de votre service.'
+                            : 'Présentation alignée sur le modèle bureautique CIQ : réception, dispatch, service, réalisation et respect des délais.') }}
                 </p>
             </div>
 
@@ -973,10 +951,11 @@
                 <div class="px-5 py-4 border-b border-sky/10 flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <svg class="icon-svg h-4 w-4 text-sky" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 5.5h18v13H3z" stroke="currentColor" stroke-width="1.7"/><path d="M3 10h18M9 10v8M15 10v8" stroke="currentColor" stroke-width="1.7"/></svg>
-                        <h3 class="text-sm font-medium text-navy">Suivi detaille</h3>
+                        <h3 class="text-sm font-medium text-navy">Suivi détaillé</h3>
                     </div>
+                    @if ($canExportPilotage)
                     <div class="flex items-center gap-2">
-                        <p class="text-xs text-neutral-400 hidden sm:block">{{ number_format($ciqTrackingRows->count(), 0, ',', ' ') }} ligne(s) sur le filtre courant</p>
+                      <p class="text-xs text-neutral-400 hidden sm:block">{{ number_format($ciqTrackingRows->count(), 0, ',', ' ') }} ligne(s) sur le filtre courant</p>
                         <button type="button" id="ciq-tracking-export-xls" class="ciq-export-button ciq-export-button--excel inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
                         <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8.5 12.5 3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="m11.5 12.5-3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14.5 12.5h2.5M14.5 15.5H17M14.5 18.5h2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
                         <span>Excel</span>
@@ -986,6 +965,7 @@
                         <span>PDF</span>
                         </button>
                     </div>
+                    @endif
                 </div>
 
                 <div id="ciq-tracking-export-area" class="overflow-x-auto bg-white">
@@ -1006,16 +986,16 @@
                         </colgroup>
                         <thead>
                             <tr class="bg-[#2f5f93] border-b border-[#274f79]">
-                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">NÂ°</th>
+                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">N°</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Date de reception</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Expediteur</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Objet</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Date de dispatch</th>
-                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Delais de transmission</th>
+                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Délais de transmission</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Service</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Realisation</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Statut</th>
-                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Respect delais</th>
+                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Respect délais</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Nombre de jours d attente</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">RZ / CS</th>
                             </tr>
@@ -1042,7 +1022,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="12" class="px-4 py-10 text-center text-sm text-neutral-400">Aucune donnee disponible pour ce tableau sur la periode selectionnee.</td>
+                                <td colspan="12" class="px-4 py-10 text-center text-sm text-neutral-400">Aucune donnée disponible pour ce tableau sur la période sélectionnée.</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -1050,15 +1030,17 @@
                 </div>
             </section>
         </section>
+        @endif
 
         <section class="space-y-5">
             <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
-                    <h2 class="text-sm font-medium text-navy"> tableau de la rÃ©partition des demandes dâ€™informations et rÃ©clamations les plus rÃ©currentes dans la cellule. </h2>
-                    <p class="text-xs text-neutral-400 mt-1">Nombre de mails par categorie avec pourcentage sur le total du type.</p>
+                    <h2 class="text-sm font-medium text-navy">tableau de la répartition des réclamations les plus récurrentes dans la cellule</h2>
+                    <p class="text-xs text-neutral-400 mt-1">Nombre de mails par catégorie avec pourcentage sur le total des réclamations.</p>
                 </div>
+                @if ($canExportPilotage)
                 <div class="flex items-center gap-2">
-                    <p class="hidden sm:block text-xs text-neutral-400">{{ number_format(($annexeInformationsRows->count() + $annexeReclamationsRows->count()), 0, ',', ' ') }} ligne(s) au total</p>
+                    <p class="hidden sm:block text-xs text-neutral-400">{{ number_format($annexeReclamationsRows->count(), 0, ',', ' ') }} ligne(s) au total</p>
                     <button type="button" id="annexe2-export-xls" class="ciq-export-button ciq-export-button--excel inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
                         <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8.5 12.5 3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="m11.5 12.5-3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14.5 12.5h2.5M14.5 15.5H17M14.5 18.5h2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
                         <span>Excel</span>
@@ -1068,50 +1050,18 @@
                         <span>PDF</span>
                     </button>
                 </div>
+                @endif
             </div>
 
             <section id="annexe2-export-area" class="space-y-5 ciq-surface rounded-2xl p-4 sm:p-5">
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-5 items-start">
-                    <section class="bg-white rounded-2xl border border-neutral-100 overflow-hidden">
-                        
-                        <div class="overflow-x-auto">
-                            <table class="w-full min-w-[760px] border-collapse">
-                                <thead>
-                                    <tr class="bg-[#e8d1cb]">
-                                        <th class="px-3 py-2 text-left text-sm font-semibold text-navy border border-neutral-300">Demande d'informations sur eBourse, les bourses &amp; accessoires de bourse</th>
-                                        <th class="px-3 py-2 text-center text-sm font-semibold text-navy border border-neutral-300 w-[150px]">Nombre de mails</th>
-                                        <th class="px-3 py-2 text-center text-sm font-semibold text-navy border border-neutral-300 w-[90px]">%</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($annexeInformationsRows as $row)
-                                    <tr class="odd:bg-white even:bg-neutral-50">
-                                        <td class="px-3 py-1.5 text-sm text-neutral-700 border border-neutral-300">{{ $row['categorie'] ?? '-' }}</td>
-                                        <td class="px-3 py-1.5 text-sm text-red-600 font-semibold text-center border border-neutral-300">{{ number_format((int) ($row['nombre_mails'] ?? 0), 0, ',', ' ') }}</td>
-                                        <td class="px-3 py-1.5 text-sm text-neutral-700 text-center border border-neutral-300">{{ $formatPercent($row['pourcentage'] ?? 0) }}</td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="3" class="px-4 py-8 text-center text-sm text-neutral-400 border border-neutral-300">Aucune donnee disponible pour les demandes d informations.</td>
-                                    </tr>
-                                    @endforelse
-                                    <tr class="bg-[#f8e7d8]">
-                                        <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300 uppercase">Total demandes d'informations</td>
-                                        <td class="px-3 py-2 text-sm font-semibold text-center text-red-600 border border-neutral-300">{{ number_format($annexeInformationsTotal, 0, ',', ' ') }}</td>
-                                        <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">&nbsp;</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-
+                <div class="grid grid-cols-1 gap-5 items-start">
                     <section class="bg-white rounded-2xl border border-neutral-100 overflow-hidden">
                         
                         <div class="overflow-x-auto">
                             <table class="w-full min-w-[760px] border-collapse">
                                 <thead>
                                     <tr class="bg-[#d0deaa]">
-                                        <th class="px-3 py-2 text-left text-sm font-semibold text-navy border border-neutral-300">Reclamation</th>
+                                        <th class="px-3 py-2 text-left text-sm font-semibold text-navy border border-neutral-300">Réclamation</th>
                                         <th class="px-3 py-2 text-center text-sm font-semibold text-navy border border-neutral-300 w-[150px]">Nombre de mails</th>
                                         <th class="px-3 py-2 text-center text-sm font-semibold text-navy border border-neutral-300 w-[90px]">%</th>
                                     </tr>
@@ -1125,11 +1075,11 @@
                                     </tr>
                                     @empty
                                     <tr>
-                                        <td colspan="3" class="px-4 py-8 text-center text-sm text-neutral-400 border border-neutral-300">Aucune donnee disponible pour les reclamations.</td>
+                                        <td colspan="3" class="px-4 py-8 text-center text-sm text-neutral-400 border border-neutral-300">Aucune donnée disponible pour les réclamations.</td>
                                     </tr>
                                     @endforelse
                                     <tr class="bg-[#fff500]">
-                                        <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300 uppercase">Total reclamations</td>
+                                        <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300 uppercase">Total réclamations</td>
                                         <td class="px-3 py-2 text-sm font-semibold text-center text-red-600 border border-neutral-300">{{ number_format($annexeReclamationsTotal, 0, ',', ' ') }}</td>
                                         <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">&nbsp;</td>
                                     </tr>
@@ -1143,9 +1093,10 @@
         <section class="space-y-5">
             <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
-                    <h2 class="ciq-section-title text-sm font-medium text-navy">tableau de repartition de l ensemble des reclamations de la cellule par direction</h2>
-                    <p class="text-xs text-neutral-400 mt-1">Toutes les demandes appliquees et non appliquees par fonction, avec execution, conformite et score moyen.</p>
+                    <h2 class="ciq-section-title text-sm font-medium text-navy">tableau de répartition de l'ensemble des réclamations de la cellule par direction</h2>
+                    <p class="text-xs text-neutral-400 mt-1">Toutes les demandes appliquées et non appliquées par fonction, avec exécution, conformité et score moyen.</p>
                 </div>
+                @if ($canExportPilotage)
                 <div class="flex items-center gap-2">
                     <p class="hidden sm:block text-xs text-neutral-400">{{ number_format($functionDistributionRows->count(), 0, ',', ' ') }} ligne(s) au total</p>
                     <button type="button" id="function-distribution-export-xls" class="ciq-export-button ciq-export-button--excel inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
@@ -1157,6 +1108,7 @@
                         <span>PDF</span>
                     </button>
                 </div>
+                @endif
             </div>
 
             <section id="function-distribution-export-area" class="ciq-surface rounded-2xl p-4 sm:p-5 overflow-hidden">
@@ -1168,11 +1120,11 @@
                                 <th colspan="6" class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Repartition par fonction</th>
                             </tr>
                             <tr class="bg-white">
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de reclamations et demandes d'informations total</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de reclamations et demandes d'informations traite</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux d'execution (%)</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de reclamations et demandes d'informations traitees dans les delais</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux de conformite (72h)(%)</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de réclamations total</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de réclamations traitées</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux d'exécution (%)</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de réclamations traitées dans les délais</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux de conformité (72h)(%)</th>
                                 <th class="px-3 py-3 text-center text-sm font-semibold text-red-500 border border-neutral-300">(A + B) / 2</th>
                             </tr>
                         </thead>
@@ -1189,7 +1141,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="px-4 py-10 text-center text-sm text-neutral-400 border border-neutral-300">Aucune donnee disponible pour cette repartition sur la periode selectionnee.</td>
+                                <td colspan="7" class="px-4 py-10 text-center text-sm text-neutral-400 border border-neutral-300">Aucune donnée disponible pour cette répartition sur la période sélectionnée.</td>
                             </tr>
                             @endforelse
                             <tr class="bg-neutral-100">
@@ -1206,210 +1158,13 @@
                 </div>
             </section>
         </section>
-
         <section class="space-y-5">
             <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
-                    <h2 class="ciq-section-title text-sm font-medium text-navy">tableau de repartition des demandes d information par direction et par service</h2>
-                    <p class="text-xs text-neutral-400 mt-1">Meme logique de calcul, mais uniquement pour les demandes d information.</p>
+                    <h2 class="ciq-section-title text-sm font-medium text-navy">tableau de répartition des réclamations par service</h2>
+                    <p class="text-xs text-neutral-400 mt-1">Vue par service et responsable, avec exécution et conformité sur les réclamations.</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <p class="hidden sm:block text-xs text-neutral-400">{{ number_format($informationFunctionDistributionRows->count(), 0, ',', ' ') }} ligne(s) au total</p>
-                    <button type="button" id="information-function-distribution-export-xls" class="ciq-export-button ciq-export-button--excel inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8.5 12.5 3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="m11.5 12.5-3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14.5 12.5h2.5M14.5 15.5H17M14.5 18.5h2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-                        <span>Excel</span>
-                    </button>
-                    <button type="button" id="information-function-distribution-export-pdf" class="ciq-export-button ciq-export-button--pdf inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 18.5v-6h2.2a1.9 1.9 0 1 1 0 3.8H8.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 18.5v-6h1.8a2 2 0 1 1 0 4H14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        <span>PDF</span>
-                    </button>
-                </div>
-            </div>
-
-            <section id="information-function-distribution-export-area" class="ciq-surface rounded-2xl p-4 sm:p-5 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table id="information-function-distribution-table" class="w-full min-w-[1180px] border-collapse">
-                        <thead>
-                            <tr class="bg-neutral-50">
-                                <th rowspan="2" class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300 w-[120px]">Fonctions</th>
-                                <th colspan="6" class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Repartition par fonction</th>
-                            </tr>
-                            <tr class="bg-white">
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de demandes d'informations total</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de demandes d'informations traitees</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux d'execution (%)</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de demandes d'informations traitees dans les delais</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux de conformite (72h) (%)</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-red-500 border border-neutral-300">(A + B) / 2</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($informationFunctionDistributionRows as $row)
-                            <tr class="odd:bg-white even:bg-neutral-50">
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">{{ $row['fonction_code'] ?? '-' }}</td>
-                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_demandes'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_traitees'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($row['taux_execution'] ?? 0) }}</td>
-                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_traitees_delai'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($row['taux_conformite'] ?? 0) }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-red-500 border border-neutral-300">{{ $formatPercent($row['score_moyen'] ?? 0) }}</td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="7" class="px-4 py-10 text-center text-sm text-neutral-400 border border-neutral-300">Aucune donnee disponible pour les demandes d information sur la periode selectionnee.</td>
-                            </tr>
-                            @endforelse
-                            <tr class="bg-neutral-100">
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">Total</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($informationFunctionDistributionTotals['total_demandes'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($informationFunctionDistributionTotals['total_traitees'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($informationFunctionDistributionTotals['taux_execution'] ?? 0) }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($informationFunctionDistributionTotals['total_traitees_delai'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($informationFunctionDistributionTotals['taux_conformite'] ?? 0) }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-red-500 border border-neutral-300">{{ $formatPercent($informationFunctionDistributionTotals['score_moyen'] ?? 0) }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </section>
-
-        <section class="space-y-5">
-            <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-                <div>
-                    <h2 class="ciq-section-title text-sm font-medium text-navy">tableau de repartition des demandes d information par service</h2>
-                    <p class="text-xs text-neutral-400 mt-1">Vue par service et responsable, avec execution et conformite sur les demandes d information.</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <p class="hidden sm:block text-xs text-neutral-400">{{ number_format($informationServiceDistributionRows->count(), 0, ',', ' ') }} ligne(s) au total</p>
-                    <button type="button" id="information-service-distribution-export-xls" class="ciq-export-button ciq-export-button--excel inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8.5 12.5 3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="m11.5 12.5-3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14.5 12.5h2.5M14.5 15.5H17M14.5 18.5h2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-                        <span>Excel</span>
-                    </button>
-                    <button type="button" id="information-service-distribution-export-pdf" class="ciq-export-button ciq-export-button--pdf inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 18.5v-6h2.2a1.9 1.9 0 1 1 0 3.8H8.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 18.5v-6h1.8a2 2 0 1 1 0 4H14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        <span>PDF</span>
-                    </button>
-                </div>
-            </div>
-
-            <section id="information-service-distribution-export-area" class="ciq-surface rounded-2xl p-4 sm:p-5 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table id="information-service-distribution-table" class="w-full min-w-[1120px] border-collapse">
-                        <thead>
-                            <tr class="bg-neutral-50">
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Services / Unite</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Agents</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails recus</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails traites</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux d'execution (%) (A)</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails traites dans les delais</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux de conformite (72h) (%) (B)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($informationServiceDistributionRows as $row)
-                            <tr class="odd:bg-white even:bg-neutral-50">
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">{{ $row['service_code'] ?? '-' }}</td>
-                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ $row['responsable'] ?? '-' }}</td>
-                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_demandes'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_traitees'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($row['taux_execution'] ?? 0) }}</td>
-                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_traitees_delai'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($row['taux_conformite'] ?? 0) }}</td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="7" class="px-4 py-10 text-center text-sm text-neutral-400 border border-neutral-300">Aucune donnee disponible pour cette repartition par service sur la periode selectionnee.</td>
-                            </tr>
-                            @endforelse
-                            <tr class="bg-neutral-100">
-                                <td colspan="2" class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">TOTAL</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($informationServiceDistributionTotals['total_demandes'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($informationServiceDistributionTotals['total_traitees'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($informationServiceDistributionTotals['taux_execution'] ?? 0) }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($informationServiceDistributionTotals['total_traitees_delai'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($informationServiceDistributionTotals['taux_conformite'] ?? 0) }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </section>
-
-        <section class="space-y-5">
-            <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-                <div>
-                    <h2 class="ciq-section-title text-sm font-medium text-navy">tableau de repartition des reclamations par direction et par service</h2>
-                    <p class="text-xs text-neutral-400 mt-1">Meme logique de calcul, mais uniquement pour les reclamations.</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <p class="hidden sm:block text-xs text-neutral-400">{{ number_format($reclamationFunctionDistributionRows->count(), 0, ',', ' ') }} ligne(s) au total</p>
-                    <button type="button" id="reclamation-function-distribution-export-xls" class="ciq-export-button ciq-export-button--excel inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8.5 12.5 3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="m11.5 12.5-3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14.5 12.5h2.5M14.5 15.5H17M14.5 18.5h2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-                        <span>Excel</span>
-                    </button>
-                    <button type="button" id="reclamation-function-distribution-export-pdf" class="ciq-export-button ciq-export-button--pdf inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
-                        <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 18.5v-6h2.2a1.9 1.9 0 1 1 0 3.8H8.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 18.5v-6h1.8a2 2 0 1 1 0 4H14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        <span>PDF</span>
-                    </button>
-                </div>
-            </div>
-
-            <section id="reclamation-function-distribution-export-area" class="ciq-surface rounded-2xl p-4 sm:p-5 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table id="reclamation-function-distribution-table" class="w-full min-w-[1180px] border-collapse">
-                        <thead>
-                            <tr class="bg-neutral-50">
-                                <th rowspan="2" class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300 w-[120px]">Fonctions</th>
-                                <th colspan="6" class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Repartition par fonction</th>
-                            </tr>
-                            <tr class="bg-white">
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de reclamations total</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de reclamations traitees</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux d'execution (%)</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de reclamations traitees dans les delais</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux de conformite (72h) (%)</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-red-500 border border-neutral-300">(A + B) / 2</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($reclamationFunctionDistributionRows as $row)
-                            <tr class="odd:bg-white even:bg-neutral-50">
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">{{ $row['fonction_code'] ?? '-' }}</td>
-                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_demandes'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_traitees'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($row['taux_execution'] ?? 0) }}</td>
-                                <td class="px-3 py-2 text-sm text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($row['total_traitees_delai'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($row['taux_conformite'] ?? 0) }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-red-500 border border-neutral-300">{{ $formatPercent($row['score_moyen'] ?? 0) }}</td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="7" class="px-4 py-10 text-center text-sm text-neutral-400 border border-neutral-300">Aucune donnee disponible pour les reclamations sur la periode selectionnee.</td>
-                            </tr>
-                            @endforelse
-                            <tr class="bg-neutral-100">
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-navy border border-neutral-300">Total</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($reclamationFunctionDistributionTotals['total_demandes'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($reclamationFunctionDistributionTotals['total_traitees'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($reclamationFunctionDistributionTotals['taux_execution'] ?? 0) }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-neutral-700 border border-neutral-300">{{ number_format((int) ($reclamationFunctionDistributionTotals['total_traitees_delai'] ?? 0), 0, ',', ' ') }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-emerald-600 border border-neutral-300">{{ $formatPercent($reclamationFunctionDistributionTotals['taux_conformite'] ?? 0) }}</td>
-                                <td class="px-3 py-2 text-sm font-semibold text-center text-red-500 border border-neutral-300">{{ $formatPercent($reclamationFunctionDistributionTotals['score_moyen'] ?? 0) }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </section>
-
-        <section class="space-y-5">
-            <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-                <div>
-                    <h2 class="ciq-section-title text-sm font-medium text-navy">tableau de repartition des reclamations par service</h2>
-                    <p class="text-xs text-neutral-400 mt-1">Vue par service et responsable, avec execution et conformite sur les reclamations.</p>
-                </div>
+                @if ($canExportPilotage)
                 <div class="flex items-center gap-2">
                     <p class="hidden sm:block text-xs text-neutral-400">{{ number_format($reclamationServiceDistributionRows->count(), 0, ',', ' ') }} ligne(s) au total</p>
                     <button type="button" id="reclamation-service-distribution-export-xls" class="ciq-export-button ciq-export-button--excel inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
@@ -1421,6 +1176,7 @@
                         <span>PDF</span>
                     </button>
                 </div>
+                @endif
             </div>
 
             <section id="reclamation-service-distribution-export-area" class="ciq-surface rounded-2xl p-4 sm:p-5 overflow-hidden">
@@ -1430,11 +1186,11 @@
                             <tr class="bg-neutral-50">
                                 <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Services / Unite</th>
                                 <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Agents</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails recus</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails traites</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux d'execution (%) (A)</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails traites dans les delais</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux de conformite (72h) (%) (B)</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails reçus</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails traités</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux d'exécution (%) (A)</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails traités dans les délais</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux de conformité (72h) (%) (B)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1450,7 +1206,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="px-4 py-10 text-center text-sm text-neutral-400 border border-neutral-300">Aucune donnee disponible pour cette repartition par service sur la periode selectionnee.</td>
+                                <td colspan="7" class="px-4 py-10 text-center text-sm text-neutral-400 border border-neutral-300">Aucune donnée disponible pour cette répartition par service sur la période sélectionnée.</td>
                             </tr>
                             @endforelse
                             <tr class="bg-neutral-100">
@@ -1479,14 +1235,14 @@
             <section class="ciq-surface rounded-2xl overflow-hidden">
                 <div class="px-5 py-4 border-b border-sky/10 flex items-center gap-2">
                     <svg class="icon-svg h-4 w-4 text-sky" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5V11H8.5L6.8 13H3V7.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 13h4.6l1.8-2H21l-2 8H5.5A2.5 2.5 0 0 1 3 16.5V13Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
-                    <h3 class="text-sm font-medium text-navy">Registre des numeros de suivi</h3>
+                    <h3 class="text-sm font-medium text-navy">Registre des numéros de suivi</h3>
                 </div>
 
                 <div class="overflow-x-auto bg-white">
                     <table class="w-full min-w-[980px]">
                         <thead class="bg-neutral-50 border-b border-neutral-200">
                             <tr>
-                                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Numero de suivi</th>
+                                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Numéro de suivi</th>
                                 <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Expediteur</th>
                                 <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Objet</th>
                                 <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Reception</th>
@@ -1527,7 +1283,7 @@
                             @empty
                             <tr>
                                 <td colspan="7" class="px-4 py-10 text-center text-sm text-neutral-400">
-                                    Aucun dossier disponible pour la consultation sur la periode selectionnee.
+                                    Aucun dossier disponible pour la consultation sur la période sélectionnée.
                                 </td>
                             </tr>
                             @endforelse
@@ -1565,12 +1321,6 @@
             const annexe2ExportPdfButton = document.getElementById('annexe2-export-pdf');
             const functionDistributionExportXlsButton = document.getElementById('function-distribution-export-xls');
             const functionDistributionExportPdfButton = document.getElementById('function-distribution-export-pdf');
-            const informationFunctionDistributionExportXlsButton = document.getElementById('information-function-distribution-export-xls');
-            const informationFunctionDistributionExportPdfButton = document.getElementById('information-function-distribution-export-pdf');
-            const informationServiceDistributionExportXlsButton = document.getElementById('information-service-distribution-export-xls');
-            const informationServiceDistributionExportPdfButton = document.getElementById('information-service-distribution-export-pdf');
-            const reclamationFunctionDistributionExportXlsButton = document.getElementById('reclamation-function-distribution-export-xls');
-            const reclamationFunctionDistributionExportPdfButton = document.getElementById('reclamation-function-distribution-export-pdf');
             const reclamationServiceDistributionExportXlsButton = document.getElementById('reclamation-service-distribution-export-xls');
             const reclamationServiceDistributionExportPdfButton = document.getElementById('reclamation-service-distribution-export-pdf');
             const trackingDetailButtons = document.querySelectorAll('.tracking-detail-trigger');
@@ -1656,7 +1406,7 @@
                 if (!Array.isArray(attachments) || attachments.length === 0) {
                     const empty = document.createElement('span');
                     empty.className = 'inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-500';
-                    empty.textContent = 'Aucune piece jointe';
+                    empty.textContent = 'Aucune pièce jointe';
                     container.appendChild(empty);
                     return;
                 }
@@ -1681,7 +1431,7 @@
                     iconPath.setAttribute('stroke-linejoin', 'round');
                     icon.appendChild(iconPath);
                     const label = document.createElement('span');
-                    label.textContent = piece.nom_fichier ?? 'Piece jointe';
+                    label.textContent = piece.nom_fichier ?? 'Pièce jointe';
 
                     link.appendChild(icon);
                     link.appendChild(label);
@@ -1696,13 +1446,15 @@
                 }
 
                 setModalText('ciq-modal-tracking-number', row.numero_suivi ?? '-');
-                setModalText('ciq-modal-subtitle', `${row.expediteur ?? '-'} â€¢ ${row.type_demande ?? '-'}`);
+                setModalText('ciq-modal-subtitle', `${row.expediteur ?? '-'} - ${row.type_demande ?? '-'}`);
                 setModalText('ciq-modal-nom', row.usager_nom ?? '-');
                 setModalText('ciq-modal-prenom', row.usager_prenom ?? '-');
                 setModalText('ciq-modal-email', row.usager_email ?? '-');
-                setModalText('ciq-modal-telephone', row.usager_telephone ?? '-');
+                setModalText('ciq-modal-statut-usager', row.usager_statut ?? '-');
                 setModalText('ciq-modal-type', row.type_demande ?? '-');
                 setModalText('ciq-modal-categorie', row.categorie ?? '-');
+                setModalText('ciq-modal-pays', row.usager_pays ?? '-');
+                setModalText('ciq-modal-etablissement', row.usager_etablissement ?? '-');
                 setModalText('ciq-modal-objet', row.objet_original ?? row.objet ?? '-');
                 setModalText('ciq-modal-message', row.message ?? '-');
                 setModalText('ciq-modal-reception', `Soumise le ${formatDetailDate(row.date_reception ?? null)}`);
@@ -1908,7 +1660,6 @@
                     return [];
                 };
                 const reclamationsRecues = normalizeSeries(series.reclamations_recues);
-                const informationsRecues = normalizeSeries(series.informations_recues);
                 const demandesCloturees = normalizeSeries(series.demandes_cloturees);
 
                 if (!canvas || typeof Chart === 'undefined' || !labels.length) {
@@ -1925,7 +1676,7 @@
                         labels,
                         datasets: [
                             {
-                                label: 'Reclamations recues',
+                                label: 'Réclamations reçues',
                                 data: reclamationsRecues,
                                 borderColor: '#3996d3',
                                 backgroundColor: 'rgba(57, 150, 211, 0.14)',
@@ -1937,19 +1688,7 @@
                                 pointHoverRadius: 5,
                             },
                             {
-                                label: 'Demandes d information',
-                                data: informationsRecues,
-                                borderColor: '#8fc043',
-                                backgroundColor: 'rgba(143, 192, 67, 0.14)',
-                                tension: 0.3,
-                                spanGaps: true,
-                                fill: false,
-                                borderWidth: 3,
-                                pointRadius: 3,
-                                pointHoverRadius: 5,
-                            },
-                            {
-                                label: 'Demandes cloturees',
+                                label: 'Demandes clôturées',
                                 data: demandesCloturees,
                                 borderColor: '#f9b13c',
                                 backgroundColor: 'rgba(249, 177, 60, 0.16)',
@@ -2144,12 +1883,6 @@
             async function exportAnnexe2AsPdf() { redirectToPilotageExport('annexe2', 'pdf'); }
             function exportFunctionDistributionAsExcel() { redirectToPilotageExport('function-distribution', 'xlsx'); }
             async function exportFunctionDistributionAsPdf() { redirectToPilotageExport('function-distribution', 'pdf'); }
-            function exportInformationFunctionDistributionAsExcel() { redirectToPilotageExport('information-function-distribution', 'xlsx'); }
-            async function exportInformationFunctionDistributionAsPdf() { redirectToPilotageExport('information-function-distribution', 'pdf'); }
-            function exportInformationServiceDistributionAsExcel() { redirectToPilotageExport('information-service-distribution', 'xlsx'); }
-            async function exportInformationServiceDistributionAsPdf() { redirectToPilotageExport('information-service-distribution', 'pdf'); }
-            function exportReclamationFunctionDistributionAsExcel() { redirectToPilotageExport('reclamation-function-distribution', 'xlsx'); }
-            async function exportReclamationFunctionDistributionAsPdf() { redirectToPilotageExport('reclamation-function-distribution', 'pdf'); }
             function exportReclamationServiceDistributionAsExcel() { redirectToPilotageExport('reclamation-service-distribution', 'xlsx'); }
             async function exportReclamationServiceDistributionAsPdf() { redirectToPilotageExport('reclamation-service-distribution', 'pdf'); }
             function setActivePerformanceChart(target) {
@@ -2269,30 +2002,6 @@
 
             if (functionDistributionExportPdfButton) {
                 functionDistributionExportPdfButton.addEventListener('click', exportFunctionDistributionAsPdf);
-            }
-
-            if (informationFunctionDistributionExportXlsButton) {
-                informationFunctionDistributionExportXlsButton.addEventListener('click', exportInformationFunctionDistributionAsExcel);
-            }
-
-            if (informationFunctionDistributionExportPdfButton) {
-                informationFunctionDistributionExportPdfButton.addEventListener('click', exportInformationFunctionDistributionAsPdf);
-            }
-
-            if (informationServiceDistributionExportXlsButton) {
-                informationServiceDistributionExportXlsButton.addEventListener('click', exportInformationServiceDistributionAsExcel);
-            }
-
-            if (informationServiceDistributionExportPdfButton) {
-                informationServiceDistributionExportPdfButton.addEventListener('click', exportInformationServiceDistributionAsPdf);
-            }
-
-            if (reclamationFunctionDistributionExportXlsButton) {
-                reclamationFunctionDistributionExportXlsButton.addEventListener('click', exportReclamationFunctionDistributionAsExcel);
-            }
-
-            if (reclamationFunctionDistributionExportPdfButton) {
-                reclamationFunctionDistributionExportPdfButton.addEventListener('click', exportReclamationFunctionDistributionAsPdf);
             }
 
             if (reclamationServiceDistributionExportXlsButton) {

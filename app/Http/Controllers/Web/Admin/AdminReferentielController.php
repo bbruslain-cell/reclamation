@@ -12,7 +12,7 @@ class AdminReferentielController extends BaseAdminController
     public function indexDirections(Request $request): View
     {
         $actor = $this->access->requireActor($request);
-        $this->assertCanManageParams((int) $actor->id_utilisateur);
+        $this->assertCanManageParams($actor);
 
         $directions = DB::table('directions')->orderBy('code')->get();
         $services = DB::table('services')->get();
@@ -64,7 +64,7 @@ class AdminReferentielController extends BaseAdminController
     public function indexServices(Request $request): View
     {
         $actor = $this->access->requireActor($request);
-        $this->assertCanManageParams((int) $actor->id_utilisateur);
+        $this->assertCanManageParams($actor);
 
         $directions = DB::table('directions')->orderBy('code')->get();
         $services = DB::table('services as s')

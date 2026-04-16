@@ -2,7 +2,8 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>{{ $title }}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>{{ $forPdf ? $title : ($sheetTitle ?? $title) }}</title>
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
@@ -63,7 +64,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ count($section['headers']) }}">Aucune donnee disponible.</td>
+                        <td colspan="{{ count($section['headers']) }}">Aucune donnée disponible.</td>
                     </tr>
                 @endforelse
 

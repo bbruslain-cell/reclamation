@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\InteractsWithServiceWindow;
+use App\Models\Demande;
 use App\Services\AccessControlService;
 use App\Services\DemandWorkflowService;
 use App\Services\StepAlertService;
@@ -12,6 +13,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use RuntimeException;
@@ -31,7 +33,7 @@ class ChefInboxController extends Controller
     public function index(Request $request): View
     {
         $actor = $this->access->requireActor($request);
-        $this->access->assertPermission((int) $actor->id_utilisateur, 'demande.assign.agent');
+        Gate::forUser($actor)->authorize('demande.assign.agent');
 
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
@@ -68,6 +70,10 @@ class ChefInboxController extends Controller
                 's.libelle as service',
                 'u.nom as usager_nom',
                 'u.prenom as usager_prenom',
+                'u.email as usager_email',
+                'u.statut_usager as usager_statut',
+                'u.pays as usager_pays',
+                'u.etablissement as usager_etablissement',
                 'ag.nom as agent_nom',
                 'ag.prenom as agent_prenom'
             );
@@ -112,6 +118,35 @@ class ChefInboxController extends Controller
             ->all();
 
         $piecesByDemand = collect();
+        $historyByDemand = collect();
+        $recentChefActions = DB::table('historique_actions as ha')
+            ->join('demandes as d', 'd.id_demande', '=', 'ha.id_demande')
+            ->leftJoin('usagers as u', 'u.id_usager', '=', 'd.id_usager')
+            ->leftJoin('utilisateurs as actor_u', 'actor_u.id_utilisateur', '=', 'ha.id_utilisateur')
+            ->leftJoin('services as s', 's.id_service', '=', 'ha.id_service_associe')
+            ->whereIn('d.id_service_courant', !empty($allowedServiceIds) ? $allowedServiceIds : [-1])
+            ->whereIn('ha.type_action', [
+                'affectation_agent',
+                'annulation_affectation_agent',
+                'reponse_directe_chef',
+                'reponse_redigee',
+                'envoi_reponse',
+            ])
+            ->orderByDesc('ha.date_action')
+            ->limit(20)
+            ->get([
+                'ha.type_action',
+                'ha.date_action',
+                'ha.commentaire',
+                'd.id_demande',
+                'd.numero_suivi',
+                'd.objet',
+                'u.nom as usager_nom',
+                'u.prenom as usager_prenom',
+                'actor_u.nom as acteur_nom',
+                'actor_u.prenom as acteur_prenom',
+                's.code as service_code',
+            ]);
         if (!empty($demandIds)) {
             $piecesByDemand = DB::table('demande_piece_jointe as dpj')
                 ->join('pieces_jointes as pj', 'pj.id_piece_jointe', '=', 'dpj.id_piece_jointe')
@@ -122,6 +157,26 @@ class ChefInboxController extends Controller
                     'pj.id_piece_jointe',
                     'pj.nom_fichier',
                     'pj.chemin_fichier',
+                ])
+                ->groupBy('id_demande');
+
+            $historyByDemand = DB::table('historique_actions as ha')
+                ->leftJoin('utilisateurs as u', 'u.id_utilisateur', '=', 'ha.id_utilisateur')
+                ->leftJoin('services as s', 's.id_service', '=', 'ha.id_service_associe')
+                ->leftJoin('parametres as old_st', 'old_st.id_parametre', '=', 'ha.ancien_statut_id')
+                ->leftJoin('parametres as new_st', 'new_st.id_parametre', '=', 'ha.nouveau_statut_id')
+                ->whereIn('ha.id_demande', $demandIds)
+                ->orderByDesc('ha.date_action')
+                ->get([
+                    'ha.id_demande',
+                    'ha.type_action',
+                    'ha.date_action',
+                    'ha.commentaire',
+                    's.code as service_code',
+                    'old_st.libelle as ancien_statut',
+                    'new_st.libelle as nouveau_statut',
+                    'u.nom as acteur_nom',
+                    'u.prenom as acteur_prenom',
                 ])
                 ->groupBy('id_demande');
         }
@@ -141,8 +196,10 @@ class ChefInboxController extends Controller
             'pending' => $pending,
             'assigned' => $assigned,
             'piecesByDemand' => $piecesByDemand,
+            'historyByDemand' => $historyByDemand,
+            'recentChefActions' => $recentChefActions,
             'agentsByService' => $agents,
-            'canPilotage' => $this->access->hasPermission((int) $actor->id_utilisateur, 'dashboard.view'),
+            'canPilotage' => Gate::forUser($actor)->allows('dashboard.view'),
         ]);
     }
 
@@ -150,22 +207,19 @@ class ChefInboxController extends Controller
     {
         try {
             $actor = $this->access->requireActor($request);
-            $this->access->assertPermission((int) $actor->id_utilisateur, 'demande.assign.agent');
+            $demandModel = Demande::query()->find($id);
+            if (!$demandModel) {
+                throw new RuntimeException('Demande introuvable.');
+            }
+
+            Gate::forUser($actor)->authorize('assignAgent', $demandModel);
 
             $payload = $request->validate([
                 'id_agent' => ['required', 'integer', 'exists:utilisateurs,id_utilisateur'],
                 'commentaire' => ['nullable', 'string', 'max:2000'],
             ]);
 
-            $allowedServiceIds = $this->access->scopedServiceIds((int) $actor->id_utilisateur);
             $demand = DB::table('demandes')->where('id_demande', $id)->first();
-            if (!$demand) {
-                throw new RuntimeException('Demande introuvable.');
-            }
-
-            if (!in_array((int) $demand->id_service_courant, $allowedServiceIds, true)) {
-                throw new AuthorizationException('Acces refuse sur cette demande.');
-            }
 
             $agent = DB::table('utilisateurs as u')
                 ->join('utilisateur_role as ur', 'ur.id_utilisateur', '=', 'u.id_utilisateur')
@@ -186,7 +240,7 @@ class ChefInboxController extends Controller
                 comment: $payload['commentaire'] ?? null
             );
 
-            return redirect()->back()->with('success', 'Demande affectee a un agent.');
+            return redirect()->back()->with('success', 'Demande affectÃƒÂ©e ÃƒÂ  un agent.');
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         } catch (ValidationException $e) {
@@ -200,8 +254,12 @@ class ChefInboxController extends Controller
     {
         try {
             $actor = $this->access->requireActor($request);
-            $this->access->assertPermission((int) $actor->id_utilisateur, 'demande.reply.send');
-            $this->access->assertDemandAccess((int) $actor->id_utilisateur, $id);
+            $demandModel = Demande::query()->find($id);
+            if (!$demandModel) {
+                throw new RuntimeException('Demande introuvable.');
+            }
+
+            Gate::forUser($actor)->authorize('reply', $demandModel);
 
             $payload = $request->validate([
                 'contenu_reponse' => ['required', 'string', 'min:5'],
@@ -220,7 +278,7 @@ class ChefInboxController extends Controller
             }
 
             if ((int) ($demandMeta->id_agent_traitant ?? 0) > 0) {
-                throw new RuntimeException('Le chef de service ne peut plus repondre directement apres affectation a un agent.');
+                throw new RuntimeException('Le chef de service ne peut plus repondre directement aprÃƒÂ¨s l affectation ÃƒÂ  un agent.');
             }
 
             if (!in_array((string) $demandMeta->statut_code, ['affectee_service', 'reponse_prete'], true)) {
@@ -259,7 +317,7 @@ class ChefInboxController extends Controller
                 'updated_at' => now(),
             ]);
 
-            return redirect()->back()->with('success', 'Reponse directe du chef envoyee et demande cloturee.');
+            return redirect()->back()->with('success', 'RÃƒÂ©ponse directe envoyÃƒÂ©e et demande cloturÃƒÂ©e.');
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         } catch (ValidationException $e) {
@@ -273,8 +331,12 @@ class ChefInboxController extends Controller
     {
         try {
             $actor = $this->access->requireActor($request);
-            $this->access->assertPermission((int) $actor->id_utilisateur, 'demande.assign.agent');
-            $this->access->assertDemandAccess((int) $actor->id_utilisateur, $id);
+            $demandModel = Demande::query()->find($id);
+            if (!$demandModel) {
+                throw new RuntimeException('Demande introuvable.');
+            }
+
+            Gate::forUser($actor)->authorize('cancelAgentAssignment', $demandModel);
 
             $payload = $request->validate([
                 'commentaire' => ['nullable', 'string', 'max:2000'],
@@ -286,7 +348,7 @@ class ChefInboxController extends Controller
                 comment: $payload['commentaire'] ?? null
             );
 
-            return redirect()->back()->with('success', 'Affectation agent annulee.');
+            return redirect()->back()->with('success', 'Affectation agent annulÃƒÂ©e.');
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         } catch (ValidationException $e) {
@@ -296,3 +358,5 @@ class ChefInboxController extends Controller
         }
     }
 }
+
+

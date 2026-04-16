@@ -37,11 +37,6 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10
 Route::post('/logout', [AuthController::class, 'logout']);
 
 // Mot de passe (oubli / réinitialisation)
-Route::get('/mot-de-passe/oubli', [PasswordController::class, 'showForgot']);
-Route::post('/mot-de-passe/oubli', [PasswordController::class, 'submitForgot'])->middleware('throttle:5,1');
-Route::get('/mot-de-passe/reinitialiser', [PasswordController::class, 'showReset']);
-Route::post('/mot-de-passe/reinitialiser', [PasswordController::class, 'submitReset']);
-
 // ---------------------------------------------------------------
 // Routes PROTÉGÉES (authentification obligatoire via agent.auth)
 // ---------------------------------------------------------------
@@ -61,8 +56,8 @@ Route::middleware('agent.auth')->group(function () {
     // Accueil
     Route::get('/accueil/inbox', [AccueilInboxController::class, 'index']);
     Route::put('/accueil/demandes/{id}/affecter', [AccueilInboxController::class, 'affecter']);
+    Route::put('/accueil/demandes/{id}/reponse-directe', [AccueilInboxController::class, 'reponseDirecteAccueil']);
     Route::put('/accueil/demandes/{id}/annuler-affectation', [AccueilInboxController::class, 'annulerAffectation']);
-    Route::put('/accueil/demandes/{id}/reponse-directe', [AccueilInboxController::class, 'reponseDirecte']);
 
     // Chef de service
     Route::get('/chef/inbox', [ChefInboxController::class, 'index']);
@@ -102,7 +97,7 @@ Route::middleware('agent.auth')->group(function () {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
         $access->assertPermission((int) $actor->id_utilisateur, 'dashboard.view');
-        return app(ApiOverviewController::class)->index($request);
+        return app(ApiOverviewController::class)->index($request, $access);
     });
     Route::get('/pilotage/export/{section}/{format}', [PilotageExportController::class, 'download']);
 

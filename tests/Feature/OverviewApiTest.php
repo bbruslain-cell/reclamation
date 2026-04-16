@@ -59,7 +59,6 @@ class OverviewApiTest extends TestCase
                     'labels',
                     'series' => [
                         'reclamations_recues',
-                        'informations_recues',
                         'demandes_cloturees',
                     ],
                 ],
@@ -69,17 +68,11 @@ class OverviewApiTest extends TestCase
                 'registre_controle_interne',
                 'tableau_suivi_annexe',
                 'annexe_repartition' => [
-                    'informations',
-                    'total_informations',
                     'reclamations',
                     'total_reclamations',
                 ],
                 'annexes_fonctions' => [
                     'global' => [
-                        'rows',
-                        'totaux',
-                    ],
-                    'informations' => [
                         'rows',
                         'totaux',
                     ],
@@ -197,40 +190,7 @@ class OverviewApiTest extends TestCase
         $this->assertSame('DAF Chef', $registre->get('ANBG-2026-0005')['acteur_reponse']);
     }
 
-    public function test_overview_annexe_repartition_counts_categories_selected_by_usagers(): void
-    {
-        $this->seed();
-
-        $this->post('/reclamations', [
-            'nom' => 'Doe',
-            'prenom' => 'Jane',
-            'email' => 'jane.category@example.com',
-            'telephone' => '060000000',
-            'qualite' => 'Etudiante',
-            'type_demande_code' => 'demande_information',
-            'categorie' => 'Demande d informations diverses',
-            'objet' => 'Question complementaire',
-            'message' => 'Je souhaite des informations complementaires sur mon dossier en cours.',
-            'consentement' => 'on',
-        ])->assertRedirect('/reclamations/nouvelle');
-
-        $ciqId = (int) \Illuminate\Support\Facades\DB::table('utilisateurs')
-            ->where('email', 'ciq@anbg.ga')
-            ->value('id_utilisateur');
-
-        $response = $this->withHeader('X-User-Id', (string) $ciqId)
-            ->getJson('/api/overview?periode=all');
-
-        $response->assertOk();
-
-        $informationRows = collect($response->json('annexe_repartition.informations') ?? [])
-            ->keyBy('categorie');
-
-        $this->assertTrue($informationRows->has('Demande d informations diverses'));
-        $this->assertSame(1, $informationRows->get('Demande d informations diverses')['nombre_mails']);
-    }
-
-    public function test_overview_exposes_function_annexes_for_global_and_information_tables(): void
+    public function test_overview_exposes_function_annexes_for_global_tables(): void
     {
         $this->seed();
 
@@ -244,7 +204,6 @@ class OverviewApiTest extends TestCase
         $response->assertOk();
 
         $globalRows = collect($response->json('annexes_fonctions.global.rows') ?? [])->keyBy('fonction_code');
-        $informationRows = collect($response->json('annexes_fonctions.informations.rows') ?? [])->keyBy('fonction_code');
 
         $this->assertTrue($globalRows->has('DS'));
         $this->assertTrue($globalRows->has('DSIC'));
@@ -254,73 +213,138 @@ class OverviewApiTest extends TestCase
         $this->assertSame(1, $globalRows->get('DSIC')['total_demandes']);
         $this->assertSame(1, $globalRows->get('DSIC')['total_traitees']);
         $this->assertEquals(100.0, $globalRows->get('DSIC')['taux_conformite']);
-
-        $this->assertSame(1, $informationRows->get('DSIC')['total_demandes']);
-        $this->assertSame(1, $informationRows->get('DSIC')['total_traitees']);
-        $this->assertSame(0, $informationRows->get('UCAS')['total_demandes']);
     }
 
-    public function test_overview_annexe_uses_ucas_for_direct_accueil_reply(): void
+    public function test_overview_reports_direct_accueil_responses_under_ucas(): void
     {
         $this->seed();
+
+        $this->post('/reclamations', [
+            'nom' => 'Mouila',
+            'prenom' => 'Sandra',
+            'email' => 'pilotage.direct.accueil@example.com',
+            'statut_usager' => 'Parent / Tuteur',
+            'pays' => 'Gabon',
+            'etablissement' => '',
+            'categorie' => 'Suivi bourse',
+            'objet' => 'Réclamation UCAS pilotage',
+            'message' => 'Je souhaite une prise en charge directe au niveau accueil.',
+            'consentement' => 'on',
+        ])->assertRedirect('/reclamations/nouvelle');
+
+        $trackingNumber = (string) DB::table('demandes')
+            ->where('objet', 'Réclamation UCAS pilotage')
+            ->value('numero_suivi');
+        $demandId = (int) DB::table('demandes')
+            ->where('numero_suivi', $trackingNumber)
+            ->value('id_demande');
+
+        $this->post('/login', [
+            'email' => 'accueil@anbg.ga',
+            'password' => 'ChangeMe@123',
+        ])->assertRedirect('/mot-de-passe/nouveau');
+
+        $this->post('/mot-de-passe/nouveau', [
+            'ancien_mdp' => 'ChangeMe@123',
+            'password' => 'ChangeMe@124',
+            'password_confirmation' => 'ChangeMe@124',
+        ])->assertRedirect('/espace');
+
+        $this->post("/accueil/demandes/{$demandId}/reponse-directe", [
+            '_method' => 'PUT',
+            'contenu_reponse' => "La réponse a été apportée directement à l'accueil pour clôture immédiate.",
+        ])->assertRedirect();
 
         $ciqId = (int) DB::table('utilisateurs')
             ->where('email', 'ciq@anbg.ga')
             ->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->where('id_utilisateur', $ciqId)
+            ->update(['changement_mdp_requis' => false]);
 
-        $accueilId = (int) DB::table('utilisateurs')
-            ->where('email', 'accueil@anbg.ga')
-            ->value('id_utilisateur');
+        $response = $this->withHeader('X-User-Id', (string) $ciqId)
+            ->getJson('/api/overview?periode=all');
 
-        $ucasServiceId = (int) DB::table('services')
-            ->where('code', 'UCAS')
-            ->value('id_service');
+        $response->assertOk();
 
-        $clotureeId = (int) DB::table('parametres')
-            ->where('famille', 'statut_demande')
-            ->where('code', 'cloturee')
-            ->value('id_parametre');
+        $serviceRows = collect($response->json('annexes_services.reclamations.rows') ?? [])->keyBy('service_code');
+        $trackingRow = collect($response->json('tableau_suivi_annexe') ?? [])->firstWhere('numero_suivi', $trackingNumber);
+        $traceRow = collect($response->json('tracabilite_globale') ?? [])->firstWhere('numero_suivi', $trackingNumber);
 
+        $this->assertTrue($serviceRows->has('UCAS'));
+        $this->assertNotNull($trackingRow);
+        $this->assertSame('UCAS', $trackingRow['service_direction']);
+        $this->assertNotNull($traceRow);
+        $this->assertContains('Réponse directe accueil', collect($traceRow['actions'] ?? [])->pluck('action')->all());
+    }
+
+    public function test_overview_marks_overdue_direct_accueil_response_as_out_of_time(): void
+    {
+        $this->seed();
+
+        $this->post('/reclamations', [
+            'nom' => 'Mouila',
+            'prenom' => 'Sandra',
+            'email' => 'pilotage.direct.accueil.retard@example.com',
+            'statut_usager' => 'Parent / Tuteur',
+            'pays' => 'Gabon',
+            'etablissement' => '',
+            'categorie' => 'Suivi bourse',
+            'objet' => 'RÃ©clamation UCAS en retard',
+            'message' => 'Je souhaite une prise en charge directe au niveau accueil mais hors dÃ©lai.',
+            'consentement' => 'on',
+        ])->assertRedirect('/reclamations/nouvelle');
+
+        $trackingNumber = (string) DB::table('demandes')
+            ->where('objet', 'RÃ©clamation UCAS en retard')
+            ->value('numero_suivi');
         $demandId = (int) DB::table('demandes')
-            ->where('numero_suivi', 'ANBG-2026-0001')
+            ->where('numero_suivi', $trackingNumber)
             ->value('id_demande');
 
         DB::table('demandes')
             ->where('id_demande', $demandId)
             ->update([
-                'id_statut' => $clotureeId,
-                'id_service_courant' => null,
-                'id_agent_accueil' => $accueilId,
-                'id_agent_direction' => null,
-                'id_agent_traitant' => null,
-                'date_affectation_accueil' => now()->subHours(2),
-                'date_envoi_usager' => now()->subHour(),
-                'date_cloture' => now()->subHour(),
+                'date_soumission' => now()->subDays(3),
                 'updated_at' => now(),
             ]);
 
-        DB::table('historique_actions')->insert([
-            'id_demande' => $demandId,
-            'id_utilisateur' => $accueilId,
-            'type_action' => 'reponse_directe_accueil',
-            'ancien_statut_id' => null,
-            'nouveau_statut_id' => null,
-            'id_service_associe' => $ucasServiceId,
-            'date_action' => now()->subHour(),
-            'commentaire' => 'Reponse directe accueil',
-            'created_at' => now()->subHour(),
-            'updated_at' => now()->subHour(),
-        ]);
+        $this->post('/login', [
+            'email' => 'accueil@anbg.ga',
+            'password' => 'ChangeMe@123',
+        ])->assertRedirect('/mot-de-passe/nouveau');
+
+        $this->post('/mot-de-passe/nouveau', [
+            'ancien_mdp' => 'ChangeMe@123',
+            'password' => 'ChangeMe@124',
+            'password_confirmation' => 'ChangeMe@124',
+        ])->assertRedirect('/espace');
+
+        $this->post("/accueil/demandes/{$demandId}/reponse-directe", [
+            '_method' => 'PUT',
+            'contenu_reponse' => "La rÃ©ponse directe accueil a Ã©tÃ© envoyÃ©e aprÃ¨s dÃ©passement du dÃ©lai.",
+        ])->assertRedirect();
+
+        $ciqId = (int) DB::table('utilisateurs')
+            ->where('email', 'ciq@anbg.ga')
+            ->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->where('id_utilisateur', $ciqId)
+            ->update(['changement_mdp_requis' => false]);
 
         $response = $this->withHeader('X-User-Id', (string) $ciqId)
-            ->getJson('/api/overview');
+            ->getJson('/api/overview?periode=all');
 
         $response->assertOk();
 
-        $annexeRows = collect($response->json('tableau_suivi_annexe') ?? [])->keyBy('numero_suivi');
-        $row = $annexeRows->get('ANBG-2026-0001');
+        $trackingRow = collect($response->json('tableau_suivi_annexe') ?? [])->firstWhere('numero_suivi', $trackingNumber);
+        $serviceRows = collect($response->json('annexes_services.reclamations.rows') ?? [])->keyBy('service_code');
 
-        $this->assertNotNull($row);
-        $this->assertSame('UCAS', $row['service_direction']);
+        $this->assertNotNull($trackingRow);
+        $this->assertSame('UCAS', $trackingRow['service_direction']);
+        $this->assertSame('NON', $trackingRow['respect_delais']);
+        $this->assertSame('NON', $trackingRow['delai_transmission_oh']);
+        $this->assertTrue($serviceRows->has('UCAS'));
+        $this->assertSame(0, (int) ($serviceRows->get('UCAS')['total_traitees_delai'] ?? -1));
     }
 }
