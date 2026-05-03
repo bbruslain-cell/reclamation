@@ -1,10 +1,14 @@
 <!doctype html>
 <html lang="fr">
+@php
+    $serviceSummary = $serviceSummary ?? [];
+@endphp
 <head>
     <meta charset="utf-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <title>Chef de service Ã¢â‚¬â€ ANBG</title>
+    <title>Chef de service | ANBG</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -81,6 +85,21 @@
         .fa-lock { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M7 10V8a5 5 0 0 1 10 0v2h1a2 2 0 0 1 2 2v8H4v-8a2 2 0 0 1 2-2h1Zm2 0h6V8a3 3 0 0 0-6 0v2Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M7 10V8a5 5 0 0 1 10 0v2h1a2 2 0 0 1 2 2v8H4v-8a2 2 0 0 1 2-2h1Zm2 0h6V8a3 3 0 0 0-6 0v2Z'/%3E%3C/svg%3E\"); }
         .fa-xmark { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4 6.4 5Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4 6.4 5Z'/%3E%3C/svg%3E\"); }
         .fa-user-xmark { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M9 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-6 2-6 4.5V20h9v-2.5a4.8 4.8 0 0 1 1.3-3.2A9.7 9.7 0 0 0 9 13Zm6.4 1L18 16.6l2.6-2.6 1.4 1.4-2.6 2.6 2.6 2.6-1.4 1.4L18 19.4 15.4 22 14 20.6l2.6-2.6-2.6-2.6 1.4-1.4Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M9 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-6 2-6 4.5V20h9v-2.5a4.8 4.8 0 0 1 1.3-3.2A9.7 9.7 0 0 0 9 13Zm6.4 1L18 16.6l2.6-2.6 1.4 1.4-2.6 2.6 2.6 2.6-1.4 1.4L18 19.4 15.4 22 14 20.6l2.6-2.6-2.6-2.6 1.4-1.4Z'/%3E%3C/svg%3E\"); }
+        .kpi-card {
+            position: relative;
+            overflow: hidden;
+        }
+        .kpi-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent 55%);
+            pointer-events: none;
+        }
+        .kpi-card > * {
+            position: relative;
+            z-index: 1;
+        }
     </style>
 </head>
 
@@ -140,19 +159,10 @@
                 </div>
                 <div>
                     <h1 class="text-white text-xl font-medium leading-snug mb-1">Espace Chef de service</h1>
-                   
-                       
-                    <div class="mt-3 flex flex-wrap gap-2">
-                        <span class="inline-flex items-center gap-1.5 bg-sky/15 border border-sky/25 text-sky-100 text-xs font-medium px-3 py-1 rounded-full">
-                            <svg class="icon-svg text-sky text-[15px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5h-2v6l5 3 1-1.7-4-2.3V7Z" fill="currentColor"/></svg> D&eacute;lai partag&eacute; 48h
-                        </span>
-                        <span class="inline-flex items-center gap-1.5 bg-leaf/15 border border-leaf/25 text-green-100 text-xs font-medium px-3 py-1 rounded-full">
-                            <svg class="icon-svg text-leaf text-[15px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 11a4 4 0 1 0-3.999-4A4 4 0 0 0 9 11Zm6 1a3 3 0 1 0-2.999-3A3 3 0 0 0 15 12Zm-6 2c-3.3 0-6 2-6 4.5V21h12v-2.5C15 16 12.3 14 9 14Zm6 .5c-.8 0-1.6.1-2.3.4 1.4.9 2.3 2.1 2.3 3.6V21h6v-1.8c0-2.6-2.7-4.7-6-4.7Z" fill="currentColor"/></svg> Affectation aux agents
-                        </span>
-                        <span class="inline-flex items-center gap-1.5 bg-gold/15 border border-gold/25 text-yellow-100 text-xs font-medium px-3 py-1 rounded-full">
-                            <svg class="icon-svg text-gold text-[15px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 7 3 12l7 5v-3h3c3.3 0 5.4 1.1 8 4-1-6-4-9-9-9h-2V7Z" fill="currentColor"/></svg> R&eacute;ponse directe
-                        </span>
-                    </div>
+                    <p class="max-w-3xl text-sm leading-6 text-white/78">
+                        Vue op&eacute;rationnelle du <span class="font-semibold text-white">{{ $serviceSummary['service_label'] ?? 'Service non renseign&eacute;' }}</span>
+                    </p>
+
                 </div>
             </div>
         </div>
@@ -199,7 +209,61 @@
             </form>
         </div>
 
-        {{-- SECTION 1 ÃƒÂ¢Ã‚â‚¬Ã‚â€ Sans agent assignÃƒÆ’Ã‚Â© --}}
+        {{-- SECTION 1 - Sans agent assigné --}}
+        <section id="chef-kpi-content" class="flex flex-wrap items-stretch justify-center gap-3">
+            <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#3996d3_0%,#1c203d_120%)] px-4 py-4 text-white shadow-card">
+                <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
+                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/12">
+                        <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M5 3h14l3 9v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7l3-9Zm1.4 2L4.1 12H9l1 2h4l1-2h4.9L17.6 5H6.4Z" fill="currentColor"/>
+                        </svg>
+                    </span>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">Demandes affect&eacute;es</p>
+                    <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ (int) ($serviceSummary['total_sans_agent'] ?? 0) }}">{{ number_format((int) ($serviceSummary['total_sans_agent'] ?? 0), 0, ',', ' ') }}</p>
+                </div>
+            </article>
+            <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#f8e932_0%,#d9a90a_110%)] px-4 py-4 text-[#1c203d] shadow-card">
+                <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
+                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/35">
+                        <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/>
+                            <path d="M12 7.8v5.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            <circle cx="12" cy="16.8" r="1" fill="currentColor"/>
+                        </svg>
+                    </span>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1c203d]/72">Demandes en retard</p>
+                    <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ (int) ($serviceSummary['total_en_retard'] ?? 0) }}">{{ number_format((int) ($serviceSummary['total_en_retard'] ?? 0), 0, ',', ' ') }}</p>
+                </div>
+            </article>
+            <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#8fc043_0%,#45661c_115%)] px-4 py-4 text-white shadow-card">
+                <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
+                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/12">
+                        <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M17.2 14.3l-3.4 3.4-1.6-1.6-1.4 1.4 3 3 4.8-4.8-1.4-1.4Z" fill="currentColor"/>
+                            <path d="M9 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-6 2-6 4.5V20h8.5a6 6 0 0 1-.5-2.5c0-1.7.7-3.2 1.8-4.3A8.8 8.8 0 0 0 9 13Z" fill="currentColor"/>
+                        </svg>
+                    </span>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/72">Demandes assign&eacute;es</p>
+                    <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ (int) ($serviceSummary['total_suivies'] ?? 0) }}">{{ number_format((int) ($serviceSummary['total_suivies'] ?? 0), 0, ',', ' ') }}</p>
+                </div>
+            </article>
+            <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#1c203d_0%,#2a3163_100%)] px-4 py-4 text-white shadow-card">
+                <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
+                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/12">
+                        <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M9 11a4 4 0 1 0-3.999-4A4 4 0 0 0 9 11Zm6 1a3 3 0 1 0-2.999-3A3 3 0 0 0 15 12Zm-6 2c-3.3 0-6 2-6 4.5V21h12v-2.5C15 16 12.3 14 9 14Zm6 .5c-.8 0-1.6.1-2.3.4 1.4.9 2.3 2.1 2.3 3.6V21h6v-1.8c0-2.6-2.7-4.7-6-4.7Z" fill="currentColor"/>
+                        </svg>
+                    </span>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/68">Total agents</p>
+                    <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ (int) ($serviceSummary['total_agents'] ?? 0) }}">{{ number_format((int) ($serviceSummary['total_agents'] ?? 0), 0, ',', ' ') }}</p>
+                </div>
+            </article>
+        </section>
+
+        <div id="chef-live-content"
+            class="space-y-6"
+            data-refresh-url="{{ request()->fullUrl() }}"
+            data-refresh-interval="20000">
         <div class="surface-card rounded-[26px] overflow-hidden">
             <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -222,8 +286,8 @@
                             <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Usager</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Service</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Statut</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Alerte 48h</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Temps restant 48h</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Alerte 16h</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Temps restant 16h</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Action</th>
                         </tr>
                     </thead>
@@ -286,7 +350,7 @@
                             </td>
                         </tr>
 
-                        {{-- DÃƒÆ’Ã‚Â©tail --}}
+                        {{-- Détail --}}
                         <tr id="detail-p-{{ $demande->id_demande }}" class="detail-row" style="display:none;">
                             <td colspan="7" class="px-4 py-4 bg-[linear-gradient(180deg,#f8fbfe_0%,#f4f7fb_100%)] border-b border-neutral-100">
                                 @php
@@ -306,7 +370,7 @@
                                 @endphp
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-                                    {{-- DÃƒÆ’Ã‚Â©tail demande --}}
+                                    {{-- Détail demande --}}
                                     <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
                                         <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2">
                                             <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 2h8l4 4v16H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V7h3.5L13 3.5ZM8 11h8v2H8v-2Zm0 4h8v2H8v-2Z" fill="currentColor"/></svg>D&eacute;tail de la demande
@@ -385,8 +449,6 @@
                                             <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2 mb-3">
                                                 <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 7 3 12l7 5v-3h3c3.3 0 5.4 1.1 8 4-1-6-4-9-9-9h-2V7Z" fill="currentColor"/></svg>R&eacute;ponse directe du chef
                                             </h4>
-                                           
-                                            </div>
                                             <form method="post" action="/chef/demandes/{{ $demande->id_demande }}/reponse-directe" enctype="multipart/form-data" class="space-y-2.5">
                                                 @csrf @method('put')
                                                 <textarea name="contenu_reponse" required rows="4"
@@ -395,7 +457,7 @@
                                                 <label for="chef-direct-files-{{ $demande->id_demande }}" class="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-neutral-200 hover:border-sky rounded-lg p-3 cursor-pointer transition-colors duration-150 bg-neutral-50 hover:bg-sky-50">
                                                     <svg class="icon-svg text-neutral-400 text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 11a4 4 0 0 0 1 7Zm6-6V8h-2v4H8l4 4 4-4h-3Z" fill="currentColor"/></svg>
                                                     <span class="text-xs text-neutral-400">Pi&egrave;ces jointes (optionnel)</span>
-                                                    <span class="file-selection-feedback text-[11px] text-neutral-400 text-center">Aucun fichier sÃ©lectionnÃ©</span>
+                                                    <span class="file-selection-feedback text-[11px] text-neutral-400 text-center">Aucun fichier s&eacute;lectionn&eacute;</span>
                                                     <input id="chef-direct-files-{{ $demande->id_demande }}" type="file" name="pieces_jointes[]" multiple class="hidden" data-file-feedback>
                                                 </label>
                                                 <button type="submit"
@@ -429,7 +491,7 @@
                                                         {{ $historyLabels[$entry->type_action] ?? ucfirst(str_replace('_', ' ', (string) $entry->type_action)) }}
                                                     </span>
                                                     <p class="text-sm font-medium text-navy">
-                                                        {{ trim(((string) ($entry->acteur_prenom ?? '')).' '.((string) ($entry->acteur_nom ?? ''))) ?: 'Systeme' }}
+                                                        {{ trim(((string) ($entry->acteur_prenom ?? '')).' '.((string) ($entry->acteur_nom ?? ''))) !== '' ? trim(((string) ($entry->acteur_prenom ?? '')).' '.((string) ($entry->acteur_nom ?? ''))) : html_entity_decode('Syst&egrave;me', ENT_QUOTES, 'UTF-8') }}
                                                     </p>
                                                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-400">
                                                         <span>{{ \Carbon\Carbon::parse($entry->date_action)->format('d/m/Y H:i') }}</span>
@@ -437,7 +499,7 @@
                                                         <span>Service : {{ $entry->service_code }}</span>
                                                         @endif
                                                         @if(!empty($entry->ancien_statut) || !empty($entry->nouveau_statut))
-                                                        <span>{{ $entry->ancien_statut ?: 'Ã¢â‚¬â€' }} Ã¢â€ â€™ {{ $entry->nouveau_statut ?: 'Ã¢â‚¬â€' }}</span>
+                                                        <span>{{ $entry->ancien_statut ?: '-' }} -> {{ $entry->nouveau_statut ?: '-' }}</span>
                                                         @endif
                                                     </div>
                                                 </div>
@@ -447,7 +509,7 @@
                                             @endif
                                         </div>
                                         @empty
-                                        <p class="text-sm text-neutral-400">Aucune action enregistr?e pour cette demande.</p>
+                                        <p class="text-sm text-neutral-400">Aucune action enregistr&eacute;e pour cette demande.</p>
                                         @endforelse
                                     </div>
                                 </div>
@@ -479,7 +541,7 @@
             @endif
         </div>
 
-        {{-- SECTION 2 ÃƒÂ¢Ã‚â‚¬Ã‚â€ Avec agent assignÃƒÆ’Ã‚Â© --}}
+        {{-- SECTION 2 - Avec agent assigné --}}
         <div class="surface-card rounded-[26px] overflow-hidden">
             <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -502,8 +564,8 @@
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Usager</th>
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Agent</th>
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Statut</th>
-                            <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Alerte 48h</th>
-                            <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Temps restant 48h</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Alerte 16h</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Temps restant 16h</th>
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Action</th>
                         </tr>
                     </thead>
@@ -571,7 +633,7 @@
                             </td>
                         </tr>
 
-                        {{-- DÃƒÆ’Ã‚Â©tail --}}
+                        {{-- Détail --}}
                         <tr id="detail-a-{{ $demande->id_demande }}" class="detail-row" style="display:none;">
                             <td colspan="7" class="px-4 py-4 bg-[linear-gradient(180deg,#f8fbfe_0%,#f4f7fb_100%)] border-b border-neutral-100">
                                 @php
@@ -591,7 +653,7 @@
                                 @endphp
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-                                    {{-- DÃƒÆ’Ã‚Â©tail demande --}}
+                                    {{-- Détail demande --}}
                                     <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
                                         <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2">
                                             <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 2h8l4 4v16H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V7h3.5L13 3.5ZM8 11h8v2H8v-2Zm0 4h8v2H8v-2Z" fill="currentColor"/></svg>D&eacute;tail de la demande
@@ -658,7 +720,7 @@
                                                 <label for="chef-assigned-files-{{ $demande->id_demande }}" class="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-neutral-200 hover:border-sky rounded-lg p-3 cursor-pointer transition-colors duration-150 bg-neutral-50 hover:bg-sky-50">
                                                     <svg class="icon-svg text-neutral-400 text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 11a4 4 0 0 0 1 7Zm6-6V8h-2v4H8l4 4 4-4h-3Z" fill="currentColor"/></svg>
                                                     <span class="text-xs text-neutral-400">Pi&egrave;ces jointes (optionnel)</span>
-                                                    <span class="file-selection-feedback text-[11px] text-neutral-400 text-center">Aucun fichier sÃ©lectionnÃ©</span>
+                                                    <span class="file-selection-feedback text-[11px] text-neutral-400 text-center">Aucun fichier s&eacute;lectionn&eacute;</span>
                                                     <input id="chef-assigned-files-{{ $demande->id_demande }}" type="file" name="pieces_jointes[]" multiple class="hidden" data-file-feedback>
                                                 </label>
                                                 <button type="submit"
@@ -668,7 +730,7 @@
                                             </form>
                                         </div>
 
-                                        {{-- Annuler / VerrouillÃƒÆ’Ã‚Â© --}}
+                                        {{-- Annuler / Verrouillé --}}
                                         @if($demande->statut_code === 'affectee_agent')
                                         <div class="bg-white border border-red-100 rounded-xl p-4">
                                             <h4 class="text-xs font-medium text-red-500 uppercase tracking-wider border-b border-red-100 pb-2 mb-3">
@@ -719,7 +781,7 @@
                                                         {{ $historyLabels[$entry->type_action] ?? ucfirst(str_replace('_', ' ', (string) $entry->type_action)) }}
                                                     </span>
                                                     <p class="text-sm font-medium text-navy">
-                                                        {{ trim(((string) ($entry->acteur_prenom ?? '')).' '.((string) ($entry->acteur_nom ?? ''))) ?: html_entity_decode('Syst&egrave;me', ENT_QUOTES, 'UTF-8') }}
+                                                        {{ trim(((string) ($entry->acteur_prenom ?? '')).' '.((string) ($entry->acteur_nom ?? ''))) !== '' ? trim(((string) ($entry->acteur_prenom ?? '')).' '.((string) ($entry->acteur_nom ?? ''))) : html_entity_decode('Syst&egrave;me', ENT_QUOTES, 'UTF-8') }}
                                                     </p>
                                                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-400">
                                                         <span>{{ \Carbon\Carbon::parse($entry->date_action)->format('d/m/Y H:i') }}</span>
@@ -803,8 +865,8 @@
                             </div>
                             <p class="text-sm font-medium text-navy">{{ $entry->objet }}</p>
                             <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500">
-                                <span>Usager : {{ trim(((string) ($entry->usager_prenom ?? '')).' '.((string) ($entry->usager_nom ?? ''))) ?: 'Ã¢â‚¬â€' }}</span>
-                                <span>Acteur : {{ trim(((string) ($entry->acteur_prenom ?? '')).' '.((string) ($entry->acteur_nom ?? ''))) ?: html_entity_decode('Syst&egrave;me', ENT_QUOTES, 'UTF-8') }}</span>
+                                <span>Usager : {{ trim(((string) ($entry->usager_prenom ?? '')).' '.((string) ($entry->usager_nom ?? ''))) !== '' ? trim(((string) ($entry->usager_prenom ?? '')).' '.((string) ($entry->usager_nom ?? ''))) : '-' }}</span>
+                                <span>Acteur : {{ trim(((string) ($entry->acteur_prenom ?? '')).' '.((string) ($entry->acteur_nom ?? ''))) !== '' ? trim(((string) ($entry->acteur_prenom ?? '')).' '.((string) ($entry->acteur_nom ?? ''))) : html_entity_decode('Syst&egrave;me', ENT_QUOTES, 'UTF-8') }}</span>
                                 @if(!empty($entry->service_code))
                                 <span>Service : {{ $entry->service_code }}</span>
                                 @endif
@@ -825,6 +887,7 @@
                 @endforelse
             </div>
         </div>
+        </div>
 
         {{-- Footer --}}
         <footer class="border-t border-neutral-200 pt-4 pb-2 flex items-center justify-between text-xs text-neutral-400">
@@ -836,7 +899,43 @@
 
 <script>
 (function () {
-    document.querySelectorAll('tr[id^="detail-a-"] form[action*="/reponse-directe"]').forEach((form) => {
+    const eyeSvg = `
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M2.8 12s3.2-5.5 9.2-5.5S21.2 12 21.2 12s-3.2 5.5-9.2 5.5S2.8 12 2.8 12Z" stroke="currentColor" stroke-width="2"/>
+            <circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="2"/>
+        </svg>`;
+    const eyeOffSvg = `
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="m4 4 16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M2.8 12s3.2-5.5 9.2-5.5c2.5 0 4.6.9 6.2 2.1M21.2 12s-3.2 5.5-9.2 5.5c-2.5 0-4.6-.9-6.2-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="2"/>
+        </svg>`;
+    const liveContent = document.getElementById('chef-live-content');
+    const kpiContent = document.getElementById('chef-kpi-content');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+    const animateCounters = (root = document) => {
+        root.querySelectorAll('[data-countup]:not([data-countup-ready])').forEach((node) => {
+            node.dataset.countupReady = '1';
+            const target = Number(node.getAttribute('data-countup') || 0);
+            const duration = 700;
+            const startTime = performance.now();
+
+            const tick = (now) => {
+                const progress = Math.min((now - startTime) / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                node.textContent = Math.round(target * eased).toLocaleString('fr-FR');
+                if (progress < 1) {
+                    requestAnimationFrame(tick);
+                }
+            };
+
+            requestAnimationFrame(tick);
+        });
+    };
+
+    const initDirectReplyRestrictions = (root = document) => {
+    root.querySelectorAll('tr[id^="detail-a-"] form[action*="/reponse-directe"]').forEach((form) => {
         const card = form.closest('.bg-white');
         if (!card) return;
 
@@ -849,8 +948,11 @@
             </div>
         `;
     });
+    };
 
-    document.querySelectorAll('input[data-file-feedback]').forEach((input) => {
+    const initFileFeedback = (root = document) => {
+    root.querySelectorAll('input[data-file-feedback]:not([data-file-feedback-ready])').forEach((input) => {
+        input.dataset.fileFeedbackReady = '1';
         input.addEventListener('change', () => {
             const label = input.closest('label');
             const feedback = label?.querySelector('.file-selection-feedback');
@@ -858,17 +960,20 @@
 
             const files = Array.from(input.files || []);
             if (!files.length) {
-                feedback.textContent = 'Aucun fichier sÃ©lectionnÃ©';
+                feedback.textContent = 'Aucun fichier sélectionné';
                 return;
             }
 
             feedback.textContent = files.length === 1
                 ? files[0].name
-                : `${files.length} fichiers sÃ©lectionnÃ©s`;
+                : `${files.length} fichiers sélectionnés`;
         });
     });
+    };
 
-    document.querySelectorAll('.view-toggle').forEach((btn) => {
+    const initViewToggles = (root = document) => {
+    root.querySelectorAll('.view-toggle:not([data-toggle-ready])').forEach((btn) => {
+        btn.dataset.toggleReady = '1';
         btn.addEventListener('click', () => {
             const row  = document.getElementById(btn.dataset.target);
             if (!row) return;
@@ -879,25 +984,127 @@
             const spans = btn.querySelectorAll('span');
             const label = spans.length > 1 ? spans[1] : null;
             if (isOpen) {
-                icon.innerHTML = `
-                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M2.8 12s3.2-5.5 9.2-5.5S21.2 12 21.2 12s-3.2 5.5-9.2 5.5S2.8 12 2.8 12Z" stroke="currentColor" stroke-width="2"/>
-                        <circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                `;
+                row.querySelectorAll('form').forEach((form) => {
+                    delete form.dataset.refreshDirty;
+                });
+                icon.innerHTML = eyeSvg;
                 if (label) label.textContent = 'Voir';
             } else {
-                icon.innerHTML = `
-                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="m4 4 16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M2.8 12s3.2-5.5 9.2-5.5c2.5 0 4.6.9 6.2 2.1M21.2 12s-3.2 5.5-9.2 5.5c-2.5 0-4.6-.9-6.2-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        <circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                `;
+                icon.innerHTML = eyeOffSvg;
                 if (label) label.textContent = 'Masquer';
             }
         });
     });
+    };
+
+    const initFormRefreshLocks = (root = document) => {
+        root.querySelectorAll('form:not([data-refresh-form-ready])').forEach((form) => {
+            form.dataset.refreshFormReady = '1';
+            form.addEventListener('input', () => {
+                form.dataset.refreshDirty = '1';
+            });
+            form.addEventListener('change', () => {
+                form.dataset.refreshDirty = '1';
+            });
+            form.addEventListener('submit', () => {
+                if (liveContent && liveContent.contains(form)) {
+                    liveContent.dataset.refreshLocked = '1';
+                }
+            });
+        });
+    };
+
+    const initChefInteractions = (root = document) => {
+        animateCounters(root);
+        initDirectReplyRestrictions(root);
+        initFileFeedback(root);
+        initFormRefreshLocks(root);
+        initViewToggles(root);
+    };
+
+    const hasFocusedControl = () => {
+        const active = document.activeElement;
+        if (!active || !liveContent || !liveContent.contains(active)) return false;
+
+        return ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(active.tagName) || active.isContentEditable;
+    };
+
+    const hasOpenDetail = () => {
+        if (!liveContent) return false;
+
+        return Array.from(liveContent.querySelectorAll('.detail-row')).some((row) => row.style.display !== 'none');
+    };
+
+    const hasDirtyForm = () => {
+        if (!liveContent) return false;
+
+        return Array.from(liveContent.querySelectorAll('form')).some((form) => form.dataset.refreshDirty === '1');
+    };
+
+    const shouldSkipRefresh = (isRefreshing) => {
+        if (!liveContent || isRefreshing || document.hidden || liveContent.dataset.refreshLocked === '1') {
+            return true;
+        }
+
+        return hasFocusedControl() || hasOpenDetail() || hasDirtyForm();
+    };
+
+    const initChefAutoRefresh = () => {
+        if (!liveContent || liveContent.dataset.autoRefreshReady === '1') return;
+        liveContent.dataset.autoRefreshReady = '1';
+
+        let isRefreshing = false;
+        const interval = Math.max(Number(liveContent.dataset.refreshInterval || 20000), 10000);
+
+        const refreshContent = async () => {
+            if (shouldSkipRefresh(isRefreshing)) return;
+            isRefreshing = true;
+
+            try {
+                const url = new URL(liveContent.dataset.refreshUrl || window.location.href, window.location.origin);
+                url.searchParams.set('_chef_refresh', Date.now().toString());
+
+                const response = await fetch(url.toString(), {
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-Chef-Refresh': 'tables',
+                    },
+                    cache: 'no-store',
+                });
+
+                if (!response.ok) return;
+
+                const html = await response.text();
+                const nextDocument = new DOMParser().parseFromString(html, 'text/html');
+                const nextKpiContent = nextDocument.getElementById('chef-kpi-content');
+                const nextContent = nextDocument.getElementById('chef-live-content');
+
+                if (nextKpiContent && kpiContent) {
+                    kpiContent.innerHTML = nextKpiContent.innerHTML;
+                    animateCounters(kpiContent);
+                }
+
+                if (!nextContent) return;
+
+                liveContent.innerHTML = nextContent.innerHTML;
+                initChefInteractions(liveContent);
+            } catch (error) {
+                console.warn('Rafraichissement chef de service interrompu.', error);
+            } finally {
+                isRefreshing = false;
+            }
+        };
+
+        window.setInterval(refreshContent, interval);
+        window.addEventListener('focus', refreshContent);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) refreshContent();
+        });
+    };
+
+    initChefInteractions(document);
+    initChefAutoRefresh();
 })();
 </script>
 </body>

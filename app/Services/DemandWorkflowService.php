@@ -252,7 +252,7 @@ class DemandWorkflowService
                 oldStatusId: $demand->id_statut,
                 newStatusId: $statusResponseReady,
                 serviceId:   $demand->id_service_courant,
-                comment:     'Reponse unique'
+                comment:     'Réponse rédigée'
             );
 
             $result = $this->refreshDemandSla($demandId);
@@ -318,7 +318,7 @@ class DemandWorkflowService
                 oldStatusId: $demand->id_statut,
                 newStatusId: $statusCloturee,
                 serviceId: $demand->id_service_courant,
-                comment: 'Envoi final a l usager'
+                comment: "Envoi final à l'usager"
             );
 
             if ($mailPayload !== null) {

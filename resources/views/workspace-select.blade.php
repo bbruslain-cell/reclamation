@@ -53,7 +53,7 @@
                         <img src="/Logo_anbg.png" alt="ANBG" class="h-9 w-auto object-contain block">
                     </div>
                     <div>
-                        <p class="text-xs uppercase tracking-[0.22em] text-white/60">Portail collaborateur</p>
+                        <p class="text-xs uppercase tracking-[0.22em] text-white/60">Portail Multi-Rôle</p>
                         <p class="text-sm font-medium">Choisissez votre espace</p>
                     </div>
                 </div>
@@ -70,19 +70,11 @@
         <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
             <section class="rounded-3xl bg-navy text-white shadow-card overflow-hidden">
                 <div class="px-6 py-8 sm:px-8">
-                    <p class="text-xs uppercase tracking-[0.22em] text-sky-100/70">Connexion multi-role</p>
-                    <h1 class="mt-2 text-2xl sm:text-3xl font-medium">Plusieurs espaces sont disponibles pour votre compte.</h1>
+                    <h1 class="mt-2 text-2xl sm:text-3xl font-medium">Espaces disponibles pour votre compte.</h1>
                     <p class="mt-3 max-w-3xl text-sm sm:text-base text-sky-100/90 leading-relaxed">
                         Choisissez l'espace dans lequel vous souhaitez travailler maintenant. Vos autres droits restent actifs pendant la séssion.
                     </p>
-                    <div class="mt-4 flex flex-wrap gap-2">
-                        @foreach($roles as $role)
-                            <span class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium">
-                                <i class="fas fa-key text-[10px] text-sky-200"></i>
-                                {{ $role }}
-                            </span>
-                        @endforeach
-                    </div>
+
                 </div>
             </section>
 
@@ -95,16 +87,7 @@
                             <div class="w-11 h-11 rounded-2xl {{ $isDefault ? 'bg-sky text-white' : 'bg-navy-50 text-navy' }} flex items-center justify-center flex-shrink-0">
                                 <i class="fas {{ $space['code'] === 'admin' ? 'fa-sliders' : ($space['code'] === 'accueil' ? 'fa-inbox' : ($space['code'] === 'chef' ? 'fa-briefcase' : ($space['code'] === 'chef_direction' ? 'fa-building-user' : ($space['code'] === 'agent' ? 'fa-headset' : 'fa-chart-line')))) }} text-sm"></i>
                             </div>
-                            <div class="flex flex-wrap items-center justify-end gap-2">
-                                @if($isDefault)
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-leaf-50 px-2.5 py-1 text-[11px] font-medium text-green-700 border border-green-200">
-                                        <i class="fas fa-star text-[10px]"></i> Recommande
-                                    </span>
-                                @endif
-                                <span class="inline-flex items-center gap-1 rounded-full bg-gold-50 px-2.5 py-1 text-[11px] font-medium text-amber-700 border border-amber-200">
-                                    {{ $space['badge'] }}
-                                </span>
-                            </div>
+
                         </div>
 
                         <div class="mt-4">

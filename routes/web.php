@@ -86,9 +86,26 @@ Route::middleware('agent.auth')->group(function () {
         $overviewResponse = app(ApiOverviewController::class)->index($request, $access);
 
         return view('pilotage-ciq', [
-            'actor'        => $actor,
-            'roleCodes'    => $roleCodes,
-            'overviewData' => $overviewResponse->getData(true),
+            'actor'             => $actor,
+            'roleCodes'         => $roleCodes,
+            'overviewData'      => $overviewResponse->getData(true),
+            'canExportPilotage' => $access->hasPermission((int) $actor->id_utilisateur, 'dashboard.export'),
+        ]);
+    });
+    Route::get('/pilotage/dashboard', function (AccessControlService $access, \Illuminate\Http\Request $request) {
+        $actor = $access->resolveActor($request);
+        if (!$actor) {
+            return redirect('/login');
+        }
+        $access->assertPermission((int) $actor->id_utilisateur, 'dashboard.view');
+        $roleCodes = $access->roleCodes((int) $actor->id_utilisateur);
+        $overviewResponse = app(ApiOverviewController::class)->index($request, $access);
+
+        return view('pilotage-dashboard', [
+            'actor'             => $actor,
+            'roleCodes'         => $roleCodes,
+            'overviewData'      => $overviewResponse->getData(true),
+            'canExportPilotage' => $access->hasPermission((int) $actor->id_utilisateur, 'dashboard.export'),
         ]);
     });
     Route::get('/pilotage/data', function (\Illuminate\Http\Request $request, AccessControlService $access) {
@@ -99,6 +116,7 @@ Route::middleware('agent.auth')->group(function () {
         $access->assertPermission((int) $actor->id_utilisateur, 'dashboard.view');
         return app(ApiOverviewController::class)->index($request, $access);
     });
+    Route::get('/pilotage/demandes/{id}/detail', [ApiOverviewController::class, 'trackingDetail']);
     Route::get('/pilotage/export/{section}/{format}', [PilotageExportController::class, 'download']);
 
     // Administration

@@ -227,7 +227,7 @@
         </div>
     </section>
 
-    <section class="flex flex-wrap items-stretch justify-center gap-3">
+    <section id="accueil-kpi-content" data-new-demand-count="{{ $summary->total_nouvelles }}" class="flex flex-wrap items-stretch justify-center gap-3">
         <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#1c203d_0%,#2a3163_100%)] px-4 py-4 text-white shadow-card">
             <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
                 <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/12">
@@ -236,9 +236,8 @@
                         <path d="m6 9 6 4 6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </span>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/68">Flux filtre</p>
                 <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_demandes }}">0</p>
-                <p class="text-xs text-white/68">Demandes recues</p>
+                <p class="text-xs text-white/68">Demandes totales</p>
             </div>
         </article>
 
@@ -250,27 +249,12 @@
                         <path d="M4 13h4l1.5 2h5L16 13h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </span>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">A traiter</p>
                 <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_nouvelles }}">0</p>
                 <p class="text-xs text-white/68">Demandes nouvelles</p>
             </div>
         </article>
 
-        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#f8e932_0%,#d9a90a_110%)] px-4 py-4 text-[#1c203d] shadow-card">
-            <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
-                <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/35">
-                    <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M8 3.5h5l4 4V18a2 2 0 0 1-2 2H8A2 2 0 0 1 6 18V5.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                        <path d="M13 3.5V8h4.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                        <path d="M12 10.5v3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                        <circle cx="12" cy="16.8" r="1" fill="currentColor"/>
-                    </svg>
-                </span>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1c203d]/72">Pour Directions</p>
-                <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_reclamations }}">0</p>
-                <p class="text-xs text-[#1c203d]/72">Réclamations</p>
-            </div>
-        </article>
+
 
         <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#fff7df_0%,#ffe28b_100%)] px-4 py-4 text-[#8a5b00] shadow-card">
             <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
@@ -281,7 +265,6 @@
                         <circle cx="12" cy="15.8" r="1" fill="currentColor"/>
                     </svg>
                 </span>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8a5b00]/72">Délai pour l'accueil</p>
                 <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_a_risque }}">0</p>
                 <p class="text-xs text-[#8a5b00]/72">Demandes à risque</p>
             </div>
@@ -296,7 +279,6 @@
                         <circle cx="12" cy="16.7" r="1" fill="currentColor"/>
                     </svg>
                 </span>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8b1d1d]/70">Suivi</p>
                 <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_en_retard }}">0</p>
                 <p class="text-xs text-[#8b1d1d]/70">Demandes en retard</p>
             </div>
@@ -387,6 +369,7 @@
         </div>
     </div>
 
+    <div id="accueil-live-content" data-refresh-url="{{ request()->fullUrl() }}" data-refresh-interval="20000" class="space-y-4">
     <!-- ── TABLE DEMANDES ── -->
     <div class="surface-card rounded-[26px] overflow-hidden">
         <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center justify-between">
@@ -422,7 +405,7 @@
                 <tbody class="divide-y divide-neutral-100">
                 @forelse($nouvelles as $demande)
                     <!-- Ligne principale -->
-                    <tr class="demand-row transition-colors duration-100">
+                    <tr class="demand-row transition-colors duration-100" data-new-demand-row data-demand-id="{{ $demande->id_demande }}">
                         <td class="px-4 py-3">
                             <span class="font-mono text-xs font-medium text-navy bg-navy-50 px-2 py-1 rounded">
                                 {{ $demande->numero_suivi }}
@@ -962,8 +945,32 @@
             </table>
         </div>
     </div>
+    </div>
 
 </main>
+
+<div
+    id="accueil-new-demand-toast"
+    class="pointer-events-none fixed right-4 top-24 z-50 w-[min(92vw,360px)] transition-all duration-300 ease-out"
+    style="opacity: 0; transform: translateY(8px); visibility: hidden;"
+    aria-live="polite"
+    aria-atomic="true"
+>
+    <div class="flex items-start gap-3 rounded-2xl border border-sky-100 bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur">
+        <span class="mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#3996d3_0%,#1c203d_100%)] text-white">
+            <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-7Z" stroke="currentColor" stroke-width="1.8"/>
+                <path d="m6 9 6 4 6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </span>
+        <div>
+            <p class="text-sm font-semibold">Nouvelle demande reçue</p>
+            <p id="accueil-new-demand-toast-message" class="mt-0.5 text-xs leading-5 text-neutral-500">
+                Vous avez une nouvelle demande à traiter.
+            </p>
+        </div>
+    </div>
+</div>
 
 <!-- ═══════════════════ FOOTER ═══════════════════ -->
 <footer class="border-t border-neutral-200 bg-white mt-8">
@@ -987,47 +994,116 @@
             <path d="M6.3 9.2A16.3 16.3 0 0 0 2.8 12s3.2 5.5 9.2 5.5c1.3 0 2.5-.2 3.6-.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>`;
 
-    const countupNodes = document.querySelectorAll('[data-countup]');
-    countupNodes.forEach((node) => {
-        const target = Number(node.getAttribute('data-countup') || 0);
-        const duration = 700;
-        const startTime = performance.now();
+    const liveContent = document.getElementById('accueil-live-content');
+    const kpiContent = document.getElementById('accueil-kpi-content');
+    const newDemandToast = document.getElementById('accueil-new-demand-toast');
+    const newDemandToastMessage = document.getElementById('accueil-new-demand-toast-message');
+    let newDemandToastTimeout = null;
 
-        const tick = (now) => {
-            const progress = Math.min((now - startTime) / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            node.textContent = Math.round(target * eased).toLocaleString('fr-FR');
-            if (progress < 1) {
-                requestAnimationFrame(tick);
-            }
-        };
+    const getNewDemandCount = (node) => Number(node?.dataset?.newDemandCount || 0);
 
-        requestAnimationFrame(tick);
-    });
+    const showNewDemandNotification = (difference = 1) => {
+        if (!newDemandToast) return;
 
-    /* ── Filtre services selon direction ── */
-    const forms = document.querySelectorAll('.affectation-form');
-    forms.forEach((form) => {
-        const dirSel = form.querySelector('.direction-select');
-        const svcSel = form.querySelector('.service-select');
-        if (!dirSel || !svcSel) return;
-        const options = Array.from(svcSel.querySelectorAll('option[data-direction-id]'));
-        const refresh = () => {
-            const val = dirSel.value;
-            svcSel.value = '';
-            options.forEach(o => { o.hidden = val !== '' && o.dataset.directionId !== val; });
-        };
-        dirSel.addEventListener('change', refresh);
-        refresh();
-    });
+        if (newDemandToastMessage) {
+            newDemandToastMessage.textContent = difference > 1
+                ? `Vous avez ${difference} nouvelles demandes à traiter.`
+                : 'Vous avez une nouvelle demande à traiter.';
+        }
 
-    document.addEventListener('dragover', (event) => {
-        event.preventDefault();
-    });
+        window.clearTimeout(newDemandToastTimeout);
+        newDemandToast.style.visibility = 'visible';
+        newDemandToast.style.opacity = '1';
+        newDemandToast.style.transform = 'translateY(0)';
 
-    document.addEventListener('drop', (event) => {
-        event.preventDefault();
-    });
+        newDemandToastTimeout = window.setTimeout(() => {
+            newDemandToast.style.opacity = '0';
+            newDemandToast.style.transform = 'translateY(8px)';
+            window.setTimeout(() => {
+                if (newDemandToast.style.opacity === '0') {
+                    newDemandToast.style.visibility = 'hidden';
+                }
+            }, 320);
+        }, 4500);
+    };
+
+    const getVisibleNewDemandIds = (root) => Array.from(root?.querySelectorAll('[data-new-demand-row][data-demand-id]') || [])
+        .map((row) => String(row.dataset.demandId || '').trim())
+        .filter(Boolean);
+
+    const countAddedVisibleNewDemands = (currentRoot, nextRoot) => {
+        const currentIds = new Set(getVisibleNewDemandIds(currentRoot));
+
+        return getVisibleNewDemandIds(nextRoot).filter((id) => !currentIds.has(id)).length;
+    };
+
+    const animateCounters = (root = document) => {
+        root.querySelectorAll('[data-countup]:not([data-countup-ready])').forEach((node) => {
+            node.dataset.countupReady = '1';
+            const target = Number(node.getAttribute('data-countup') || 0);
+            const duration = 700;
+            const startTime = performance.now();
+
+            const tick = (now) => {
+                const progress = Math.min((now - startTime) / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                node.textContent = Math.round(target * eased).toLocaleString('fr-FR');
+                if (progress < 1) {
+                    requestAnimationFrame(tick);
+                }
+            };
+
+            requestAnimationFrame(tick);
+        });
+    };
+
+    const initAffectationForms = (root = document) => {
+        root.querySelectorAll('.affectation-form:not([data-affectation-ready])').forEach((form) => {
+            form.dataset.affectationReady = '1';
+            const dirSel = form.querySelector('.direction-select');
+            const svcSel = form.querySelector('.service-select');
+            if (!dirSel || !svcSel) return;
+            const options = Array.from(svcSel.querySelectorAll('option[data-direction-id]'));
+            const refresh = () => {
+                const val = dirSel.value;
+                svcSel.value = '';
+                options.forEach((option) => {
+                    option.hidden = val !== '' && option.dataset.directionId !== val;
+                });
+            };
+            dirSel.addEventListener('change', refresh);
+            refresh();
+        });
+    };
+
+    const initFormRefreshLocks = (root = document) => {
+        root.querySelectorAll('form:not([data-refresh-form-ready])').forEach((form) => {
+            form.dataset.refreshFormReady = '1';
+            form.addEventListener('input', () => {
+                form.dataset.refreshDirty = '1';
+            });
+            form.addEventListener('change', () => {
+                form.dataset.refreshDirty = '1';
+            });
+            form.addEventListener('submit', () => {
+                if (liveContent && liveContent.contains(form)) {
+                    liveContent.dataset.refreshLocked = '1';
+                }
+            });
+        });
+    };
+
+    const initGlobalDropGuard = () => {
+        if (window.accueilDropGuardReady) return;
+        window.accueilDropGuardReady = true;
+        document.addEventListener('dragover', (event) => {
+            event.preventDefault();
+        });
+
+        document.addEventListener('drop', (event) => {
+            event.preventDefault();
+        });
+    };
 
     const formatBytes = (bytes) => {
         if (!Number.isFinite(bytes) || bytes <= 0) return '';
@@ -1038,83 +1114,193 @@
         return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo`;
     };
 
-    document.querySelectorAll('.anbg-upload-widget').forEach((widget) => {
-        const input = widget.querySelector('[data-upload-input]');
-        const dropzone = widget.querySelector('[data-upload-dropzone]');
-        const list = widget.querySelector('[data-upload-list]');
-        if (!input || !dropzone || !list) return;
+    const initUploadWidgets = (root = document) => {
+        root.querySelectorAll('.anbg-upload-widget:not([data-upload-ready])').forEach((widget) => {
+            widget.dataset.uploadReady = '1';
+            const input = widget.querySelector('[data-upload-input]');
+            const dropzone = widget.querySelector('[data-upload-dropzone]');
+            const list = widget.querySelector('[data-upload-list]');
+            if (!input || !dropzone || !list) return;
 
-        const renderFiles = () => {
-            const files = Array.from(input.files || []);
-            list.innerHTML = '';
+            const renderFiles = () => {
+                const files = Array.from(input.files || []);
+                list.innerHTML = '';
 
-            if (!files.length) {
-                list.classList.add('hidden');
-                return;
-            }
+                if (!files.length) {
+                    list.classList.add('hidden');
+                    return;
+                }
 
-            list.classList.remove('hidden');
-            files.forEach((file) => {
-                const item = document.createElement('div');
-                item.className = 'anbg-file-chip';
-                item.innerHTML = `
-                    <svg class="icon-svg text-sky text-[13px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M8 3.5h5l4 4V18a2 2 0 0 1-2 2H8A2 2 0 0 1 6 18V5.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                        <path d="M13 3.5V8h4.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                    </svg>
-                    <strong>${file.name}</strong>
-                    <span class="text-neutral-500">${formatBytes(file.size)}</span>
-                `;
-                list.appendChild(item);
+                list.classList.remove('hidden');
+                files.forEach((file) => {
+                    const item = document.createElement('div');
+                    item.className = 'anbg-file-chip';
+                    item.innerHTML = `
+                        <svg class="icon-svg text-sky text-[13px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M8 3.5h5l4 4V18a2 2 0 0 1-2 2H8A2 2 0 0 1 6 18V5.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                            <path d="M13 3.5V8h4.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                        </svg>
+                        <strong>${file.name}</strong>
+                        <span class="text-neutral-500">${formatBytes(file.size)}</span>
+                    `;
+                    list.appendChild(item);
+                });
+            };
+
+            dropzone.addEventListener('click', () => input.click());
+            dropzone.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    input.click();
+                }
             });
+            input.addEventListener('change', renderFiles);
+            dropzone.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                dropzone.classList.add('is-dragover');
+            });
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('is-dragover');
+            });
+            dropzone.addEventListener('drop', (event) => {
+                event.preventDefault();
+                dropzone.classList.remove('is-dragover');
+                const files = event.dataTransfer?.files;
+                if (!files || !files.length) return;
+                const transfer = new DataTransfer();
+                Array.from(files).forEach((file) => transfer.items.add(file));
+                input.files = transfer.files;
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                renderFiles();
+            });
+        });
+    };
+
+    const initViewToggles = (root = document) => {
+        root.querySelectorAll('.view-toggle:not([data-toggle-ready])').forEach((btn) => {
+            btn.dataset.toggleReady = '1';
+            btn.addEventListener('click', () => {
+                const row = document.getElementById(btn.dataset.target);
+                if (!row) return;
+                const isOpen = row.style.display !== 'none';
+                row.style.display = isOpen ? 'none' : '';
+                btn.setAttribute('aria-expanded', String(!isOpen));
+                const iconWrap = btn.querySelector('.toggle-icon');
+                const label = Array.from(btn.querySelectorAll('span')).find((span) => !span.classList.contains('toggle-icon'));
+                if (isOpen) {
+                    row.querySelectorAll('form').forEach((form) => {
+                        delete form.dataset.refreshDirty;
+                    });
+                    if (iconWrap) iconWrap.innerHTML = eyeSvg;
+                    if (label) label.textContent = 'Voir';
+                } else {
+                    if (iconWrap) iconWrap.innerHTML = eyeOffSvg;
+                    if (label) label.textContent = 'Masquer';
+                }
+            });
+        });
+    };
+
+    const initAccueilInteractions = (root = document) => {
+        animateCounters(root);
+        initAffectationForms(root);
+        initFormRefreshLocks(root);
+        initGlobalDropGuard();
+        initUploadWidgets(root);
+        initViewToggles(root);
+    };
+
+    const hasFocusedControl = () => {
+        const active = document.activeElement;
+        if (!active || !liveContent || !liveContent.contains(active)) return false;
+
+        return ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(active.tagName) || active.isContentEditable;
+    };
+
+    const hasOpenDetail = () => {
+        if (!liveContent) return false;
+
+        return Array.from(liveContent.querySelectorAll('.detail-row')).some((row) => row.style.display !== 'none');
+    };
+
+    const hasDirtyForm = () => {
+        if (!liveContent) return false;
+
+        return Array.from(liveContent.querySelectorAll('form')).some((form) => form.dataset.refreshDirty === '1');
+    };
+
+    const shouldSkipRefresh = (isRefreshing) => {
+        if (!liveContent || isRefreshing || document.hidden || liveContent.dataset.refreshLocked === '1') {
+            return true;
+        }
+
+        return hasFocusedControl() || hasOpenDetail() || hasDirtyForm();
+    };
+
+    const initAccueilAutoRefresh = () => {
+        if (!liveContent || liveContent.dataset.autoRefreshReady === '1') return;
+        liveContent.dataset.autoRefreshReady = '1';
+
+        let isRefreshing = false;
+        const interval = Math.max(Number(liveContent.dataset.refreshInterval || 20000), 10000);
+
+        const refreshTables = async () => {
+            if (shouldSkipRefresh(isRefreshing)) return;
+            isRefreshing = true;
+
+            try {
+                const url = new URL(liveContent.dataset.refreshUrl || window.location.href, window.location.origin);
+                url.searchParams.set('_accueil_refresh', Date.now().toString());
+
+                const response = await fetch(url.toString(), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-Accueil-Refresh': 'tables',
+                    },
+                    cache: 'no-store',
+                });
+
+                if (!response.ok) return;
+
+                const html = await response.text();
+                const nextDocument = new DOMParser().parseFromString(html, 'text/html');
+                const nextKpiContent = nextDocument.getElementById('accueil-kpi-content');
+                const nextContent = nextDocument.getElementById('accueil-live-content');
+                let newDemandDifference = nextContent ? countAddedVisibleNewDemands(liveContent, nextContent) : 0;
+
+                if (nextKpiContent && kpiContent) {
+                    const currentNewDemandCount = getNewDemandCount(kpiContent);
+                    const nextNewDemandCount = getNewDemandCount(nextKpiContent);
+                    newDemandDifference = Math.max(newDemandDifference, nextNewDemandCount - currentNewDemandCount);
+                    kpiContent.innerHTML = nextKpiContent.innerHTML;
+                    kpiContent.dataset.newDemandCount = String(nextNewDemandCount);
+                    animateCounters(kpiContent);
+                }
+
+                if (!nextContent) return;
+
+                liveContent.innerHTML = nextContent.innerHTML;
+                initAccueilInteractions(liveContent);
+
+                if (newDemandDifference > 0) {
+                    showNewDemandNotification(newDemandDifference);
+                }
+            } catch (error) {
+                console.warn('Rafraîchissement accueil interrompu.', error);
+            } finally {
+                isRefreshing = false;
+            }
         };
 
-        dropzone.addEventListener('click', () => input.click());
-        dropzone.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                input.click();
-            }
+        window.setInterval(refreshTables, interval);
+        window.addEventListener('focus', refreshTables);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) refreshTables();
         });
-        input.addEventListener('change', renderFiles);
-        dropzone.addEventListener('dragover', (event) => {
-            event.preventDefault();
-            dropzone.classList.add('is-dragover');
-        });
-        dropzone.addEventListener('dragleave', () => {
-            dropzone.classList.remove('is-dragover');
-        });
-        dropzone.addEventListener('drop', (event) => {
-            event.preventDefault();
-            dropzone.classList.remove('is-dragover');
-            const files = event.dataTransfer?.files;
-            if (!files || !files.length) return;
-            const transfer = new DataTransfer();
-            Array.from(files).forEach((file) => transfer.items.add(file));
-            input.files = transfer.files;
-            renderFiles();
-        });
-    });
+    };
 
-    /* ── Toggle détail ── */
-    document.querySelectorAll('.view-toggle').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const row = document.getElementById(btn.dataset.target);
-            if (!row) return;
-            const isOpen = row.style.display !== 'none';
-            row.style.display = isOpen ? 'none' : '';
-            btn.setAttribute('aria-expanded', String(!isOpen));
-            const iconWrap  = btn.querySelector('.toggle-icon');
-            const label = btn.querySelectorAll('span')[1];
-            if (isOpen) {
-                if (iconWrap) iconWrap.innerHTML = eyeSvg;
-                label.textContent = 'Voir';
-            } else {
-                if (iconWrap) iconWrap.innerHTML = eyeOffSvg;
-                label.textContent = 'Masquer';
-            }
-        });
-    });
+    initAccueilInteractions(document);
+    initAccueilAutoRefresh();
 })();
 </script>
 </body>

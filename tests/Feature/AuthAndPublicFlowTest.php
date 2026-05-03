@@ -253,7 +253,7 @@ class AuthAndPublicFlowTest extends TestCase
         $this->get('/agent/inbox')
             ->assertOk()
             ->assertSee('Message complet')
-            ->assertSee('Temps restant 48h')
+            ->assertSee('Temps restant 16h')
             ->assertSee('Mes frais de scolarite ne sont pas encore regles.')
             ->assertDontSee('Cloturee')
             ->assertDontSee('Reponse transmise a l usager')
@@ -451,7 +451,7 @@ class AuthAndPublicFlowTest extends TestCase
 
         $this->get('/chef/inbox')
             ->assertOk()
-            ->assertSee('Temps restant 48h');
+            ->assertSee('Temps restant 16h');
         $this->get('/pilotage')->assertOk();
     }
 

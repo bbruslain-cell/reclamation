@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web\Concerns;
 
+use App\Services\StepAlertService;
 use App\Services\WorkingHoursSlaService;
 use Carbon\Carbon;
 
@@ -9,10 +10,12 @@ trait InteractsWithServiceWindow
 {
     private function withServiceWindowMeta(
         object $demand,
-        WorkingHoursSlaService $slaService,
-        int $deadlineHours = 48,
-        int $warningHours = 24
+        WorkingHoursSlaService $slaService
     ): object {
+        $thresholds = app(StepAlertService::class)->thresholdsForStep('chef');
+        $deadlineHours = (float) $thresholds['deadline'];
+        $warningHours = (float) $thresholds['warning'];
+
         $startAt = property_exists($demand, 'date_affectation_accueil')
             ? $demand->date_affectation_accueil
             : null;
@@ -21,12 +24,12 @@ trait InteractsWithServiceWindow
             : 0;
 
         if (!$startAt || $configId <= 0) {
-            $demand->service_window_deadline_hours = (float) $deadlineHours;
+            $demand->service_window_deadline_hours = $deadlineHours;
             $demand->service_window_elapsed_hours = 0.0;
-            $demand->service_window_remaining_hours = (float) $deadlineHours;
+            $demand->service_window_remaining_hours = $deadlineHours;
             $demand->service_window_overdue_hours = 0.0;
             $demand->service_window_tone = 'neutral';
-            $demand->service_window_label = 'Fenetre 48h a demarrer';
+            $demand->service_window_label = 'Fenetre '.$this->formatServiceWindowHours($deadlineHours).' a demarrer';
             $demand->service_window_hint = 'Le compteur commence apres affectation accueil.';
 
             return $demand;
@@ -40,7 +43,7 @@ trait InteractsWithServiceWindow
             $endAt = $demand->date_cloture;
         }
 
-        $elapsedHours = $slaService->calculateElapsedBusinessHours(
+        $elapsedHours = $slaService->calculateElapsedHours(
             Carbon::parse($startAt),
             $endAt ? Carbon::parse($endAt) : null,
             $configId
@@ -49,7 +52,7 @@ trait InteractsWithServiceWindow
         $remainingHours = round(max(0, $deadlineHours - $elapsedHours), 2);
         $overdueHours = round(max(0, $elapsedHours - $deadlineHours), 2);
 
-        $demand->service_window_deadline_hours = (float) $deadlineHours;
+        $demand->service_window_deadline_hours = $deadlineHours;
         $demand->service_window_elapsed_hours = $elapsedHours;
         $demand->service_window_remaining_hours = $remainingHours;
         $demand->service_window_overdue_hours = $overdueHours;
@@ -59,12 +62,12 @@ trait InteractsWithServiceWindow
             default => 'green',
         };
         $demand->service_window_label = match (true) {
-            $overdueHours > 0 => 'Depassee de '.$this->formatServiceWindowHours($overdueHours).' SLA',
+            $overdueHours > 0 => 'Delai depasse de '.$this->formatServiceWindowHours($overdueHours),
             $remainingHours <= 0 => 'Echeance atteinte',
-            default => 'Reste '.$this->formatServiceWindowHours($remainingHours).' SLA',
+            default => 'Delai restant '.$this->formatServiceWindowHours($remainingHours),
         };
         $demand->service_window_hint = $this->formatServiceWindowHours($elapsedHours)
-            .' / '.$deadlineHours.'h consommees';
+            .' / '.$this->formatServiceWindowHours($deadlineHours).' consommees';
 
         return $demand;
     }

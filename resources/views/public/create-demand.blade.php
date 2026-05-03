@@ -68,6 +68,13 @@
             flex-shrink: 0;
         }
 
+        /* Spinner animation */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+        .animate-spin { animation: spin 0.8s linear infinite; }
+
     </style>
 </head>
 <body class="bg-white font-sans text-navy-500 antialiased">
@@ -116,26 +123,12 @@
                 </div>
                 <div>
                     <h1 class="font-medium text-white text-xl sm:text-2xl leading-snug mb-1 tracking-wide opacity-0 animate-fade-in-up">
-                        Bienvenue sur la Plateforme Réclamation de l'ANBG
+                        Bienvenue sur la Plateforme Réclamation de l'ANBG.
                     </h1>
                     <p class="text-sky-200 text-sm sm:text-base leading-relaxed max-w-2xl font-light opacity-0 animate-fade-in-up-1">
-                        Soumettez votre réclamation relative à la gestion des bourses. Chaque demande est enregistrée et traitée par nos équipes. Une réponse vous sera apportée dans un délai maximum de<strong class="text-white font-medium"> 72 heures ouvrées.</strong>.
+                        Soumettez votre réclamation relative à la gestion des bourses. Chaque demande est enregistrée et traitée par nos équipes. Une réponse vous sera apportée dans un délai maximum de<strong class="text-white font-medium"> 72 heures ouvrées.</strong>
                     </p>
-                    <!-- Badges SLA -->
-                    <div class="mt-3 flex flex-wrap gap-2 opacity-0 animate-fade-in-up-2">
-                        <span class="inline-flex items-center gap-1.5 bg-sky-400/15 border border-sky-400/25 text-sky-100 text-xs font-medium px-3 py-1 rounded-full hover:bg-sky-400/20 transition-colors">
-                            <svg class="icon-svg text-sky-300 text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/>
-                                <path d="M12 8v4l2.8 1.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg> Réponse sous 72h
-                        </span>
-                        <span class="inline-flex items-center gap-1.5 bg-leaf-400/15 border border-leaf-400/25 text-green-100 text-xs font-medium px-3 py-1 rounded-full hover:bg-leaf-400/20 transition-colors">
-                            <svg class="icon-svg text-leaf-400 text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <path d="M12 4.5 18 7v4.4c0 3.3-2.1 6.2-6 8.1-3.9-1.9-6-4.8-6-8.1V7l6-2.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                                <path d="m9.5 12 1.7 1.7 3.3-3.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg> Données protégées (RGPD)
-                        </span>
-                    </div>
+                    <!-- Badges délai -->
                 </div>
             </div>
         </div>
@@ -176,23 +169,20 @@
         <div class="bg-white rounded-2xl shadow-card overflow-hidden border border-neutral-100">
 
             <!-- Card header -->
-            <div class="px-6 py-5 border-b border-neutral-100 flex flex-col items-center justify-center text-center bg-gradient-to-r from-neutral-200 to-white">
-    
+            <div class="px-6 py-5 border-b border-navy-600 flex flex-col items-center justify-center text-center bg-navy-500">
            <div class="w-full">
-               <h2 class="font-semibold text-navy-500 text-2xl tracking-wide">
+               <h2 class="font-semibold text-white text-2xl tracking-wide">
                    Remplissez le Formulaire Relative à Votre Réclamation.
                </h2>
-                      <p class="text-neutral-500 text-sm mt-1">
-                   Les champs marqués d'un <span class="text-red-500 font-bold">*</span> sont obligatoires.
+                      <p class="text-sky-50 text-sm mt-1">
+                   Les champs marqués d'un <span class="text-gold-300 font-bold">*</span> sont obligatoires.
                </p>
            </div>
-
-   
-
         </div>
 
-            <!-- FORM -->
-            <form method="post" action="/reclamations" enctype="multipart/form-data" class="divide-y divide-neutral-100">
+            <!-- ✅ MODIF 1 : @submit="handleSubmit" ajouté sur le formulaire -->
+            <form method="post" action="/reclamations" enctype="multipart/form-data"
+                  @submit="handleSubmit" class="divide-y divide-neutral-100">
 
                 @csrf
 
@@ -470,7 +460,7 @@
                             <span class="text-[11px] bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-md font-medium">PDF</span>
                             <span class="text-[11px] bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-md font-medium">JPG</span>
                             <span class="text-[11px] bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-md font-medium">PNG</span>
-                            <span class="text-[11px] bg-neutral-200 text-neutral-500 px-2 py-0.5 rounded-md font-medium">Max 2 Mo</span>
+                            <span class="text-[11px] bg-neutral-200 text-neutral-500 px-2 py-0.5 rounded-md font-medium">Max 3,5 Mo</span>
                         </div>
                     </div>
 
@@ -503,18 +493,27 @@
 
                     <!-- Submit button -->
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <p class="text-xs text-neutral-400 flex items-center gap-1.5">
-                           
-                        </p>
+                        <p class="text-xs text-neutral-400 flex items-center gap-1.5"></p>
+
+                        <!-- ✅ MODIF 2 : bouton avec état submitting -->
                         <button
                             type="submit"
-                            class="inline-flex items-center justify-center gap-2.5 bg-sky-500 hover:bg-navy-600 text-white font-medium text-sm px-8 py-3 rounded-xl shadow-btn hover:shadow-btn-hover transition-all duration-200 w-full sm:w-auto"
+                            :disabled="submitting"
+                            :class="submitting
+                                ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
+                                : 'bg-sky-500 hover:bg-navy-600 text-white shadow-btn hover:shadow-btn-hover'"
+                            class="inline-flex items-center justify-center gap-2.5 font-medium text-sm px-8 py-3 rounded-xl transition-all duration-200 w-full sm:w-auto"
                         >
-                            <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <!-- Spinner pendant l'envoi -->
+                            <svg v-if="submitting" class="icon-svg animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
+                            </svg>
+                            <!-- Icône normale -->
+                            <svg v-else class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                 <path d="M4 11.5 19 5l-4.8 14-3.1-5.1L4 11.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                                 <path d="M10.8 13.8 19 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                             </svg>
-                            Soumettre ma demande
+                            @{{ submitting ? 'Envoi en cours…' : 'Soumettre ma demande' }}
                         </button>
                     </div>
                 </div>
@@ -522,8 +521,6 @@
             </form>
         </div>
 
-       
-        
     </main>
 
     <!-- FOOTER -->
@@ -576,7 +573,9 @@
                     piece_jointe:      @json($errors->first('piece_jointe')),
                     consentement:      @json($errors->first('consentement')),
                 },
-                categories: []
+                categories:  [],
+                // ✅ MODIF 2 : état de soumission
+                submitting: false,
             };
         },
         mounted() {
@@ -603,7 +602,6 @@
                 }
             },
             applyCategory() {
-                // L'objet prend strictement la valeur de la catégorie choisie
                 this.form.objet = this.form.categorie;
                 if (this.form.objet) {
                     this.clearError('objet');
@@ -614,6 +612,18 @@
                     this.errors[field] = null;
                 }
             },
+
+            // ✅ MODIF 2 : protection double soumission
+            handleSubmit(e) {
+                if (this.submitting) {
+                    e.preventDefault();
+                    return;
+                }
+                this.submitting = true;
+                // Réactiver après 8s en cas d'erreur serveur ou timeout
+                setTimeout(() => { this.submitting = false; }, 8000);
+            },
+
             setupDropzone() {
                 document.addEventListener('dragover', e => e.preventDefault());
                 document.addEventListener('drop', e => e.preventDefault());
@@ -622,6 +632,10 @@
                 const input = document.getElementById('piece_jointe');
                 const list  = document.getElementById('file-list');
                 if (!dz || !input) return;
+
+                // ✅ MODIF 1 : constantes de validation fichier
+                const MAX_SIZE = 3.5 * 1024 * 1024; // 3,5 Mo en octets
+                const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
                 const refreshList = () => {
                     list.innerHTML = '';
@@ -639,9 +653,28 @@
                     });
                 };
 
+                // ✅ MODIF 1 : validation taille et type avant acceptation du fichier
                 const applyFiles = files => {
+                    if (!files || files.length === 0) return;
+
+                    const file = files[0];
+
+                    // Vérification de la taille
+                    if (file.size > MAX_SIZE) {
+                        this.errors.piece_jointe = `Fichier trop lourd (${(file.size / 1024 / 1024).toFixed(1)} Mo). Maximum autorisé : 3,5 Mo.`;
+                        return;
+                    }
+
+                    // Vérification du type MIME
+                    if (!ALLOWED_TYPES.includes(file.type)) {
+                        this.errors.piece_jointe = 'Format non accepté. Utilisez PDF, JPG ou PNG.';
+                        return;
+                    }
+
+                    // Fichier valide : effacer l'erreur et affecter
+                    this.errors.piece_jointe = null;
                     const dt = new DataTransfer();
-                    if (files && files.length > 0) dt.items.add(files[0]);
+                    dt.items.add(file);
                     input.files = dt.files;
                     refreshList();
                 };
@@ -655,7 +688,9 @@
                     dz.classList.remove('dropzone-active');
                     if (e.dataTransfer?.files?.length) applyFiles(e.dataTransfer.files);
                 });
-                input.addEventListener('change', refreshList);
+
+                // ✅ MODIF 1 : input change passe aussi par applyFiles (couvre le clic)
+                input.addEventListener('change', () => applyFiles(input.files));
             }
         }
     });

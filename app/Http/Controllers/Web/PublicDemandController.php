@@ -42,14 +42,14 @@ class PublicDemandController extends Controller
             'categorie' => ['nullable', 'string', 'max:255'],
             'objet' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string', 'min:10'],
-            'piece_jointe' => ['nullable', 'file', 'max:2048', 'mimes:pdf,jpg,jpeg,png'],
+            'piece_jointe' => ['nullable', 'file', 'max:3584', 'mimes:pdf,jpg,jpeg,png'],
             'consentement' => ['accepted'],
         ]);
 
         $configSlaId = DB::table('config_sla')->where('actif', true)->value('id_config_sla');
         if (!$configSlaId) {
             throw ValidationException::withMessages([
-                'type_demande_code' => 'Configuration SLA absente.',
+                'type_demande_code' => 'Configuration des délais absente.',
             ]);
         }
 

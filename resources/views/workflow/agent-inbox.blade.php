@@ -116,7 +116,7 @@
                    
                     <div class="mt-3 flex flex-wrap gap-2">
                         <span class="inline-flex items-center gap-1.5 bg-sky/15 border border-sky/25 text-sky-100 text-xs font-medium px-3 py-1 rounded-full">
-                            <svg class="icon-svg text-sky text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5h-2v6l5 3 1-1.7-4-2.3V7Z"/></svg> Fenêtre partagée 48h
+                            <svg class="icon-svg text-sky text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5h-2v6l5 3 1-1.7-4-2.3V7Z"/></svg> Fenêtre partagée 16h
                         </span>
                         <span class="inline-flex items-center gap-1.5 bg-leaf/15 border border-leaf/25 text-green-100 text-xs font-medium px-3 py-1 rounded-full">
                             <svg class="icon-svg text-leaf text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m16.6 3 4.4 4.4-10 10L6 19l1.6-5 9-11ZM5 21h14v-2H5v2Z"/></svg> Réponse finale agent
@@ -166,6 +166,10 @@
         {{-- ══════════════════════════════════════
              TABLE DEMANDES
         ══════════════════════════════════════ --}}
+        <div id="agent-live-content"
+            class="space-y-5"
+            data-refresh-url="{{ request()->fullUrl() }}"
+            data-refresh-interval="20000">
         <div class="bg-white rounded-2xl shadow-card border border-neutral-100 overflow-hidden">
             <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -186,8 +190,8 @@
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Usager</th>
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Service</th>
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Statut</th>
-                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Alerte 48h</th>
-                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Temps restant 48h</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Alerte 16h</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Temps restant 16h</th>
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Action</th>
                         </tr>
                     </thead>
@@ -373,6 +377,7 @@
             </div>
             @endif
         </div>
+        </div>
 
         {{-- Footer --}}
         <footer class="border-t border-neutral-200 pt-4 pb-2 flex items-center justify-between text-xs text-neutral-400">
@@ -384,26 +389,38 @@
 
 <script>
 (function () {
-    document.querySelectorAll('.view-toggle').forEach((btn) => {
+    const eyeSvg = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5C5.6 5 2 12 2 12s3.6 7 10 7 10-7 10-7-3.6-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg>';
+    const eyeOffSvg = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m3.3 2 18.7 18.7-1.4 1.4-4.1-4.1A11.7 11.7 0 0 1 12 19C5.6 19 2 12 2 12a19 19 0 0 1 4.4-5.3L1.9 3.4 3.3 2Zm6.1 6.1A4 4 0 0 0 12 16c.7 0 1.4-.2 2-.5L9.4 8.1ZM12 5c6.4 0 10 7 10 7a18.9 18.9 0 0 1-4.1 5.1l-2.2-2.2A4 4 0 0 0 9.1 8.3L7.5 6.7A10.8 10.8 0 0 1 12 5Z"/></svg>';
+    const liveContent = document.getElementById('agent-live-content');
+    const initViewToggles = (root = document) => {
+    root.querySelectorAll('.view-toggle:not([data-toggle-ready])').forEach((btn) => {
+        btn.dataset.toggleReady = '1';
         btn.addEventListener('click', () => {
             const row = document.getElementById(btn.dataset.target);
             if (!row) return;
             const isOpen = row.style.display !== 'none';
             row.style.display = isOpen ? 'none' : '';
             btn.setAttribute('aria-expanded', String(!isOpen));
-            const icon  = btn.querySelector('.toggle-icon');
-            const label = btn.querySelector('span');
+            const icon = btn.querySelector('.toggle-icon');
+            const spans = btn.querySelectorAll('span');
+            const label = spans.length > 1 ? spans[1] : null;
             if (isOpen) {
-                icon.innerHTML    = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5C5.6 5 2 12 2 12s3.6 7 10 7 10-7 10-7-3.6-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg>';
-                label.textContent = 'Voir';
+                row.querySelectorAll('form').forEach((form) => {
+                    delete form.dataset.refreshDirty;
+                });
+                if (icon) icon.innerHTML = eyeSvg;
+                if (label) label.textContent = 'Voir';
             } else {
-                icon.innerHTML    = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m3.3 2 18.7 18.7-1.4 1.4-4.1-4.1A11.7 11.7 0 0 1 12 19C5.6 19 2 12 2 12a19 19 0 0 1 4.4-5.3L1.9 3.4 3.3 2Zm6.1 6.1A4 4 0 0 0 12 16c.7 0 1.4-.2 2-.5L9.4 8.1ZM12 5c6.4 0 10 7 10 7a18.9 18.9 0 0 1-4.1 5.1l-2.2-2.2A4 4 0 0 0 9.1 8.3L7.5 6.7A10.8 10.8 0 0 1 12 5Z"/></svg>';
-                label.textContent = 'Masquer';
+                if (icon) icon.innerHTML = eyeOffSvg;
+                if (label) label.textContent = 'Masquer';
             }
         });
     });
+    };
 
-    document.querySelectorAll('input[data-file-feedback]').forEach((input) => {
+    const initFileFeedback = (root = document) => {
+    root.querySelectorAll('input[data-file-feedback]:not([data-file-feedback-ready])').forEach((input) => {
+        input.dataset.fileFeedbackReady = '1';
         input.addEventListener('change', () => {
             const feedback = input.closest('div')?.querySelector('.file-selection-feedback');
             if (!feedback) return;
@@ -417,6 +434,106 @@
             }
         });
     });
+    };
+
+    const initFormRefreshLocks = (root = document) => {
+        root.querySelectorAll('form:not([data-refresh-form-ready])').forEach((form) => {
+            form.dataset.refreshFormReady = '1';
+            form.addEventListener('input', () => {
+                form.dataset.refreshDirty = '1';
+            });
+            form.addEventListener('change', () => {
+                form.dataset.refreshDirty = '1';
+            });
+            form.addEventListener('submit', () => {
+                if (liveContent && liveContent.contains(form)) {
+                    liveContent.dataset.refreshLocked = '1';
+                }
+            });
+        });
+    };
+
+    const initAgentInteractions = (root = document) => {
+        initViewToggles(root);
+        initFileFeedback(root);
+        initFormRefreshLocks(root);
+    };
+
+    const hasFocusedControl = () => {
+        const active = document.activeElement;
+        if (!active || !liveContent || !liveContent.contains(active)) return false;
+
+        return ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(active.tagName) || active.isContentEditable;
+    };
+
+    const hasOpenDetail = () => {
+        if (!liveContent) return false;
+
+        return Array.from(liveContent.querySelectorAll('tr[id^="detail-"]')).some((row) => row.style.display !== 'none');
+    };
+
+    const hasDirtyForm = () => {
+        if (!liveContent) return false;
+
+        return Array.from(liveContent.querySelectorAll('form')).some((form) => form.dataset.refreshDirty === '1');
+    };
+
+    const shouldSkipRefresh = (isRefreshing) => {
+        if (!liveContent || isRefreshing || document.hidden || liveContent.dataset.refreshLocked === '1') {
+            return true;
+        }
+
+        return hasFocusedControl() || hasOpenDetail() || hasDirtyForm();
+    };
+
+    const initAgentAutoRefresh = () => {
+        if (!liveContent || liveContent.dataset.autoRefreshReady === '1') return;
+        liveContent.dataset.autoRefreshReady = '1';
+
+        let isRefreshing = false;
+        const interval = Math.max(Number(liveContent.dataset.refreshInterval || 20000), 10000);
+
+        const refreshContent = async () => {
+            if (shouldSkipRefresh(isRefreshing)) return;
+            isRefreshing = true;
+
+            try {
+                const url = new URL(liveContent.dataset.refreshUrl || window.location.href, window.location.origin);
+                url.searchParams.set('_agent_refresh', Date.now().toString());
+
+                const response = await fetch(url.toString(), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-Agent-Refresh': 'tables',
+                    },
+                    cache: 'no-store',
+                });
+
+                if (!response.ok) return;
+
+                const html = await response.text();
+                const nextDocument = new DOMParser().parseFromString(html, 'text/html');
+                const nextContent = nextDocument.getElementById('agent-live-content');
+                if (!nextContent) return;
+
+                liveContent.innerHTML = nextContent.innerHTML;
+                initAgentInteractions(liveContent);
+            } catch (error) {
+                console.warn('Rafraichissement agent interrompu.', error);
+            } finally {
+                isRefreshing = false;
+            }
+        };
+
+        window.setInterval(refreshContent, interval);
+        window.addEventListener('focus', refreshContent);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) refreshContent();
+        });
+    };
+
+    initAgentInteractions(document);
+    initAgentAutoRefresh();
 })();
 </script>
 </body>

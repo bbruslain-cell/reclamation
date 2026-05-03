@@ -423,7 +423,7 @@
             </div>
         </section>
         <section class="section">
-            <h2>Demandes en cours (SLA)</h2>
+            <h2>Demandes en cours (délai)</h2>
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -883,7 +883,7 @@
                 ['Retards chef', data.kpis.chef_rouges],
                 ['Retards agent', data.kpis.agent_rouges],
                 ['Taux traitement dans delais (%)', data.kpis.taux_traitement_dans_delais],
-                ['SLA actif', data.sla_active ? `${data.sla_active.delai_max_heures}h` : 'N/A'],
+                ['Délai actif', data.sla_active ? `${data.sla_active.delai_max_heures}h` : 'N/A'],
             ];
 
             document.getElementById('kpis').innerHTML = kpis.map(([label, value]) => `

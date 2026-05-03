@@ -39,28 +39,28 @@ class ParameterSeeder extends Seeder
                 'code' => 'default',
                 'libelle' => 'Seuils SLA par defaut',
                 'ordre_affichage' => 1,
-                'metadata_json' => json_encode(['vert' => 12, 'orange' => 18, 'rouge' => 24]),
+                'metadata_json' => json_encode(['warning' => 12, 'deadline' => 24]),
             ],
             [
                 'famille' => 'seuil_alerte',
                 'code' => 'accueil',
                 'libelle' => 'Seuils accueil',
                 'ordre_affichage' => 2,
-                'metadata_json' => json_encode(['vert' => 12, 'orange' => 18, 'rouge' => 24]),
+                'metadata_json' => json_encode(['warning' => 4, 'deadline' => 8]),
             ],
             [
                 'famille' => 'seuil_alerte',
                 'code' => 'chef',
                 'libelle' => 'Seuils chef de service',
                 'ordre_affichage' => 3,
-                'metadata_json' => json_encode(['vert' => 24, 'orange' => 36, 'rouge' => 48]),
+                'metadata_json' => json_encode(['warning' => 8, 'deadline' => 16]),
             ],
             [
                 'famille' => 'seuil_alerte',
                 'code' => 'agent',
                 'libelle' => 'Seuils agent',
                 'ordre_affichage' => 4,
-                'metadata_json' => json_encode(['vert' => 24, 'orange' => 36, 'rouge' => 48]),
+                'metadata_json' => json_encode(['warning' => 8, 'deadline' => 16]),
             ],
         ];
 

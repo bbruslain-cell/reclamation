@@ -33,6 +33,11 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
+        $email = trim((string) ($request->input('email') ?: $request->input('username')));
+        if ($email !== '') {
+            $request->merge(['email' => $email]);
+        }
+
         $payload = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],

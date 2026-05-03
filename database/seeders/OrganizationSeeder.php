@@ -12,10 +12,10 @@ class OrganizationSeeder extends Seeder
     public function run(): void
     {
         $directions = [
-            'DG' => 'Direction Generale',
-            'DS' => 'Direction de la Scolarite',
-            'DAF' => 'Direction Administrative et Financiere',
-            'DSIC' => 'Direction des systemes d informations et de la Communication',
+            'DG' => 'Direction Générale',
+            'DS' => 'Direction de la Scolarité',
+            'DAF' => 'Direction Administrative et Financière',
+            'DSIC' => 'Direction des Systèmes d’Informations et de la Communication',
         ];
 
         foreach ($directions as $code => $libelle) {

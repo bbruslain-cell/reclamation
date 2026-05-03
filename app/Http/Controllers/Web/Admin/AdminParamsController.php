@@ -131,7 +131,7 @@ class AdminParamsController extends BaseAdminController
 
             $configId = DB::table('config_sla')->where('actif', true)->value('id_config_sla');
             if (!$configId) {
-                throw ValidationException::withMessages(['date_ferie' => 'Aucune configuration SLA active.']);
+                throw ValidationException::withMessages(['date_ferie' => 'Aucune configuration de délai active.']);
             }
 
             DB::table('sla_jours_feries')->updateOrInsert(

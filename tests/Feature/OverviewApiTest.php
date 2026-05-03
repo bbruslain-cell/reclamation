@@ -12,7 +12,7 @@ class OverviewApiTest extends TestCase
 
     public function test_overview_endpoint_returns_expected_structure(): void
     {
-        $this->seed();
+        $this->seedOverviewFixtures();
         $ciqId = (int) \Illuminate\Support\Facades\DB::table('utilisateurs')
             ->where('email', 'ciq@anbg.ga')
             ->value('id_utilisateur');
@@ -94,7 +94,7 @@ class OverviewApiTest extends TestCase
 
     public function test_chef_direction_can_view_scoped_overview_only(): void
     {
-        $this->seed();
+        $this->seedOverviewFixtures();
 
         $db = \Illuminate\Support\Facades\DB::class;
         $userId = (int) $db::table('utilisateurs')
@@ -110,12 +110,12 @@ class OverviewApiTest extends TestCase
 
         $payload = $response->json();
         $this->assertCount(1, $payload['par_direction']);
-        $this->assertSame('Direction de la Scolarite', $payload['par_direction'][0]['direction']);
+        $this->assertSame('Direction de la Scolarité', $payload['par_direction'][0]['direction']);
     }
 
     public function test_overview_supports_service_and_application_filters_for_ciq(): void
     {
-        $this->seed();
+        $this->seedOverviewFixtures();
 
         $db = \Illuminate\Support\Facades\DB::class;
         $userId = (int) $db::table('utilisateurs')
@@ -143,7 +143,7 @@ class OverviewApiTest extends TestCase
 
     public function test_ciq_overview_exposes_complete_traceability_for_agent_and_chef_flows(): void
     {
-        $this->seed();
+        $this->seedOverviewFixtures();
 
         $userId = (int) \Illuminate\Support\Facades\DB::table('utilisateurs')
             ->where('email', 'ciq@anbg.ga')
@@ -168,15 +168,15 @@ class OverviewApiTest extends TestCase
             'Soumission usager',
             'Affectation service',
             'Affectation agent',
-            'Reponse redigee',
-            'Reponse finale envoyee',
+            'Réponse rédigée',
+            'Réponse finale envoyée',
         ], $agentFlowActions);
 
         $this->assertSame([
             'Soumission usager',
             'Affectation service',
-            'Reponse redigee',
-            'Reponse finale envoyee',
+            'Réponse rédigée',
+            'Réponse finale envoyée',
             'Reponse directe chef',
         ], $chefFlowActions);
 
@@ -192,7 +192,7 @@ class OverviewApiTest extends TestCase
 
     public function test_overview_exposes_function_annexes_for_global_tables(): void
     {
-        $this->seed();
+        $this->seedOverviewFixtures();
 
         $ciqId = (int) \Illuminate\Support\Facades\DB::table('utilisateurs')
             ->where('email', 'ciq@anbg.ga')
@@ -217,7 +217,7 @@ class OverviewApiTest extends TestCase
 
     public function test_overview_reports_direct_accueil_responses_under_ucas(): void
     {
-        $this->seed();
+        $this->seedOverviewFixtures();
 
         $this->post('/reclamations', [
             'nom' => 'Mouila',
@@ -242,12 +242,6 @@ class OverviewApiTest extends TestCase
         $this->post('/login', [
             'email' => 'accueil@anbg.ga',
             'password' => 'ChangeMe@123',
-        ])->assertRedirect('/mot-de-passe/nouveau');
-
-        $this->post('/mot-de-passe/nouveau', [
-            'ancien_mdp' => 'ChangeMe@123',
-            'password' => 'ChangeMe@124',
-            'password_confirmation' => 'ChangeMe@124',
         ])->assertRedirect('/espace');
 
         $this->post("/accueil/demandes/{$demandId}/reponse-directe", [
@@ -275,7 +269,7 @@ class OverviewApiTest extends TestCase
         $this->assertNotNull($trackingRow);
         $this->assertSame('UCAS', $trackingRow['service_direction']);
         $this->assertNotNull($traceRow);
-        	$this->assertContains('Reponse directe accueil', collect($traceRow['actions'] ?? [])->pluck('action')->all());
+        $this->assertContains('Reponse directe accueil', collect($traceRow['actions'] ?? [])->pluck('action')->all());
     }
 
     public function test_overview_marks_overdue_direct_accueil_response_as_out_of_time(): void
@@ -346,5 +340,14 @@ class OverviewApiTest extends TestCase
         $this->assertSame('NON', $trackingRow['delai_transmission_oh']);
         $this->assertTrue($serviceRows->has('UCAS'));
         $this->assertSame(0, (int) ($serviceRows->get('UCAS')['total_traitees_delai'] ?? -1));
+    }
+
+    private function seedOverviewFixtures(): void
+    {
+        $this->seed();
+
+        DB::table('utilisateurs')->update([
+            'changement_mdp_requis' => false,
+        ]);
     }
 }

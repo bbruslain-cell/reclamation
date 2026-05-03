@@ -107,19 +107,28 @@ class OverviewController extends Controller
         $totalOuvertes = (clone $baseDemands)
             ->where('st.code', '!=', 'cloturee')
             ->count('d.id_demande');
+        $directAccueilMetricsForKpis = $this->buildDirectAccueilMetrics(clone $baseDemands);
+        $directAccueilDansDelais = (int) $directAccueilMetricsForKpis->total_traitees_delai;
+        $directAccueilEnRetard = max(0, (int) $directAccueilMetricsForKpis->total_traitees - $directAccueilDansDelais);
+        $nonDirectAccueilCondition = 'NOT '.$this->directAccueilExpression();
+
         $totalGlobalDansDelais = (clone $baseDemands)
             ->where('d.delai_alerte', 'dans_les_delais')
-            ->count('d.id_demande');
+            ->whereRaw($nonDirectAccueilCondition)
+            ->count('d.id_demande') + $directAccueilDansDelais;
         $totalGlobalARisque = (clone $baseDemands)
             ->where('d.delai_alerte', 'a_risque')
+            ->whereRaw($nonDirectAccueilCondition)
             ->count('d.id_demande');
         $totalRetard = (clone $baseDemands)
             ->where('d.delai_alerte', 'en_retard')
-            ->count('d.id_demande');
+            ->whereRaw($nonDirectAccueilCondition)
+            ->count('d.id_demande') + $directAccueilEnRetard;
         $totalClotureesDansDelai = (clone $baseDemands)
             ->where('st.code', 'cloturee')
             ->where('d.delai_alerte', 'dans_les_delais')
-            ->count('d.id_demande');
+            ->whereRaw($nonDirectAccueilCondition)
+            ->count('d.id_demande') + $directAccueilDansDelais;
         $delaiMoyenTraitement = (clone $baseDemands)
             ->where('st.code', 'cloturee')
             ->avg('d.heures_ouvrees_cloture');
@@ -135,8 +144,12 @@ class OverviewController extends Controller
             ->get();
 
         $byDirection = (clone $baseDemands)
-            ->select(DB::raw("COALESCE(dir.libelle, 'Non affectÃ©') as direction"), DB::raw('COUNT(*) as total'))
-            ->groupBy(DB::raw("COALESCE(dir.libelle, 'Non affectÃ©')"))
+            ->select(
+                DB::raw("COALESCE(dir.code, 'NON_AFFECTE') as direction_code"),
+                DB::raw("COALESCE(dir.libelle, 'Non affecté') as direction"),
+                DB::raw('COUNT(*) as total')
+            )
+            ->groupBy(DB::raw("COALESCE(dir.code, 'NON_AFFECTE')"), DB::raw("COALESCE(dir.libelle, 'Non affecté')"))
             ->orderByDesc('total')
             ->get();
 
@@ -144,6 +157,7 @@ class OverviewController extends Controller
             ->whereNotNull('dir.id_direction')
             ->select(
                 'dir.id_direction',
+                'dir.code as direction_code',
                 'dir.libelle as direction',
                 DB::raw('COUNT(*) as total_demandes'),
                 DB::raw("SUM(CASE WHEN st.code = 'cloturee' THEN 1 ELSE 0 END) as total_cloturees"),
@@ -153,13 +167,14 @@ class OverviewController extends Controller
                 DB::raw("SUM(CASE WHEN d.alerte_agent = 'rouge' THEN 1 ELSE 0 END) as total_retards_agent"),
                 DB::raw("SUM(CASE WHEN d.alerte_chef = 'rouge' OR d.alerte_agent = 'rouge' THEN 1 ELSE 0 END) as total_retards")
             )
-            ->groupBy('dir.id_direction', 'dir.libelle')
+            ->groupBy('dir.id_direction', 'dir.code', 'dir.libelle')
             ->get()
             ->map(function ($row) {
                 $cloturees = (int) $row->total_cloturees;
                 $dansDelai = (int) $row->total_cloturees_delai;
 
                 return [
+                    'direction_code' => (string) $row->direction_code,
                     'direction' => (string) $row->direction,
                     'total_demandes' => (int) $row->total_demandes,
                     'total_cloturees' => $cloturees,
@@ -495,8 +510,33 @@ class OverviewController extends Controller
                 'service' => $row->service ?: '-',
             ]);
 
-        $annexeBaseRows = (clone $baseDemands)
+        $trackingPage = max(1, (int) $request->input('tracking_page', 1));
+        $trackingPerPage = min(100, max(10, (int) $request->input('tracking_per_page', 25)));
+        $trackingAll = $request->boolean('tracking_all', false);
+        $trackingDemandId = max(0, (int) $request->input('tracking_demand_id', 0));
+
+        $annexeBaseQuery = (clone $baseDemands)
             ->leftJoin('utilisateurs as ua', 'ua.id_utilisateur', '=', 'd.id_agent_accueil')
+            ->leftJoin('utilisateurs as ut', 'ut.id_utilisateur', '=', 'd.id_agent_traitant')
+            ->leftJoin('utilisateurs as ud', 'ud.id_utilisateur', '=', 'd.id_agent_direction');
+
+        if ($trackingDemandId > 0) {
+            $annexeBaseQuery->where('d.id_demande', $trackingDemandId);
+        }
+
+        $annexeTotalRows = (int) (clone $annexeBaseQuery)->count('d.id_demande');
+        $annexeLastPage = max(1, (int) ceil($annexeTotalRows / max(1, $trackingPerPage)));
+
+        if (!$trackingAll && $trackingDemandId <= 0) {
+            $trackingPage = min($trackingPage, $annexeLastPage);
+        }
+
+        $annexeOffset = $trackingAll || $trackingDemandId > 0 ? 0 : ($trackingPage - 1) * $trackingPerPage;
+        $annexeLimit = $trackingDemandId > 0
+            ? 1
+            : ($trackingAll ? min(5000, max(500, (int) $request->input('tracking_limit', 5000))) : $trackingPerPage);
+
+        $annexeBaseRows = $annexeBaseQuery
             ->select(
                 'd.id_demande',
                 'd.numero_suivi',
@@ -530,15 +570,26 @@ class OverviewController extends Controller
                 'u.etablissement as usager_etablissement',
                 'ua.nom as accueil_nom',
                 'ua.prenom as accueil_prenom',
-                'ua.id_service as accueil_service_id'
+                'ua.id_service as accueil_service_id',
+                'ut.nom as agent_traitant_nom',
+                'ut.prenom as agent_traitant_prenom',
+                'ud.nom as direction_agent_nom',
+                'ud.prenom as direction_agent_prenom'
             )
             ->orderByDesc('d.date_soumission')
-            ->limit(500)
+            ->offset($annexeOffset)
+            ->limit($annexeLimit)
             ->get();
+
+        $annexeShownRows = $annexeBaseRows->count();
+        $annexeFrom = $annexeTotalRows > 0 ? $annexeOffset + 1 : 0;
+        $annexeTo = $annexeTotalRows > 0 ? min($annexeOffset + $annexeShownRows, $annexeTotalRows) : 0;
 
         $annexeChefByDemand = collect();
         $annexeDirectAccueilByDemand = collect();
         $annexeResponseServiceByDemand = collect();
+        $annexeTreatmentActionsByDemand = collect();
+        $annexeResponseDetailByDemand = collect();
         $annexePiecesByDemand = collect();
         $annexeDemandIds = $annexeBaseRows->pluck('id_demande')->filter()->values()->all();
         if (!empty($annexeDemandIds)) {
@@ -595,6 +646,98 @@ class OverviewController extends Controller
                     return $serviceId > 0 ? $serviceId : null;
                 });
 
+            $annexeTreatmentActionsByDemand = DB::table('historique_actions as ha')
+                ->leftJoin('utilisateurs as actor', 'actor.id_utilisateur', '=', 'ha.id_utilisateur')
+                ->leftJoin('utilisateurs as assigned_agent', 'assigned_agent.id_utilisateur', '=', 'ha.id_agent_associe')
+                ->leftJoin('services as svc', 'svc.id_service', '=', 'ha.id_service_associe')
+                ->leftJoin('directions as dir', 'dir.id_direction', '=', 'svc.id_direction')
+                ->whereIn('ha.id_demande', $annexeDemandIds)
+                ->whereIn('ha.type_action', [
+                    'soumission_usager',
+                    'affectation_service',
+                    'annulation_affectation_service',
+                    'affectation_agent',
+                    'annulation_affectation_agent',
+                    'reponse_redigee',
+                    'envoi_reponse',
+                    'reponse_directe_accueil',
+                    'reponse_directe_chef',
+                ])
+                ->orderBy('ha.date_action')
+                ->get([
+                    'ha.id_demande',
+                    'ha.type_action',
+                    'ha.date_action',
+                    'ha.commentaire',
+                    'actor.nom as acteur_nom',
+                    'actor.prenom as acteur_prenom',
+                    'assigned_agent.nom as agent_nom',
+                    'assigned_agent.prenom as agent_prenom',
+                    'svc.code as service_code',
+                    'svc.libelle as service_libelle',
+                    'dir.code as direction_code',
+                    'dir.libelle as direction_libelle',
+                ])
+                ->groupBy('id_demande')
+                ->map(function ($rows) {
+                    return $rows->map(function ($action) {
+                        $acteur = trim(((string) ($action->acteur_prenom ?? '')).' '.((string) ($action->acteur_nom ?? '')));
+                        $agent = trim(((string) ($action->agent_prenom ?? '')).' '.((string) ($action->agent_nom ?? '')));
+
+                        return [
+                            'type_action' => (string) $action->type_action,
+                            'libelle' => $this->humanActionLabel((string) $action->type_action),
+                            'date_action' => $action->date_action,
+                            'acteur' => $acteur !== ''
+                                ? $acteur
+                                : ((string) $action->type_action === 'soumission_usager' ? 'Usager' : 'Système'),
+                            'agent' => $agent !== '' ? $agent : null,
+                            'service' => trim((string) ($action->service_code ?? '')) ?: null,
+                            'service_libelle' => trim((string) ($action->service_libelle ?? '')) ?: null,
+                            'direction' => trim((string) ($action->direction_code ?? '')) ?: null,
+                            'direction_libelle' => trim((string) ($action->direction_libelle ?? '')) ?: null,
+                            'commentaire' => $this->humanActionComment((string) $action->type_action, $action->commentaire),
+                        ];
+                    })->values()->all();
+                });
+
+            $annexeResponseDetailByDemand = DB::table('reponses as r')
+                ->leftJoin('parametres as tr', 'tr.id_parametre', '=', 'r.id_type_reponse')
+                ->leftJoin('utilisateurs as redacteur', 'redacteur.id_utilisateur', '=', 'r.id_redacteur')
+                ->leftJoin('utilisateurs as envoyeur', 'envoyeur.id_utilisateur', '=', 'r.id_envoyeur')
+                ->whereIn('r.id_demande', $annexeDemandIds)
+                ->orderByDesc('r.numero_version')
+                ->orderByDesc('r.date_envoi_usager')
+                ->orderByDesc('r.date_redaction')
+                ->get([
+                    'r.id_demande',
+                    'r.numero_version',
+                    'r.contenu_reponse',
+                    'r.date_redaction',
+                    'r.date_envoi_usager',
+                    'tr.libelle as type_reponse',
+                    'redacteur.nom as redacteur_nom',
+                    'redacteur.prenom as redacteur_prenom',
+                    'envoyeur.nom as envoyeur_nom',
+                    'envoyeur.prenom as envoyeur_prenom',
+                ])
+                ->groupBy('id_demande')
+                ->map(function ($rows) {
+                    $response = $rows->first();
+                    $redacteur = trim(((string) ($response->redacteur_prenom ?? '')).' '.((string) ($response->redacteur_nom ?? '')));
+                    $envoyeur = trim(((string) ($response->envoyeur_prenom ?? '')).' '.((string) ($response->envoyeur_nom ?? '')));
+
+                    return [
+                        'numero_version' => (int) ($response->numero_version ?? 1),
+                        'type_reponse' => (string) ($response->type_reponse ?? ''),
+                        'contenu' => (string) ($response->contenu_reponse ?? ''),
+                        'date_redaction' => $response->date_redaction,
+                        'date_envoi_usager' => $response->date_envoi_usager,
+                        'redacteur' => $redacteur !== '' ? $redacteur : '-',
+                        'envoyeur' => $envoyeur !== '' ? $envoyeur : null,
+                    ];
+                });
+
             $annexePiecesByDemand = DB::table('demande_piece_jointe as dpj')
                 ->join('pieces_jointes as pj', 'pj.id_piece_jointe', '=', 'dpj.id_piece_jointe')
                 ->whereIn('dpj.id_demande', $annexeDemandIds)
@@ -637,9 +780,12 @@ class OverviewController extends Controller
                 return trim(((string) ($first->prenom ?? '')).' '.((string) ($first->nom ?? '')));
             });
 
+        $accueilThresholds = $this->stepAlerts->thresholdsForStep('accueil');
+        $serviceThresholds = $this->stepAlerts->thresholdsForStep('chef');
+
         $annexeRows = $annexeBaseRows
             ->values()
-            ->map(function ($row, int $index) use ($annexeChefByDemand, $annexeDirectAccueilByDemand, $annexeResponseServiceByDemand, $annexePiecesByDemand, $serviceChefByServiceId, $serviceMetaById) {
+            ->map(function ($row, int $index) use ($annexeChefByDemand, $annexeDirectAccueilByDemand, $annexeResponseServiceByDemand, $annexeTreatmentActionsByDemand, $annexeResponseDetailByDemand, $annexePiecesByDemand, $serviceChefByServiceId, $serviceMetaById, $accueilThresholds, $serviceThresholds) {
                 $dispatching = $row->date_affectation_accueil ? Carbon::parse($row->date_affectation_accueil) : null;
                 $reception = $row->date_soumission ? Carbon::parse($row->date_soumission) : null;
 
@@ -649,7 +795,7 @@ class OverviewController extends Controller
                         $reception,
                         $dispatching,
                         (int) $row->id_config_sla
-                    ) <= 24;
+                    ) <= (float) ($accueilThresholds['deadline'] ?? 8);
                 }
 
                 $realisationDate = $row->date_envoi_usager ?: $row->date_cloture;
@@ -661,6 +807,13 @@ class OverviewController extends Controller
                 if ($serviceId === null && !empty($row->accueil_service_id)) {
                     $serviceId = (int) $row->accueil_service_id;
                 }
+                $globalAlertCode = $reception
+                    ? $this->resolveGlobalDelayAlert(
+                        $row->date_soumission,
+                        $realisationDate,
+                        (int) $row->id_config_sla
+                    )
+                    : ($row->delai_alerte ?? null);
                 $isDirectAccueil = $annexeDirectAccueilByDemand->has($row->id_demande);
                 $respectDelais = $isDirectAccueil
                     ? ($this->isWithinAccueilDirectDeadline(
@@ -668,7 +821,14 @@ class OverviewController extends Controller
                         $realisationDate,
                         (int) $row->id_config_sla
                     ) ? 'OUI' : 'NON')
-                    : (($row->delai_alerte ?? null) === 'en_retard' ? 'NON' : 'OUI');
+                    : ($globalAlertCode === 'en_retard' ? 'NON' : 'OUI');
+                $responsableRetard = $this->resolveGlobalDelayOwner(
+                    $row,
+                    $realisationDate,
+                    (float) ($accueilThresholds['deadline'] ?? 8),
+                    (float) ($serviceThresholds['deadline'] ?? 16),
+                    $globalAlertCode
+                );
                 $serviceMeta = $serviceId !== null ? $serviceMetaById->get($serviceId) : null;
                 $serviceLabel = trim((string) ($serviceMeta->code ?? $row->service_code ?? $row->service_libelle ?? '-'));
 
@@ -685,6 +845,31 @@ class OverviewController extends Controller
 
                 $expediteur = trim(((string) ($row->usager_prenom ?? '')).' '.((string) ($row->usager_nom ?? '')));
                 $piecesJointes = $annexePiecesByDemand->get($row->id_demande, []);
+                $traitementActions = collect($annexeTreatmentActionsByDemand->get($row->id_demande, []));
+                $affectationAccueil = $traitementActions->where('type_action', 'affectation_service')->last();
+                $affectationAgent = $traitementActions->where('type_action', 'affectation_agent')->last();
+                $reponseDetail = $annexeResponseDetailByDemand->get($row->id_demande, null);
+
+                $agentAccueil = trim(((string) ($row->accueil_prenom ?? '')).' '.((string) ($row->accueil_nom ?? '')));
+                $agentTraitant = trim(((string) ($row->agent_traitant_prenom ?? '')).' '.((string) ($row->agent_traitant_nom ?? '')));
+                $agentDirection = trim(((string) ($row->direction_agent_prenom ?? '')).' '.((string) ($row->direction_agent_nom ?? '')));
+                $chefAffectation = is_array($affectationAgent ?? null) ? (string) ($affectationAgent['acteur'] ?? '') : '';
+                $agentAffecte = is_array($affectationAgent ?? null) ? (string) ($affectationAgent['agent'] ?? '') : '';
+                $serviceAffecte = is_array($affectationAccueil ?? null)
+                    ? (string) (($affectationAccueil['service'] ?? '') ?: ($affectationAccueil['service_libelle'] ?? ''))
+                    : $serviceLabel;
+                $serviceAffecteLibelle = is_array($affectationAccueil ?? null)
+                    ? (string) (($affectationAccueil['service_libelle'] ?? '') ?: ($affectationAccueil['service'] ?? ''))
+                    : (string) ($serviceMeta->libelle ?? $row->service_libelle ?? $serviceLabel);
+                $directionAffectee = is_array($affectationAccueil ?? null)
+                    ? (string) (($affectationAccueil['direction'] ?? '') ?: ($affectationAccueil['direction_libelle'] ?? ''))
+                    : (string) ($row->direction_code ?? $row->direction_libelle ?? '');
+                $affectationAccueilDate = is_array($affectationAccueil ?? null)
+                    ? ($affectationAccueil['date_action'] ?? $row->date_affectation_accueil)
+                    : $row->date_affectation_accueil;
+                $affectationAgentDate = is_array($affectationAgent ?? null)
+                    ? ($affectationAgent['date_action'] ?? $row->date_affectation_agent)
+                    : $row->date_affectation_agent;
 
                 return [
                     'id_demande' => (int) $row->id_demande,
@@ -704,6 +889,7 @@ class OverviewController extends Controller
                         $realisationDate,
                         (int) $row->id_config_sla
                     ),
+                    'responsable_retard' => $responsableRetard,
                     'qcs' => $qcs !== '' ? $qcs : '-',
                     'usager_nom' => (string) ($row->usager_nom ?? ''),
                     'usager_prenom' => (string) ($row->usager_prenom ?? ''),
@@ -718,6 +904,34 @@ class OverviewController extends Controller
                     'objet_original' => (string) ($row->objet ?? ''),
                     'message' => (string) ($row->message ?? ''),
                     'pieces_jointes' => $piecesJointes,
+                    'traitement' => [
+                        'affectation_accueil' => [
+                            'agent' => is_array($affectationAccueil ?? null)
+                                ? (string) ($affectationAccueil['acteur'] ?? ($agentAccueil ?: '-'))
+                                : ($agentAccueil !== '' ? $agentAccueil : '-'),
+                            'service' => trim($serviceAffecte) !== '' ? $serviceAffecte : '-',
+                            'service_libelle' => trim($serviceAffecteLibelle) !== '' ? $serviceAffecteLibelle : '-',
+                            'direction' => trim($directionAffectee) !== '' ? $directionAffectee : '-',
+                            'date' => $affectationAccueilDate,
+                            'commentaire' => is_array($affectationAccueil ?? null) ? ($affectationAccueil['commentaire'] ?? null) : null,
+                        ],
+                        'affectation_agent' => [
+                            'chef' => $chefAffectation !== '' ? $chefAffectation : ($qcs !== '-' ? $qcs : '-'),
+                            'agent' => $agentAffecte !== '' ? $agentAffecte : ($agentTraitant !== '' ? $agentTraitant : '-'),
+                            'date' => $affectationAgentDate,
+                            'commentaire' => is_array($affectationAgent ?? null) ? ($affectationAgent['commentaire'] ?? null) : null,
+                        ],
+                        'reponse' => $reponseDetail ?: [
+                            'numero_version' => null,
+                            'type_reponse' => null,
+                            'contenu' => '',
+                            'date_redaction' => null,
+                            'date_envoi_usager' => $realisationDate,
+                            'redacteur' => $agentDirection !== '' ? $agentDirection : '-',
+                            'envoyeur' => null,
+                        ],
+                        'historique' => $traitementActions->values()->all(),
+                    ],
                 ];
             });
 
@@ -1061,6 +1275,11 @@ class OverviewController extends Controller
             ->where('actif', true)
             ->orderBy('ordre_affichage')
             ->get(['code', 'libelle']);
+        $catalogTypes = DB::table('parametres')
+            ->where('famille', 'type_demande')
+            ->where('actif', true)
+            ->orderBy('ordre_affichage')
+            ->get(['code', 'libelle']);
 
         return response()->json([
             'generated_at' => now()->toIso8601String(),
@@ -1111,6 +1330,15 @@ class OverviewController extends Controller
             'registre_mails' => $registreMails,
             'registre_controle_interne' => $registreControleInterne,
             'tableau_suivi_annexe' => $annexeRows,
+            'tableau_suivi_pagination' => [
+                'current_page' => $trackingPage,
+                'per_page' => $trackingPerPage,
+                'total' => $annexeTotalRows,
+                'from' => $annexeFrom,
+                'to' => $annexeTo,
+                'last_page' => $annexeLastPage,
+                'is_all' => $trackingAll,
+            ],
             'annexe_repartition' => [
                 'reclamations' => $annexeReclamations,
                 'total_reclamations' => $totalAnnexeReclamations,
@@ -1130,6 +1358,7 @@ class OverviewController extends Controller
                 'directions' => $catalogDirections,
                 'services' => $catalogServices,
                 'statuts' => $catalogStatus,
+                'types' => $catalogTypes,
                 'application_states' => [
                     ['code' => 'appliquee', 'libelle' => 'Appliquee'],
                     ['code' => 'non_appliquee', 'libelle' => 'Non appliquee'],
@@ -1143,13 +1372,45 @@ class OverviewController extends Controller
                     'Interfaces utilisateur',
                     'Gestion des utilisateurs et des droits',
                     'Gestion des reclamations',
-                    'Suivi de l exÃ©cution et statuts',
-                    'SLA 72h + alertes',
+                    'Suivi de l exécution et statuts',
+                    'Delai 24h + alertes',
                     'Tracabilite',
                     'Tableau de bord + exports',
                 ],
             ],
         ]);
+    }
+
+    public function trackingDetail(Request $request, AccessControlService $access, int $id): JsonResponse
+    {
+        try {
+            $actor = $access->requireActor($request);
+            $userId = (int) $actor->id_utilisateur;
+
+            if (Gate::forUser($actor)->denies('dashboard.view')) {
+                throw new AuthorizationException('Acces tableau de bord refuse.');
+            }
+
+            $access->assertDemandAccess($userId, $id);
+        } catch (AuthorizationException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
+        }
+
+        $request->merge([
+            'tracking_demand_id' => $id,
+            'tracking_page' => 1,
+            'tracking_per_page' => 10,
+        ]);
+
+        $overview = $this->index($request, $access)->getData(true);
+        $detail = collect($overview['tableau_suivi_annexe'] ?? [])
+            ->first(fn (array $row): bool => (int) ($row['id_demande'] ?? 0) === $id);
+
+        if (!$detail) {
+            return response()->json(['message' => 'Dossier introuvable dans le filtre courant.'], 404);
+        }
+
+        return response()->json(['data' => $detail]);
     }
 
     private function applyScope(Builder $query, ?array $serviceScopeIds): void
@@ -1473,12 +1734,19 @@ class OverviewController extends Controller
             Carbon::parse($endDate),
             $configId
         );
+        $dayHours = max(1.0, $this->slaService->businessDayWorkedHours($configId));
+        $days = (int) floor($elapsedHours / $dayHours);
+        $remainingHours = round(max(0, $elapsedHours - ($days * $dayHours)), 2);
 
-        $roundedHours = max(0, (int) round($elapsedHours));
-        $days = intdiv($roundedHours, 24);
-        $hours = $roundedHours % 24;
+        if ($days <= 0) {
+            return $this->formatWorkedHoursLabel($elapsedHours);
+        }
 
-        return "{$days} j {$hours} h";
+        if ($remainingHours <= 0) {
+            return "{$days} j";
+        }
+
+        return "{$days} j ".$this->formatWorkedHoursLabel($remainingHours);
     }
 
     private function humanActionLabel(string $action): string
@@ -1489,26 +1757,41 @@ class OverviewController extends Controller
             'affectation_service' => 'Affectation service',
             'affectation_agent' => 'Affectation agent',
             'annulation_affectation_agent' => 'Annulation affectation agent',
-            'reponse_redigee' => 'Reponse redigee',
-            'envoi_reponse' => 'Reponse finale envoyee',
+            'reponse_redigee' => 'Réponse rédigée',
+            'envoi_reponse' => 'Réponse finale envoyée',
             'reponse_directe_accueil' => 'Reponse directe accueil',
             'reponse_directe_chef' => 'Reponse directe chef',
             default => ucfirst(str_replace('_', ' ', $action)),
         };
     }
 
+    private function humanActionComment(string $action, ?string $comment): ?string
+    {
+        $normalized = trim((string) $comment);
+
+        return match ($action) {
+            'reponse_redigee' => $normalized === '' || $normalized === 'Reponse unique'
+                ? 'Réponse rédigée'
+                : $normalized,
+            'envoi_reponse' => $normalized === '' || $normalized === 'Envoi final a l usager'
+                ? "Envoi final à l'usager"
+                : $normalized,
+            default => $comment,
+        };
+    }
+
     private function buildFunctionPerformanceAnnexe(Builder $baseDemands, ?string $typeCode = null, bool $includeEmptyDefinitions = true): array
     {
         $functionDefinitions = [
-            'DS' => 'Direction de la Scolarite',
-            'DSIC' => 'Direction des Systemes d Information',
-            'DAF' => 'Direction Administrative et Financiere',
-            'UCAS' => 'Unite Courrier, Accueil et Securite',
+            'DS' => 'Direction de la Scolarité',
+            'DSIC' => 'Direction des Systèmes d’Informations et de la Communication',
+            'DAF' => 'Direction Administrative et Financière',
+            'UCAS' => 'Unité Courrier, Accueil et Sécurité',
         ];
 
         $directAccueilExistsExpression = $this->directAccueilExpression();
         $functionCodeExpression = "CASE WHEN {$directAccueilExistsExpression} THEN 'UCAS' WHEN dir.code IN ('DS', 'DSIC', 'DAF') THEN dir.code ELSE NULL END";
-        $functionLabelExpression = "CASE WHEN {$directAccueilExistsExpression} THEN 'Unite Courrier, Accueil et Securite' WHEN dir.code IN ('DS', 'DSIC', 'DAF') THEN dir.libelle ELSE NULL END";
+        $functionLabelExpression = "CASE WHEN {$directAccueilExistsExpression} THEN 'Unité Courrier, Accueil et Sécurité' WHEN dir.code IN ('DS', 'DSIC', 'DAF') THEN dir.libelle ELSE NULL END";
 
         $filteredDemands = (clone $baseDemands)
             ->when($typeCode !== null, fn (Builder $query) => $query->where('td.code', $typeCode));
@@ -1684,12 +1967,88 @@ class OverviewController extends Controller
         ];
     }
 
+    private function resolveGlobalDelayOwner(
+        object $row,
+        ?string $realisationDate,
+        float $accueilDeadline,
+        float $serviceDeadline,
+        ?string $globalAlertCode = null
+    ): string
+    {
+        if (($globalAlertCode ?? $row->delai_alerte ?? null) !== 'en_retard') {
+            return '-';
+        }
+
+        if (!$row->date_soumission || !$realisationDate || (int) ($row->id_config_sla ?? 0) <= 0) {
+            return '-';
+        }
+
+        $configId = (int) $row->id_config_sla;
+        $reception = Carbon::parse($row->date_soumission);
+        $serviceStartAt = $row->date_affectation_accueil ? Carbon::parse($row->date_affectation_accueil) : null;
+        $agentAssignedAt = $row->date_affectation_agent ? Carbon::parse($row->date_affectation_agent) : null;
+        $end = Carbon::parse($realisationDate);
+
+        if (!$serviceStartAt) {
+            return 'Accueil';
+        }
+
+        $accueilElapsed = $this->slaService->calculateElapsedHours($reception, $serviceStartAt, $configId);
+        if ($accueilElapsed > $accueilDeadline) {
+            return 'Accueil';
+        }
+
+        if (!$agentAssignedAt) {
+            return 'Chef de service';
+        }
+
+        $serviceElapsedBeforeAgent = $this->slaService->calculateElapsedHours($serviceStartAt, $agentAssignedAt, $configId);
+        if ($serviceElapsedBeforeAgent > $serviceDeadline) {
+            return 'Chef de service';
+        }
+
+        $serviceElapsedTotal = $this->slaService->calculateElapsedHours($serviceStartAt, $end, $configId);
+        if ($serviceElapsedTotal > $serviceDeadline) {
+            return 'Agent';
+        }
+
+        return 'Chef de service';
+    }
+
+    private function resolveGlobalDelayAlert(?string $startAt, ?string $endAt, int $configId): ?string
+    {
+        if (!$startAt || $configId <= 0) {
+            return null;
+        }
+
+        $thresholds = $this->stepAlerts->globalThresholds($configId);
+        $elapsed = $this->slaService->calculateElapsedHours(
+            Carbon::parse($startAt),
+            $endAt ? Carbon::parse($endAt) : null,
+            $configId
+        );
+
+        return $this->slaService->classifyAlert(
+            $elapsed,
+            (int) $thresholds['deadline'],
+            (float) $thresholds['warning']
+        );
+    }
+
+    private function formatWorkedHoursLabel(float $hours): string
+    {
+        $formatted = number_format($hours, 1, ',', ' ');
+        $formatted = rtrim(rtrim($formatted, '0'), ',');
+
+        return $formatted.' h';
+    }
+
     private function humanAlertLabel(string $alertCode): string
     {
         return match ($alertCode) {
-            'dans_les_delais' => 'Dans les dÃ©lais',
-            'a_risque' => 'Ã€ risque',
-            'en_retard' => 'Hors dÃ©lai',
+            'dans_les_delais' => 'Dans les délais',
+            'a_risque' => 'À risque',
+            'en_retard' => 'Hors délai',
             default => '-',
         };
     }
@@ -1710,11 +2069,13 @@ class OverviewController extends Controller
             return false;
         }
 
+        $deadline = (float) ($this->stepAlerts->thresholdsForStep('accueil')['deadline'] ?? 8);
+
         return $this->slaService->calculateElapsedHours(
             Carbon::parse($startDate),
             Carbon::parse($endDate),
             $configId
-        ) <= 24;
+        ) <= $deadline;
     }
 
     private function buildDirectAccueilMetrics(Builder $baseDemands): object

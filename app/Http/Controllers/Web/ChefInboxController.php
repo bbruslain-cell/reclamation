@@ -41,52 +41,110 @@ class ChefInboxController extends Controller
 
         $search = trim((string) ($filters['search'] ?? ''));
         $allowedServiceIds = $this->access->scopedServiceIds((int) $actor->id_utilisateur);
+        $scopedServiceIds = !empty($allowedServiceIds) ? $allowedServiceIds : [-1];
 
         $this->alerts->refreshOpenDemandAlerts($allowedServiceIds);
 
-        $baseQuery = DB::table('demandes as d')
+        $baseScope = DB::table('demandes as d')
             ->join('parametres as st', 'st.id_parametre', '=', 'd.id_statut')
             ->join('parametres as td', 'td.id_parametre', '=', 'd.id_type_demande')
             ->leftJoin('services as s', 's.id_service', '=', 'd.id_service_courant')
             ->leftJoin('usagers as u', 'u.id_usager', '=', 'd.id_usager')
             ->leftJoin('utilisateurs as ag', 'ag.id_utilisateur', '=', 'd.id_agent_traitant')
-            ->whereIn('d.id_service_courant', !empty($allowedServiceIds) ? $allowedServiceIds : [-1])
-            ->select(
-                'd.id_demande',
-                'd.numero_suivi',
-                'd.objet',
-                'd.message',
-                'd.id_config_sla',
-                'd.date_soumission',
-                'd.date_affectation_accueil',
-                'd.date_affectation_agent',
-                'd.alerte_chef',
-                'd.alerte_agent',
-                'd.id_service_courant',
-                'st.code as statut_code',
-                'st.libelle as statut',
-                'td.libelle as type_demande',
-                's.code as service_code',
-                's.libelle as service',
-                'u.nom as usager_nom',
-                'u.prenom as usager_prenom',
-                'u.email as usager_email',
-                'u.statut_usager as usager_statut',
-                'u.pays as usager_pays',
-                'u.etablissement as usager_etablissement',
-                'ag.nom as agent_nom',
-                'ag.prenom as agent_prenom'
-            );
+            ->whereIn('d.id_service_courant', $scopedServiceIds);
 
         if ($search !== '') {
             $pattern = '%'.$search.'%';
-            $baseQuery->where(function ($q) use ($pattern) {
+            $baseScope->where(function ($q) use ($pattern) {
                 $q->where('d.numero_suivi', 'like', $pattern)
                     ->orWhere('d.objet', 'like', $pattern)
                     ->orWhere('u.nom', 'like', $pattern)
                     ->orWhere('u.prenom', 'like', $pattern);
             });
         }
+
+        $baseQuery = (clone $baseScope)->select(
+            'd.id_demande',
+            'd.numero_suivi',
+            'd.objet',
+            'd.message',
+            'd.id_config_sla',
+            'd.date_soumission',
+            'd.date_affectation_accueil',
+            'd.date_affectation_agent',
+            'd.alerte_chef',
+            'd.alerte_agent',
+            'd.id_service_courant',
+            'st.code as statut_code',
+            'st.libelle as statut',
+            'td.libelle as type_demande',
+            's.code as service_code',
+            's.libelle as service',
+            'u.nom as usager_nom',
+            'u.prenom as usager_prenom',
+            'u.email as usager_email',
+            'u.statut_usager as usager_statut',
+            'u.pays as usager_pays',
+            'u.etablissement as usager_etablissement',
+            'ag.nom as agent_nom',
+            'ag.prenom as agent_prenom'
+        );
+
+        $scopeServices = DB::table('services')
+            ->whereIn('id_service', $scopedServiceIds)
+            ->orderBy('code')
+            ->get(['id_service', 'code', 'libelle']);
+        $currentService = $scopeServices->firstWhere('id_service', (int) ($actor->id_service ?? 0)) ?? $scopeServices->first();
+        $serviceLabel = $currentService
+            ? trim(trim(((string) ($currentService->code ?? '')).' - '.((string) ($currentService->libelle ?? ''))), ' -')
+            : 'Service non renseigne';
+
+        $serviceStats = (clone $baseScope)
+            ->selectRaw("
+                COUNT(*) as total_dossiers,
+                SUM(CASE WHEN st.code = 'affectee_service' THEN 1 ELSE 0 END) as total_sans_agent,
+                SUM(CASE WHEN st.code = 'affectee_agent' THEN 1 ELSE 0 END) as total_affectees_agent,
+                SUM(CASE WHEN st.code = 'reponse_prete' THEN 1 ELSE 0 END) as total_reponses_pretes,
+                SUM(CASE WHEN st.code IN ('affectee_service', 'affectee_agent', 'reponse_prete') THEN 1 ELSE 0 END) as total_ouvertes,
+                SUM(CASE WHEN st.code = 'cloturee' THEN 1 ELSE 0 END) as total_cloturees,
+                SUM(CASE WHEN d.alerte_chef = 'rouge' AND st.code != 'cloturee' THEN 1 ELSE 0 END) as total_en_retard,
+                SUM(CASE WHEN d.alerte_chef = 'orange' AND st.code != 'cloturee' THEN 1 ELSE 0 END) as total_a_risque
+            ")
+            ->first();
+
+        $totalAgents = (int) DB::table('utilisateurs as u')
+            ->join('utilisateur_role as ur', 'ur.id_utilisateur', '=', 'u.id_utilisateur')
+            ->join('roles as r', 'r.id_role', '=', 'ur.id_role')
+            ->where('r.code', 'agent')
+            ->where('u.actif', true)
+            ->whereIn('u.id_service', $scopedServiceIds)
+            ->distinct()
+            ->count('u.id_utilisateur');
+
+        $mobilizedAgents = (clone $baseScope)
+            ->whereIn('st.code', ['affectee_agent', 'reponse_prete'])
+            ->whereNotNull('d.id_agent_traitant')
+            ->distinct()
+            ->count('d.id_agent_traitant');
+
+        $serviceSummary = [
+            'service_label' => $serviceLabel,
+            'scope_label' => $scopeServices->count() > 1
+                ? $scopeServices->count().' services dans votre perimetre'
+                : 'Perimetre : 1 service',
+            'filter_label' => $search !== ''
+                ? 'Recherche active : '.$search
+                : 'Vue globale du service',
+            'total_agents' => $totalAgents,
+            'agents_mobilises' => $mobilizedAgents,
+            'total_sans_agent' => (int) ($serviceStats->total_sans_agent ?? 0),
+            'total_suivies' => (int) (($serviceStats->total_affectees_agent ?? 0) + ($serviceStats->total_reponses_pretes ?? 0)),
+            'total_reponses_pretes' => (int) ($serviceStats->total_reponses_pretes ?? 0),
+            'total_ouvertes' => (int) ($serviceStats->total_ouvertes ?? 0),
+            'total_cloturees' => (int) ($serviceStats->total_cloturees ?? 0),
+            'total_en_retard' => (int) ($serviceStats->total_en_retard ?? 0),
+            'total_a_risque' => (int) ($serviceStats->total_a_risque ?? 0),
+        ];
 
         $pending = (clone $baseQuery)
             ->where('st.code', 'affectee_service')
@@ -124,7 +182,7 @@ class ChefInboxController extends Controller
             ->leftJoin('usagers as u', 'u.id_usager', '=', 'd.id_usager')
             ->leftJoin('utilisateurs as actor_u', 'actor_u.id_utilisateur', '=', 'ha.id_utilisateur')
             ->leftJoin('services as s', 's.id_service', '=', 'ha.id_service_associe')
-            ->whereIn('d.id_service_courant', !empty($allowedServiceIds) ? $allowedServiceIds : [-1])
+            ->whereIn('d.id_service_courant', $scopedServiceIds)
             ->whereIn('ha.type_action', [
                 'affectation_agent',
                 'annulation_affectation_agent',
@@ -185,7 +243,7 @@ class ChefInboxController extends Controller
             ->join('utilisateur_role as ur', 'ur.id_utilisateur', '=', 'u.id_utilisateur')
             ->join('roles as r', 'r.id_role', '=', 'ur.id_role')
             ->where('r.code', 'agent')
-            ->whereIn('u.id_service', !empty($allowedServiceIds) ? $allowedServiceIds : [-1])
+            ->whereIn('u.id_service', $scopedServiceIds)
             ->orderBy('u.nom')
             ->get(['u.id_utilisateur', 'u.nom', 'u.prenom', 'u.id_service'])
             ->groupBy('id_service');
@@ -199,6 +257,7 @@ class ChefInboxController extends Controller
             'historyByDemand' => $historyByDemand,
             'recentChefActions' => $recentChefActions,
             'agentsByService' => $agents,
+            'serviceSummary' => $serviceSummary,
             'canPilotage' => Gate::forUser($actor)->allows('dashboard.view'),
         ]);
     }

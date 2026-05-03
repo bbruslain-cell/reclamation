@@ -281,7 +281,7 @@
             </form>
         </section>
 
-        <section class="flex flex-wrap items-stretch justify-center gap-3">
+        <section id="direction-kpi-content" class="flex flex-wrap items-stretch justify-center gap-3">
             <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#1c203d_0%,#2a3163_100%)] px-4 py-4 text-white shadow-card">
                 <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
                     <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/12">
@@ -290,7 +290,7 @@
                         </svg>
                     </span>
                     <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/68">Services actifs</p>
-                    <p class="text-[1.75rem] font-bold leading-none">{{ number_format((int) ($serviceSummary['services_actifs'] ?? 0), 0, ',', ' ') }}</p>
+                    <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ (int) ($serviceSummary['services_actifs'] ?? 0) }}">{{ number_format((int) ($serviceSummary['services_actifs'] ?? 0), 0, ',', ' ') }}</p>
                     <p class="text-xs text-white/68">Sur le filtre courant</p>
                 </div>
             </article>
@@ -334,6 +334,10 @@
             </article>
         </section>
 
+        <div id="direction-live-content"
+            class="space-y-6"
+            data-refresh-url="{{ request()->fullUrl() }}"
+            data-refresh-interval="20000">
         <section class="space-y-5">
             <div>
                 <h2 class="text-sm font-medium text-navy">Performance des services</h2>
@@ -416,7 +420,7 @@
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Usager</th>
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Service</th>
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Statut</th>
-                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Alerte globale 72h</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Alerte globale 24h</th>
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Action</th>
                         </tr>
                     </thead>
@@ -581,6 +585,7 @@
                 {{ $demandes->links() }}
             </div>
         </section>
+        </div>
 
     </main>
 
@@ -588,28 +593,129 @@
     (function () {
         const eyeSvg = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5C5.6 5 2 12 2 12s3.6 7 10 7 10-7 10-7-3.6-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z" fill="currentColor"/></svg>';
         const eyeSlashSvg = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3.3 2 18.7 18.7-1.4 1.4-4.1-4.1A11.7 11.7 0 0 1 12 19C5.6 19 2 12 2 12a19 19 0 0 1 4.4-5.3L1.9 3.4 3.3 2Zm6.1 6.1A4 4 0 0 0 12 16c.7 0 1.4-.2 2-.5L9.4 8.1ZM12 5c6.4 0 10 7 10 7a18.9 18.9 0 0 1-4.1 5.1l-2.2-2.2A4 4 0 0 0 9.1 8.3L7.5 6.7A10.8 10.8 0 0 1 12 5Z" fill="currentColor"/></svg>';
-        document.querySelectorAll('.view-toggle').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const row = document.getElementById(btn.dataset.target);
-                if (!row) {
-                    return;
-                }
+        const liveContent = document.getElementById('direction-live-content');
+        const kpiContent = document.getElementById('direction-kpi-content');
 
-                const isOpen = row.style.display !== 'none';
-                row.style.display = isOpen ? 'none' : '';
-                btn.setAttribute('aria-expanded', String(!isOpen));
+        const animateCounters = (root = document) => {
+            root.querySelectorAll('[data-countup]:not([data-countup-ready])').forEach((node) => {
+                node.dataset.countupReady = '1';
+                const target = Number(node.getAttribute('data-countup') || 0);
+                const duration = 700;
+                const startTime = performance.now();
 
-                const icon = btn.querySelector('.icon-slot');
-                const label = btn.querySelector('.label-slot');
-                if (isOpen) {
-                    icon.innerHTML = eyeSvg;
-                    label.textContent = 'Voir';
-                } else {
-                    icon.innerHTML = eyeSlashSvg;
-                    label.textContent = 'Masquer';
-                }
+                const tick = (now) => {
+                    const progress = Math.min((now - startTime) / duration, 1);
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    node.textContent = Math.round(target * eased).toLocaleString('fr-FR');
+                    if (progress < 1) {
+                        requestAnimationFrame(tick);
+                    }
+                };
+
+                requestAnimationFrame(tick);
             });
-        });
+        };
+
+        const initViewToggles = (root = document) => {
+            root.querySelectorAll('.view-toggle:not([data-toggle-ready])').forEach((btn) => {
+                btn.dataset.toggleReady = '1';
+                btn.addEventListener('click', () => {
+                    const row = document.getElementById(btn.dataset.target);
+                    if (!row) {
+                        return;
+                    }
+
+                    const isOpen = row.style.display !== 'none';
+                    row.style.display = isOpen ? 'none' : '';
+                    btn.setAttribute('aria-expanded', String(!isOpen));
+
+                    const icon = btn.querySelector('.icon-slot');
+                    const label = btn.querySelector('.label-slot');
+                    if (isOpen) {
+                        if (icon) icon.innerHTML = eyeSvg;
+                        if (label) label.textContent = 'Voir';
+                    } else {
+                        if (icon) icon.innerHTML = eyeSlashSvg;
+                        if (label) label.textContent = 'Masquer';
+                    }
+                });
+            });
+        };
+
+        const initDirectionInteractions = (root = document) => {
+            animateCounters(root);
+            initViewToggles(root);
+        };
+
+        const hasOpenDetail = () => {
+            if (!liveContent) return false;
+
+            return Array.from(liveContent.querySelectorAll('.detail-row')).some((row) => row.style.display !== 'none');
+        };
+
+        const shouldSkipRefresh = (isRefreshing) => {
+            if (!liveContent || isRefreshing || document.hidden) {
+                return true;
+            }
+
+            return hasOpenDetail();
+        };
+
+        const initDirectionAutoRefresh = () => {
+            if (!liveContent || liveContent.dataset.autoRefreshReady === '1') return;
+            liveContent.dataset.autoRefreshReady = '1';
+
+            let isRefreshing = false;
+            const interval = Math.max(Number(liveContent.dataset.refreshInterval || 20000), 10000);
+
+            const refreshContent = async () => {
+                if (shouldSkipRefresh(isRefreshing)) return;
+                isRefreshing = true;
+
+                try {
+                    const url = new URL(liveContent.dataset.refreshUrl || window.location.href, window.location.origin);
+                    url.searchParams.set('_direction_refresh', Date.now().toString());
+
+                    const response = await fetch(url.toString(), {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-Direction-Refresh': 'tables',
+                        },
+                        cache: 'no-store',
+                    });
+
+                    if (!response.ok) return;
+
+                    const html = await response.text();
+                    const nextDocument = new DOMParser().parseFromString(html, 'text/html');
+                    const nextKpiContent = nextDocument.getElementById('direction-kpi-content');
+                    const nextContent = nextDocument.getElementById('direction-live-content');
+
+                    if (nextKpiContent && kpiContent) {
+                        kpiContent.innerHTML = nextKpiContent.innerHTML;
+                        animateCounters(kpiContent);
+                    }
+
+                    if (!nextContent) return;
+
+                    liveContent.innerHTML = nextContent.innerHTML;
+                    initDirectionInteractions(liveContent);
+                } catch (error) {
+                    console.warn('Rafraichissement direction interrompu.', error);
+                } finally {
+                    isRefreshing = false;
+                }
+            };
+
+            window.setInterval(refreshContent, interval);
+            window.addEventListener('focus', refreshContent);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) refreshContent();
+            });
+        };
+
+        initDirectionInteractions(document);
+        initDirectionAutoRefresh();
     })();
     </script>
 </body>
