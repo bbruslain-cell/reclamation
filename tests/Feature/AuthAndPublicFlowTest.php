@@ -1031,6 +1031,92 @@ class AuthAndPublicFlowTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_sync_role_permissions_without_server_error(): void
+    {
+        $this->seed();
+
+        $adminId = (int) DB::table('utilisateurs')
+            ->where('email', 'admin@anbg.ga')
+            ->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->where('id_utilisateur', $adminId)
+            ->update(['changement_mdp_requis' => false]);
+        $roleId = (int) DB::table('roles')
+            ->where('code', 'dg')
+            ->value('id_role');
+        $exportPermissionId = (int) DB::table('permissions')
+            ->where('name', 'dashboard.export')
+            ->value('id_permission');
+        $viewPermissionId = (int) DB::table('permissions')
+            ->where('name', 'dashboard.view')
+            ->value('id_permission');
+
+        $response = $this->withHeader('X-User-Id', (string) $adminId)
+            ->post("/admin/roles/{$roleId}/permissions", [
+                'permissions' => ['dashboard.export'],
+            ]);
+
+        $response->assertRedirect('/admin/roles');
+        $response->assertSessionDoesntHaveErrors();
+
+        $this->assertDatabaseHas('permission_role', [
+            'id_role' => $roleId,
+            'id_permission' => $exportPermissionId,
+        ]);
+        $this->assertDatabaseMissing('permission_role', [
+            'id_role' => $roleId,
+            'id_permission' => $viewPermissionId,
+        ]);
+    }
+
+    public function test_admin_cannot_delete_user_with_open_demands(): void
+    {
+        $this->seed();
+
+        $adminId = (int) DB::table('utilisateurs')
+            ->where('email', 'admin@anbg.ga')
+            ->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->where('id_utilisateur', $adminId)
+            ->update(['changement_mdp_requis' => false]);
+        $agentId = (int) DB::table('utilisateurs')
+            ->where('email', 'agent.daf@anbg.ga')
+            ->value('id_utilisateur');
+
+        $response = $this->from('/admin/utilisateurs')
+            ->withHeader('X-User-Id', (string) $adminId)
+            ->post("/admin/utilisateurs/{$agentId}/delete");
+
+        $response->assertRedirect('/admin/utilisateurs');
+        $response->assertSessionHasErrors('user');
+
+        $this->assertDatabaseHas('utilisateurs', [
+            'id_utilisateur' => $agentId,
+        ]);
+    }
+
+    public function test_admin_avatar_upload_rejects_svg_files(): void
+    {
+        $this->seed();
+        Storage::fake('public');
+
+        $adminId = (int) DB::table('utilisateurs')
+            ->where('email', 'admin@anbg.ga')
+            ->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->where('id_utilisateur', $adminId)
+            ->update(['changement_mdp_requis' => false]);
+
+        $response = $this->from('/admin')
+            ->withHeader('X-User-Id', (string) $adminId)
+            ->post('/admin/avatar', [
+                'avatar' => UploadedFile::fake()->create('avatar.svg', 10, 'image/svg+xml'),
+            ]);
+
+        $response->assertRedirect('/admin');
+        $response->assertSessionHasErrors('avatar');
+    }
+
     public function test_anbg_services_catalogue_is_seeded_with_full_structure(): void
     {
         $this->seed();

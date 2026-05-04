@@ -212,6 +212,22 @@ class AdminUsersController extends BaseAdminController
                     throw ValidationException::withMessages(['user' => 'Utilisateur introuvable.']);
                 }
 
+                $hasOpenDemands = DB::table('demandes')
+                    ->whereNull('date_cloture')
+                    ->where(function ($query) use ($id): void {
+                        $query
+                            ->where('id_agent_traitant', $id)
+                            ->orWhere('id_agent_direction', $id)
+                            ->orWhere('id_agent_accueil', $id);
+                    })
+                    ->exists();
+
+                if ($hasOpenDemands) {
+                    throw ValidationException::withMessages([
+                        'user' => 'Impossible de supprimer cet utilisateur : des demandes en cours lui sont encore rattachees.',
+                    ]);
+                }
+
                 DB::table('utilisateur_role')->where('id_utilisateur', $id)->delete();
                 DB::table('model_has_roles')->where('model_type', Utilisateur::class)->where('model_id', $id)->delete();
                 DB::table('model_has_permissions')->where('model_type', Utilisateur::class)->where('model_id', $id)->delete();
