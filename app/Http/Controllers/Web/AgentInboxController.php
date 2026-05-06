@@ -157,7 +157,7 @@ class AgentInboxController extends Controller
                 demandId: $id
             );
 
-            return redirect()->back()->with('success', 'Réponse envoyée et demande cloturée.');
+            return redirect()->back()->with('success', 'Réponse mise en file. La demande sera clôturée après confirmation d\'envoi.');
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('erreur', $e->getMessage());
         } catch (ValidationException $e) {

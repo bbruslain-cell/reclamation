@@ -376,7 +376,7 @@ class ChefInboxController extends Controller
                 'updated_at' => now(),
             ]);
 
-            return redirect()->back()->with('success', 'Réponse directe envoyée et demande clôturée.');
+            return redirect()->back()->with('success', 'Réponse directe mise en file. La demande sera clôturée après confirmation d\'envoi.');
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         } catch (ValidationException $e) {

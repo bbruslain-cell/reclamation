@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendDemandResponseJob;
 use App\Mail\DemandResponseMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class DemandWorkflowApiTest extends TestCase
@@ -15,6 +17,7 @@ class DemandWorkflowApiTest extends TestCase
     public function test_full_workflow_from_assignment_to_final_send(): void
     {
         $this->seed();
+        Queue::fake();
         Mail::fake();
 
         $demandeId = (int) DB::table('demandes')->where('numero_suivi', 'ANBG-2026-0001')->value('id_demande');
@@ -22,6 +25,9 @@ class DemandWorkflowApiTest extends TestCase
         $accueilId = (int) DB::table('utilisateurs')->where('email', 'accueil@anbg.ga')->value('id_utilisateur');
         $chefId = (int) DB::table('utilisateurs')->where('email', 'chef.ds@anbg.ga')->value('id_utilisateur');
         $agentId = (int) DB::table('utilisateurs')->where('email', 'agent.ds@anbg.ga')->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->whereIn('id_utilisateur', [$accueilId, $chefId, $agentId])
+            ->update(['changement_mdp_requis' => false]);
         $usagerEmail = (string) DB::table('demandes as d')
             ->join('usagers as u', 'u.id_usager', '=', 'd.id_usager')
             ->where('d.id_demande', $demandeId)
@@ -57,10 +63,26 @@ class DemandWorkflowApiTest extends TestCase
             ->where('d.id_demande', $demandeId)
             ->value('p.code');
 
-        $this->assertSame('cloturee', $statusCode);
-        Mail::assertQueued(DemandResponseMail::class, function (DemandResponseMail $mail) use ($usagerEmail): bool {
-            return $mail->hasTo($usagerEmail);
+        $this->assertSame('reponse_prete', $statusCode);
+        $this->assertNotNull(DB::table('demandes')->where('id_demande', $demandeId)->value('date_demande_envoi_usager'));
+        $this->assertNull(DB::table('demandes')->where('id_demande', $demandeId)->value('date_envoi_usager'));
+
+        Queue::assertPushed(SendDemandResponseJob::class, function (SendDemandResponseJob $job) use ($demandeId, $usagerEmail): bool {
+            app()->call([$job, 'handle']);
+
+            Mail::assertSent(DemandResponseMail::class, function (DemandResponseMail $mail) use ($usagerEmail): bool {
+                return $mail->hasTo($usagerEmail);
+            });
+
+            return $job->demandId === $demandeId;
         });
+
+        $statusCode = DB::table('demandes as d')
+            ->join('parametres as p', 'p.id_parametre', '=', 'd.id_statut')
+            ->where('d.id_demande', $demandeId)
+            ->value('p.code');
+
+        $this->assertSame('cloturee', $statusCode);
     }
 
     public function test_assign_agent_updates_status_and_fields(): void
@@ -72,6 +94,9 @@ class DemandWorkflowApiTest extends TestCase
         $accueilId = (int) DB::table('utilisateurs')->where('email', 'accueil@anbg.ga')->value('id_utilisateur');
         $chefId = (int) DB::table('utilisateurs')->where('email', 'chef.ds@anbg.ga')->value('id_utilisateur');
         $agentId = (int) DB::table('utilisateurs')->where('email', 'agent.ds@anbg.ga')->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->whereIn('id_utilisateur', [$accueilId, $chefId, $agentId])
+            ->update(['changement_mdp_requis' => false]);
 
         $this->withHeader('X-User-Id', (string) $accueilId)
             ->putJson("/api/demandes/{$demandeId}/affecter", [
@@ -105,6 +130,9 @@ class DemandWorkflowApiTest extends TestCase
         $accueilId = (int) DB::table('utilisateurs')->where('email', 'accueil@anbg.ga')->value('id_utilisateur');
         $chefId = (int) DB::table('utilisateurs')->where('email', 'chef.ds@anbg.ga')->value('id_utilisateur');
         $agentId = (int) DB::table('utilisateurs')->where('email', 'agent.ds@anbg.ga')->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->whereIn('id_utilisateur', [$accueilId, $chefId, $agentId])
+            ->update(['changement_mdp_requis' => false]);
 
         $this->withHeader('X-User-Id', (string) $accueilId)
             ->putJson("/api/demandes/{$demandeId}/affecter", [
@@ -144,6 +172,9 @@ class DemandWorkflowApiTest extends TestCase
         $accueilId = (int) DB::table('utilisateurs')->where('email', 'accueil@anbg.ga')->value('id_utilisateur');
         $chefId = (int) DB::table('utilisateurs')->where('email', 'chef.ds@anbg.ga')->value('id_utilisateur');
         $agentId = (int) DB::table('utilisateurs')->where('email', 'agent.ds@anbg.ga')->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->whereIn('id_utilisateur', [$accueilId, $chefId, $agentId])
+            ->update(['changement_mdp_requis' => false]);
 
         $this->withHeader('X-User-Id', (string) $accueilId)
             ->putJson("/api/demandes/{$demandeId}/affecter", [

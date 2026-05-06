@@ -324,7 +324,10 @@ class DemandWorkflowController extends Controller
                 demandId: $id
             );
 
-            return response()->json(['message' => 'Reponse envoyee et demande cloturee', 'result' => $result]);
+            return response()->json([
+                'message' => 'Reponse mise en file. La demande sera cloturee apres confirmation d envoi.',
+                'result' => $result,
+            ]);
         } catch (AuthorizationException $e) {
             return response()->json(['message' => $e->getMessage()], 403);
         } catch (RuntimeException $e) {

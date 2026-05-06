@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
+use App\Jobs\SendDemandResponseJob;
 use App\Mail\DemandResponseMail;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Throwable;
 
@@ -117,7 +117,7 @@ class DemandWorkflowService
             }
 
             if (!$demand->id_agent_traitant) {
-                throw new RuntimeException('Aucun agent n est affecte a cette demande.');
+                throw new RuntimeException('Aucun agent n\'est affecté à cette demande.');
             }
 
             $statusAffecteeService = $this->statusId('affectee_service');
@@ -160,7 +160,7 @@ class DemandWorkflowService
             }
 
             if (!$demand->id_service_courant) {
-                throw new RuntimeException('Aucun service n est actuellement affecte a cette demande.');
+                throw new RuntimeException('Aucun service n\'est actuellement affecté à cette demande.');
             }
 
             $statusNouvelle = $this->statusId('nouvelle');
@@ -201,6 +201,10 @@ class DemandWorkflowService
             $demand = DB::table('demandes')->where('id_demande', $demandId)->lockForUpdate()->first();
             if (!$demand) {
                 throw new RuntimeException('Demande introuvable.');
+            }
+
+            if ($this->isResponseDeliveryPending($demand)) {
+                throw new RuntimeException('Un envoi de réponse est déjà en cours pour cette demande.');
             }
 
             // Réponse unique : on remplace si elle existe déjà
@@ -270,13 +274,25 @@ class DemandWorkflowService
                 throw new RuntimeException('Demande introuvable.');
             }
 
+            if ($demand->date_envoi_usager || $demand->date_cloture || $this->statusCode((int) $demand->id_statut) === 'cloturee') {
+                throw new RuntimeException('La réponse finale a déjà été envoyée à l\'usager.');
+            }
+
+            if ($this->isResponseDeliveryPending($demand)) {
+                throw new RuntimeException('Un envoi de réponse est déjà en cours pour cette demande.');
+            }
+
             $latestResponse = DB::table('reponses')
                 ->where('id_demande', $demandId)
                 ->orderByDesc('numero_version')
                 ->first();
 
             if (!$latestResponse) {
-                throw new RuntimeException('Aucune reponse redigee pour cette demande.');
+                throw new RuntimeException('Aucune réponse rédigée pour cette demande.');
+            }
+
+            if ($latestResponse->date_envoi_usager) {
+                throw new RuntimeException('La réponse finale a déjà été envoyée à l\'usager.');
             }
 
             $mailPayload = $this->buildFinalResponseMailPayload(
@@ -285,15 +301,78 @@ class DemandWorkflowService
                 responseContent: (string) $latestResponse->contenu_reponse
             );
 
+            if ($mailPayload === null) {
+                throw new RuntimeException('L\'adresse email de l\'usager est invalide ou manquante.');
+            }
+
             $now = now();
             DB::table('reponses')
                 ->where('id_reponse', $latestResponse->id_reponse)
                 ->update([
                     'id_envoyeur' => $actorId,
-                    'date_envoi_usager' => $now,
+                    'date_demande_envoi_usager' => $now,
                     'updated_at' => $now,
                 ]);
 
+            DB::table('demandes')
+                ->where('id_demande', $demandId)
+                ->update([
+                    'date_demande_envoi_usager' => $now,
+                    'updated_at' => $now,
+                ]);
+
+            DB::afterCommit(function () use ($actorId, $demandId, $latestResponse, $mailPayload): void {
+                SendDemandResponseJob::dispatch(
+                    actorId: $actorId,
+                    demandId: $demandId,
+                    responseId: (int) $latestResponse->id_reponse,
+                    mailPayload: $mailPayload
+                );
+            });
+
+            $result = $this->refreshDemandSla($demandId);
+            $result['delivery_pending'] = true;
+
+            return $result;
+        });
+    }
+
+    /**
+     * @param array{
+     *     email: string,
+     *     recipient_name: string|null,
+     *     tracking_number: string,
+     *     subject_label: string,
+     *     response_content: string,
+     *     attachments: array<int, array{name: string, path: string, mime: string|null}>
+     * } $mailPayload
+     */
+    public function deliverQueuedFinalResponse(int $actorId, int $demandId, int $responseId, array $mailPayload): void
+    {
+        Mail::to($mailPayload['email'])->send(new DemandResponseMail(
+            trackingNumber: $mailPayload['tracking_number'],
+            subjectLabel: $mailPayload['subject_label'],
+            responseContent: $mailPayload['response_content'],
+            recipientName: $mailPayload['recipient_name'],
+            responseAttachments: $mailPayload['attachments']
+        ));
+
+        DB::transaction(function () use ($actorId, $demandId, $responseId): void {
+            $demand = DB::table('demandes')->where('id_demande', $demandId)->lockForUpdate()->first();
+            if (!$demand) {
+                throw new RuntimeException('Demande introuvable.');
+            }
+
+            $response = DB::table('reponses')->where('id_reponse', $responseId)->lockForUpdate()->first();
+            if (!$response || (int) $response->id_demande !== $demandId) {
+                throw new RuntimeException('Réponse introuvable.');
+            }
+
+            if ($demand->date_envoi_usager || $demand->date_cloture) {
+                return;
+            }
+
+            $now = now();
             $statusCloturee = $this->statusId('cloturee');
             $elapsed = $this->slaService->calculateElapsedHours(
                 Carbon::parse($demand->date_soumission),
@@ -301,10 +380,20 @@ class DemandWorkflowService
                 (int) $demand->id_config_sla
             );
 
+            DB::table('reponses')
+                ->where('id_reponse', $responseId)
+                ->update([
+                    'id_envoyeur' => $actorId,
+                    'date_demande_envoi_usager' => null,
+                    'date_envoi_usager' => $now,
+                    'updated_at' => $now,
+                ]);
+
             DB::table('demandes')
                 ->where('id_demande', $demandId)
                 ->update([
                     'id_statut' => $statusCloturee,
+                    'date_demande_envoi_usager' => null,
                     'date_envoi_usager' => $now,
                     'date_cloture' => $now,
                     'heures_ouvrees_cloture' => $elapsed,
@@ -320,29 +409,41 @@ class DemandWorkflowService
                 serviceId: $demand->id_service_courant,
                 comment: "Envoi final à l'usager"
             );
+        });
 
-            if ($mailPayload !== null) {
-                DB::afterCommit(function () use ($mailPayload): void {
-                    try {
-                        Mail::to($mailPayload['email'])->queue(new DemandResponseMail(
-                            trackingNumber: $mailPayload['tracking_number'],
-                            subjectLabel: $mailPayload['subject_label'],
-                            responseContent: $mailPayload['response_content'],
-                            recipientName: $mailPayload['recipient_name'],
-                            responseAttachments: $mailPayload['attachments']
-                        ));
-                    } catch (Throwable $e) {
-                        Log::error('Echec envoi mail usager', [
-                            'numero_suivi' => $mailPayload['tracking_number'],
-                            'email' => $mailPayload['email'],
-                            'message' => $e->getMessage(),
-                        ]);
-                    }
-                });
+        $this->refreshDemandSla($demandId);
+    }
+
+    public function markQueuedFinalResponseFailed(int $demandId, int $responseId, Throwable $exception): void
+    {
+        DB::transaction(function () use ($demandId, $responseId): void {
+            $demand = DB::table('demandes')->where('id_demande', $demandId)->lockForUpdate()->first();
+            $response = DB::table('reponses')->where('id_reponse', $responseId)->lockForUpdate()->first();
+
+            if ($response && !$response->date_envoi_usager) {
+                DB::table('reponses')
+                    ->where('id_reponse', $responseId)
+                    ->update([
+                        'date_demande_envoi_usager' => null,
+                        'updated_at' => now(),
+                    ]);
             }
 
-            return $this->refreshDemandSla($demandId);
+            if ($demand && !$demand->date_envoi_usager && !$demand->date_cloture) {
+                DB::table('demandes')
+                    ->where('id_demande', $demandId)
+                    ->update([
+                        'date_demande_envoi_usager' => null,
+                        'updated_at' => now(),
+                    ]);
+            }
         });
+
+        Log::error('Echec envoi mail usager', [
+            'id_demande' => $demandId,
+            'id_reponse' => $responseId,
+            'message' => $exception->getMessage(),
+        ]);
     }
 
     /**
@@ -366,7 +467,7 @@ class DemandWorkflowService
 
                 $path = $file->store('pieces_jointes', 'local');
                 $pieceId = DB::table('pieces_jointes')->insertGetId([
-                    'nom_fichier' => $file->getClientOriginalName(),
+                    'nom_fichier' => $this->sanitizeOriginalFilename($file),
                     'chemin_fichier' => $path,
                     'taille_octets' => $file->getSize(),
                     'type_mime' => $file->getMimeType() ?: 'application/octet-stream',
@@ -446,6 +547,27 @@ class DemandWorkflowService
         }
     }
 
+    private function sanitizeOriginalFilename(UploadedFile $file): string
+    {
+        $name = basename((string) $file->getClientOriginalName());
+        $name = trim((string) preg_replace('/[\x00-\x1F\x7F]+/u', '', $name));
+
+        if ($name === '' || $name === '.' || $name === '..') {
+            $extension = strtolower((string) $file->getClientOriginalExtension());
+
+            return $extension !== '' ? "piece-jointe.{$extension}" : 'piece-jointe';
+        }
+
+        return substr($name, 0, 180);
+    }
+
+    private function isResponseDeliveryPending(object $demand): bool
+    {
+        return !empty($demand->date_demande_envoi_usager)
+            && empty($demand->date_envoi_usager)
+            && empty($demand->date_cloture);
+    }
+
     private function statusCode(int $statusId): string
     {
         return (string) DB::table('parametres')->where('id_parametre', $statusId)->value('code');
@@ -463,15 +585,6 @@ class DemandWorkflowService
         }
 
         return (int) $id;
-    }
-
-    private function slaMaxHours(int $configId): int
-    {
-        $value = DB::table('config_sla')
-            ->where('id_config_sla', $configId)
-            ->value('delai_max_heures');
-
-        return max(1, (int) ($value ?: 72));
     }
 
     /**
@@ -499,7 +612,12 @@ class DemandWorkflowService
             ->first();
 
         $email = trim((string) ($recipient->email ?? ''));
-        if ($email === '') {
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Log::warning('Email usager invalide ou manquant', [
+                'id_demande' => $demandId,
+                'email' => $email !== '' ? $email : null,
+            ]);
+
             return null;
         }
 

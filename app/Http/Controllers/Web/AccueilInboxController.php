@@ -121,7 +121,17 @@ class AccueilInboxController extends Controller
             ->paginate(10, ['*'], 'nouvelles_page')
             ->withQueryString();
         $affectees = $this->applySort(clone $listQuery, $sortBy, $sortDir)
-            ->where('st.code', 'affectee_service')
+            ->where(function ($query) use ($actor) {
+                $query->where('st.code', 'affectee_service');
+
+                if ($actor->id_service) {
+                    $query->orWhere(function ($pendingQuery) use ($actor) {
+                        $pendingQuery
+                            ->where('st.code', 'reponse_prete')
+                            ->where('d.id_service_courant', (int) $actor->id_service);
+                    });
+                }
+            })
             ->paginate(10, ['*'], 'affectees_page')
             ->withQueryString();
 
@@ -353,7 +363,7 @@ class AccueilInboxController extends Controller
                 'updated_at' => now(),
             ]);
 
-            return redirect()->back()->with('success', 'Réponse directe envoyée et réclamation clôturée.');
+            return redirect()->back()->with('success', 'Réponse directe mise en file. La réclamation sera clôturée après confirmation d\'envoi.');
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         } catch (ValidationException $e) {

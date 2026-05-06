@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -458,6 +459,8 @@ class AuthAndPublicFlowTest extends TestCase
     public function test_agent_can_respond_with_attachment_and_close(): void
     {
         $this->seed();
+        config(['queue.default' => 'sync']);
+        Mail::fake();
         Storage::fake('local');
         Storage::fake('public');
 
@@ -521,6 +524,8 @@ class AuthAndPublicFlowTest extends TestCase
     public function test_accueil_can_send_direct_response_for_reclamation_and_close_it(): void
     {
         $this->seed();
+        config(['queue.default' => 'sync']);
+        Mail::fake();
         Storage::fake('local');
 
         $this->post('/reclamations', [
@@ -684,6 +689,8 @@ class AuthAndPublicFlowTest extends TestCase
     public function test_chef_can_reply_directly_and_close(): void
     {
         $this->seed();
+        config(['queue.default' => 'sync']);
+        Mail::fake();
         Storage::fake('local');
         Storage::fake('public');
 
