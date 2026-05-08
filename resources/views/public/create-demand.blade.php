@@ -82,7 +82,7 @@
 <div id="app" v-cloak>
     <!-- NAVBAR -->
     <header class="bg-navy-500 sticky top-0 z-50 shadow-md">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div class="max-w-screen-xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 2xl:px-10 h-16 flex items-center justify-between">
             <!-- Logo + Nom -->
             <div class="flex items-center gap-3">
                 <!-- Cartouche blanc logo  -->
@@ -108,12 +108,13 @@
                         <path d="M13.5 21v-7h2.3l.4-2.8h-2.7V9.4c0-.8.2-1.3 1.4-1.3H16V5.6c-.6-.1-1.3-.1-2-.1-2 0-3.4 1.2-3.4 3.5v2.2H8.5V14h2.1v7h2.9Z"/>
                     </svg>
                 </a>
+            </div>
         </div>
     </header>
 
     <!-- HERO BANNER -->
     <section class="bg-navy-500 border-b border-navy-600 pb-10 pt-8">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+        <div class="max-w-screen-xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 2xl:px-10">
             <div class="flex items-start gap-4">
                 <div class="mt-1 w-10 h-10 rounded-full bg-sky-400/20 flex items-center justify-center flex-shrink-0 opacity-0 animate-[fade-in-up_0.6s_ease-out_forwards]">
                     <svg class="icon-svg text-sky-300 text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -125,7 +126,7 @@
                     <h1 class="font-medium text-white text-xl sm:text-2xl leading-snug mb-1 tracking-wide opacity-0 animate-fade-in-up">
                         Bienvenue sur la Plateforme Réclamation de l'ANBG.
                     </h1>
-                    <p class="text-sky-200 text-sm sm:text-base leading-relaxed max-w-2xl font-light opacity-0 animate-fade-in-up-1">
+                    <p class="text-sky-200 text-sm sm:text-base leading-relaxed max-w-2xl 2xl:max-w-4xl font-light opacity-0 animate-fade-in-up-1">
                         Soumettez votre réclamation relative à la gestion des bourses. Chaque demande est enregistrée et traitée par nos équipes. Une réponse vous sera apportée dans un délai maximum de<strong class="text-white font-medium"> 72 heures ouvrées.</strong>
                     </p>
                     <!-- Badges délai -->
@@ -135,7 +136,7 @@
     </section>
 
     <!-- MAIN CONTENT -->
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+    <main class="max-w-screen-xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 2xl:px-10 py-8">
 
         <!-- Success Message -->
         @if(session('success'))
@@ -525,7 +526,7 @@
 
     <!-- FOOTER -->
     <footer class="mt-8 border-t border-neutral-100 bg-white">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-neutral-400">
+        <div class="max-w-screen-xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 2xl:px-10 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-neutral-400">
             <span>© {{ date('Y') }} Agence Nationale des Bourses du Gabon.</span>
             <span>Constructeur d'avenir</span>
         </div>
