@@ -255,10 +255,19 @@
             cursor: not-allowed;
             transform: none;
         }
+        #btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
         .submit-btn svg { width: 16px; height: 16px; }
 
         /* Spinner d'attente */
         .spinner {
+            display: inline-block;
             width: 16px; height: 16px;
             border: 2px solid rgba(255,255,255,0.35);
             border-top-color: #ffffff;
@@ -385,7 +394,12 @@
                             aria-pressed="false"
                             class="pwd-toggle"
                         >
-                           
+                            <span id="pwd-icon">
+                                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M2.8 12s3.2-5.5 9.2-5.5S21.2 12 21.2 12s-3.2 5.5-9.2 5.5S2.8 12 2.8 12Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                    <circle cx="12" cy="12" r="2.7" stroke="currentColor" stroke-width="1.8"/>
+                                </svg>
+                            </span>
                         </button>
                     </div>
                     @error('password')
@@ -453,22 +467,40 @@
         const btnLabel  = document.getElementById('btn-label');
 
         if (form && submitBtn) {
-            form.addEventListener('submit', function () {
-                // Désactive le bouton immédiatement
+            let loginSubmitStarted = false;
+
+            const resetSubmitButton = function () {
+                submitBtn.disabled = false;
+                submitBtn.removeAttribute('aria-busy');
+                if (btnIcon)  btnIcon.innerHTML  = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M13 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M4 12h11M10 7l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>`;
+                if (btnLabel) btnLabel.textContent = 'Se connecter';
+            };
+
+            form.addEventListener('submit', function (event) {
+                if (loginSubmitStarted) {
+                    return;
+                }
+
+                event.preventDefault();
+                loginSubmitStarted = true;
                 submitBtn.disabled = true;
+                submitBtn.setAttribute('aria-busy', 'true');
 
                 // Remplace l'icône par un spinner et le texte par "Connexion…"
-                if (btnIcon)  btnIcon.innerHTML  = '<span class="spinner"></span>';
+                if (btnIcon)  btnIcon.innerHTML  = '<span class="spinner" aria-hidden="true"></span>';
                 if (btnLabel) btnLabel.textContent = 'Connexion…';
+
+                window.setTimeout(function () {
+                    HTMLFormElement.prototype.submit.call(form);
+                }, 80);
 
                 // Sécurité : si le serveur ne répond pas dans 15s, on réactive le bouton
                 setTimeout(function () {
-                    submitBtn.disabled = false;
-                    if (btnIcon)  btnIcon.innerHTML  = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M13 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                        <path d="M4 12h11M10 7l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>`;
-                    if (btnLabel) btnLabel.textContent = 'Se connecter';
+                    loginSubmitStarted = false;
+                    resetSubmitButton();
                 }, 15000);
             });
         }

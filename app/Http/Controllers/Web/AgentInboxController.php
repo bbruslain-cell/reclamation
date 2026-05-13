@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Web\Concerns\InteractsWithDeliveryStatus;
 use App\Http\Controllers\Web\Concerns\InteractsWithServiceWindow;
 use App\Models\Demande;
 use App\Services\AccessControlService;
@@ -20,6 +21,7 @@ use RuntimeException;
 
 class AgentInboxController extends Controller
 {
+    use InteractsWithDeliveryStatus;
     use InteractsWithServiceWindow;
 
     public function __construct(
@@ -60,6 +62,9 @@ class AgentInboxController extends Controller
                 'd.date_soumission',
                 'd.date_affectation_accueil',
                 'd.date_affectation_agent',
+                'd.date_demande_envoi_usager',
+                'd.date_envoi_usager',
+                'd.date_echec_envoi_usager',
                 'd.alerte_agent',
                 'st.code as statut_code',
                 'st.libelle as statut',
@@ -88,7 +93,9 @@ class AgentInboxController extends Controller
         $demandes = $query->orderByDesc('d.date_affectation_agent')->paginate(15)->withQueryString();
         $demandes->setCollection(
             $demandes->getCollection()->map(
-                fn ($demande) => $this->withServiceWindowMeta($demande, $this->slaService)
+                fn ($demande) => $this->withDeliveryStatusMeta(
+                    $this->withServiceWindowMeta($demande, $this->slaService)
+                )
             )
         );
         $demandIds = collect($demandes->items())

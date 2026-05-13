@@ -189,7 +189,7 @@
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">N° Suivi</th>
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Usager</th>
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Service</th>
-                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Statut</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Statut / envoi</th>
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Alerte 16h</th>
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Temps restant 16h</th>
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Action</th>
@@ -198,7 +198,10 @@
                     <tbody class="divide-y divide-neutral-100">
                     @forelse($demandes as $demande)
                         {{-- Ligne principale --}}
-                        <tr class="trow transition-colors duration-100">
+                        <tr class="trow transition-colors duration-100"
+                            data-delivery-id="{{ $demande->id_demande }}"
+                            data-delivery-label="{{ $demande->numero_suivi }}"
+                            data-delivery-state="{{ $demande->delivery_state ?? 'idle' }}">
                             <td class="px-4 py-3">
                                 <span class="font-mono text-xs font-medium text-navy bg-navy-50 px-2 py-1 rounded">
                                     {{ $demande->numero_suivi }}
@@ -213,7 +216,10 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3">
-                                <span class="text-xs text-neutral-500">{{ $demande->statut }}</span>
+                                <div class="flex flex-col items-start">
+                                    <span class="text-xs text-neutral-500">{{ $demande->statut }}</span>
+                                    @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'badge'])
+                                </div>
                             </td>
                             <td class="px-4 py-3">
                                 @if($demande->alerte_agent === 'rouge')
@@ -320,6 +326,9 @@
                                         </h4>
 
                                        
+                                        @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'panel'])
+
+                                        @if(($demande->delivery_state ?? 'idle') !== 'pending')
                                         <form method="post" action="/agent/demandes/{{ $demande->id_demande }}/envoyer" enctype="multipart/form-data" class="space-y-3">
                                             @csrf @method('put')
 
@@ -345,9 +354,14 @@
                                             <button type="submit"
                                                 class="w-full flex items-center justify-center gap-2 bg-navy hover:bg-navy-600 text-white text-sm font-medium py-3 rounded-xl transition-colors duration-150">
                                                 <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 6h18v12H3V6Zm2 2v1l7 4 7-4V8l-7 4-7-4Zm11.2 5.8-1.4 1.4-1.3-1.3-1.4 1.4 2.7 2.7 4.8-4.8-1.4-1.4-3.4 3.4Z"/></svg>
+                                                @if(($demande->delivery_state ?? 'idle') === 'failed')
+                                                    Relancer l&apos;envoi
+                                                @else
                                                 Envoyer et clôturer
+                                                @endif
                                             </button>
                                         </form>
+                                        @endif
                                     </div>
 
                                 </div>
@@ -387,11 +401,101 @@
 
     </main>
 
+    <div
+        id="agent-delivery-toast"
+        class="pointer-events-none fixed right-4 top-24 z-50 w-[min(92vw,360px)] transition-all duration-300 ease-out"
+        style="opacity: 0; transform: translateY(8px); visibility: hidden;"
+        aria-live="polite"
+        aria-atomic="true"
+    >
+        <div id="agent-delivery-toast-card" class="flex items-start gap-3 rounded-2xl border bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur">
+            <span id="agent-delivery-toast-icon" class="mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-white"></span>
+            <div>
+                <p id="agent-delivery-toast-title" class="text-sm font-semibold"></p>
+                <p id="agent-delivery-toast-message" class="mt-0.5 text-xs leading-5 text-neutral-500"></p>
+            </div>
+        </div>
+    </div>
+
 <script>
 (function () {
     const eyeSvg = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5C5.6 5 2 12 2 12s3.6 7 10 7 10-7 10-7-3.6-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg>';
     const eyeOffSvg = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m3.3 2 18.7 18.7-1.4 1.4-4.1-4.1A11.7 11.7 0 0 1 12 19C5.6 19 2 12 2 12a19 19 0 0 1 4.4-5.3L1.9 3.4 3.3 2Zm6.1 6.1A4 4 0 0 0 12 16c.7 0 1.4-.2 2-.5L9.4 8.1ZM12 5c6.4 0 10 7 10 7a18.9 18.9 0 0 1-4.1 5.1l-2.2-2.2A4 4 0 0 0 9.1 8.3L7.5 6.7A10.8 10.8 0 0 1 12 5Z"/></svg>';
     const liveContent = document.getElementById('agent-live-content');
+    const deliveryToast = document.getElementById('agent-delivery-toast');
+    const deliveryToastCard = document.getElementById('agent-delivery-toast-card');
+    const deliveryToastIcon = document.getElementById('agent-delivery-toast-icon');
+    const deliveryToastTitle = document.getElementById('agent-delivery-toast-title');
+    const deliveryToastMessage = document.getElementById('agent-delivery-toast-message');
+    let deliveryToastTimeout = null;
+    const deliverySuccessIcon = '<svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-7Z" stroke="currentColor" stroke-width="1.8"/><path d="m6 9 6 4 6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="m10.4 13.1 1.7 1.7 3.4-3.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const deliveryErrorIcon = '<svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 16.8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    const showDeliveryNotification = (kind, title, message) => {
+        if (!deliveryToast || !deliveryToastCard || !deliveryToastIcon || !deliveryToastTitle || !deliveryToastMessage) return;
+
+        if (kind === 'success') {
+            deliveryToastCard.className = 'flex items-start gap-3 rounded-2xl border border-green-200 bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur';
+            deliveryToastIcon.className = 'mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-leaf text-white';
+            deliveryToastIcon.innerHTML = deliverySuccessIcon;
+        } else {
+            deliveryToastCard.className = 'flex items-start gap-3 rounded-2xl border border-red-200 bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur';
+            deliveryToastIcon.className = 'mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-red-500 text-white';
+            deliveryToastIcon.innerHTML = deliveryErrorIcon;
+        }
+
+        deliveryToastTitle.textContent = title;
+        deliveryToastMessage.textContent = message;
+
+        window.clearTimeout(deliveryToastTimeout);
+        deliveryToast.style.visibility = 'visible';
+        deliveryToast.style.opacity = '1';
+        deliveryToast.style.transform = 'translateY(0)';
+
+        deliveryToastTimeout = window.setTimeout(() => {
+            deliveryToast.style.opacity = '0';
+            deliveryToast.style.transform = 'translateY(8px)';
+            window.setTimeout(() => {
+                if (deliveryToast.style.opacity === '0') {
+                    deliveryToast.style.visibility = 'hidden';
+                }
+            }, 320);
+        }, 4500);
+    };
+    const getDeliveryStateMap = (root) => {
+        const map = new Map();
+        (root?.querySelectorAll('[data-delivery-id][data-delivery-state]') || []).forEach((row) => {
+            map.set(String(row.dataset.deliveryId || ''), {
+                state: String(row.dataset.deliveryState || 'idle'),
+                label: String(row.dataset.deliveryLabel || '').trim(),
+            });
+        });
+
+        return map;
+    };
+    const summarizeDeliveryTransitions = (currentRoot, nextRoot) => {
+        const currentStates = getDeliveryStateMap(currentRoot);
+        const nextStates = getDeliveryStateMap(nextRoot);
+        const delivered = [];
+        const failed = [];
+
+        currentStates.forEach((entry, id) => {
+            if (entry.state !== 'pending') {
+                return;
+            }
+
+            const nextEntry = nextStates.get(id);
+            if (!nextEntry || nextEntry.state === 'sent') {
+                delivered.push(entry.label || id);
+                return;
+            }
+
+            if (nextEntry.state === 'failed') {
+                failed.push(nextEntry.label || entry.label || id);
+            }
+        });
+
+        return { delivered, failed };
+    };
     const initViewToggles = (root = document) => {
     root.querySelectorAll('.view-toggle:not([data-toggle-ready])').forEach((btn) => {
         btn.dataset.toggleReady = '1';
@@ -516,8 +620,32 @@
                 const nextContent = nextDocument.getElementById('agent-live-content');
                 if (!nextContent) return;
 
+                const transitions = summarizeDeliveryTransitions(liveContent, nextContent);
+
                 liveContent.innerHTML = nextContent.innerHTML;
                 initAgentInteractions(liveContent);
+
+                if (transitions.delivered.length > 0) {
+                    const firstLabel = transitions.delivered[0];
+                    showDeliveryNotification(
+                        'success',
+                        transitions.delivered.length > 1 ? 'Reponses envoyees' : 'Reponse envoyee',
+                        transitions.delivered.length > 1
+                            ? `${transitions.delivered.length} reponses ont ete confirmees par le systeme.`
+                            : `La demande ${firstLabel} a bien ete envoyee a l'usager.`
+                    );
+                }
+
+                if (transitions.failed.length > 0) {
+                    const firstLabel = transitions.failed[0];
+                    showDeliveryNotification(
+                        'error',
+                        'Echec d envoi',
+                        transitions.failed.length > 1
+                            ? `${transitions.failed.length} envois ont echoue. Une relance est possible.`
+                            : `L'envoi pour la demande ${firstLabel} a echoue. Vous pouvez relancer la reponse.`
+                    );
+                }
             } catch (error) {
                 console.warn('Rafraichissement agent interrompu.', error);
             } finally {

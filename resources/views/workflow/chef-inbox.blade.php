@@ -285,7 +285,7 @@
                             <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">N&deg; Suivi</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Usager</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Service</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Statut</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Statut / envoi</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Alerte 16h</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Temps restant 16h</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Action</th>
@@ -293,7 +293,10 @@
                     </thead>
                     <tbody class="divide-y divide-neutral-100">
                     @forelse($pending as $demande)
-                        <tr class="demand-row transition-colors duration-100">
+                        <tr class="demand-row transition-colors duration-100"
+                            data-delivery-id="{{ $demande->id_demande }}"
+                            data-delivery-label="{{ $demande->numero_suivi }}"
+                            data-delivery-state="{{ $demande->delivery_state ?? 'idle' }}">
                             <td class="px-4 py-3">
                                 <span class="font-mono text-xs font-medium text-navy bg-navy-50 px-2 py-1 rounded">{{ $demande->numero_suivi }}</span>
                             </td>
@@ -305,7 +308,12 @@
                                     {{ $demande->service_code }} &mdash; {{ $demande->service }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-xs text-neutral-800">{{ $demande->statut }}</td>
+                            <td class="px-4 py-3">
+                                <div class="flex flex-col items-start">
+                                    <span class="text-xs text-neutral-800">{{ $demande->statut }}</span>
+                                    @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'badge'])
+                                </div>
+                            </td>
                             <td class="px-4 py-3">
                                 @if($demande->alerte_chef === 'rouge')
                                     <span class="inline-flex items-center gap-1.5 bg-red-50 text-red-700 border border-red-200 text-xs font-medium px-2.5 py-1 rounded-full">
@@ -366,6 +374,7 @@
                                         'reponse_redigee' => html_entity_decode('R&eacute;ponse r&eacute;dig&eacute;e', ENT_QUOTES, 'UTF-8'),
                                         'reponse_directe_chef' => 'R&eacute;ponse directe chef',
                                         'envoi_reponse' => html_entity_decode('Envoi r&eacute;ponse', ENT_QUOTES, 'UTF-8'),
+                                        'echec_envoi_reponse' => html_entity_decode('Echec d&apos;envoi', ENT_QUOTES, 'UTF-8'),
                                     ];
                                 @endphp
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -420,8 +429,10 @@
 
                                     {{-- Actions --}}
                                     <div class="space-y-3">
+                                        @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'panel'])
 
                                         {{-- Affecter agent --}}
+                                        @if(($demande->delivery_state ?? 'idle') !== 'pending')
                                         <div class="bg-white border border-neutral-200 rounded-xl p-4">
                                             <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2 mb-3">
                                                 <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-6 2-6 4.5V20h8.5a6 6 0 0 1-.5-2.5c0-1.7.7-3.2 1.8-4.3A8.8 8.8 0 0 0 9 13Zm8.2 1.3-3.4 3.4-1.6-1.6-1.4 1.4 3 3 4.8-4.8-1.4-1.4Z" fill="currentColor"/></svg>Affecter &agrave; un agent
@@ -445,6 +456,7 @@
                                         </div>
 
                                         {{-- R&eacute;ponse directe --}}
+                                        @if(($demande->delivery_state ?? 'idle') !== 'pending')
                                         <div class="bg-white border border-neutral-200 rounded-xl p-4">
                                             <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2 mb-3">
                                                 <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 7 3 12l7 5v-3h3c3.3 0 5.4 1.1 8 4-1-6-4-9-9-9h-2V7Z" fill="currentColor"/></svg>R&eacute;ponse directe du chef
@@ -466,6 +478,8 @@
                                                 </button>
                                             </form>
                                         </div>
+                                        @endif
+                                        @endif
 
                                     </div>
                                 </div>
@@ -563,7 +577,7 @@
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">N&deg; Suivi</th>
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Usager</th>
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Agent</th>
-                            <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Statut</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Statut / envoi</th>
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Alerte 16h</th>
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Temps restant 16h</th>
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Action</th>
@@ -571,7 +585,10 @@
                     </thead>
                     <tbody class="divide-y divide-neutral-100">
                     @forelse($assigned as $demande)
-                        <tr class="trow transition-colors duration-100">
+                        <tr class="trow transition-colors duration-100"
+                            data-delivery-id="{{ $demande->id_demande }}"
+                            data-delivery-label="{{ $demande->numero_suivi }}"
+                            data-delivery-state="{{ $demande->delivery_state ?? 'idle' }}">
                             <td class="px-4 py-3">
                                 <span class="font-mono text-xs font-medium text-navy bg-navy-50 px-2 py-1 rounded">{{ $demande->numero_suivi }}</span>
                             </td>
@@ -587,7 +604,10 @@
                                 </div>
                             </td>
                             <td class="px-4 py-3">
-                                <span class="text-xs bg-neutral-100 text-neutral-600 px-2 py-1 rounded-full">{{ $demande->statut }}</span>
+                                <div class="flex flex-col items-start">
+                                    <span class="text-xs bg-neutral-100 text-neutral-600 px-2 py-1 rounded-full">{{ $demande->statut }}</span>
+                                    @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'badge'])
+                                </div>
                             </td>
                             <td class="px-4 py-3">
                                 @if($demande->alerte_agent === 'rouge')
@@ -634,7 +654,7 @@
                         </tr>
 
                         {{-- Détail --}}
-                        <tr id="detail-a-{{ $demande->id_demande }}" class="detail-row" style="display:none;">
+                        <tr id="detail-a-{{ $demande->id_demande }}" class="detail-row" style="display:none;" data-agent-assigned="{{ $demande->statut_code === 'affectee_agent' ? '1' : '0' }}">
                             <td colspan="7" class="px-4 py-4 bg-[linear-gradient(180deg,#f8fbfe_0%,#f4f7fb_100%)] border-b border-neutral-100">
                                 @php
                                     $pieces = $piecesByDemand->get($demande->id_demande, collect());
@@ -649,6 +669,7 @@
                                         'reponse_redigee' => html_entity_decode('R&eacute;ponse r&eacute;dig&eacute;e', ENT_QUOTES, 'UTF-8'),
                                         'reponse_directe_chef' => 'R&eacute;ponse directe chef',
                                         'envoi_reponse' => html_entity_decode('Envoi r&eacute;ponse', ENT_QUOTES, 'UTF-8'),
+                                        'echec_envoi_reponse' => html_entity_decode('Echec d&apos;envoi', ENT_QUOTES, 'UTF-8'),
                                     ];
                                 @endphp
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -705,8 +726,10 @@
 
                                     {{-- Actions --}}
                                     <div class="space-y-3">
+                                        @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'panel'])
 
                                         {{-- R&eacute;ponse directe chef --}}
+                                        @if(($demande->delivery_state ?? 'idle') !== 'pending')
                                         <div class="bg-white border border-neutral-200 rounded-xl p-4">
                                             <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2 mb-3">
                                                 <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 7 3 12l7 5v-3h3c3.3 0 5.4 1.1 8 4-1-6-4-9-9-9h-2V7Z" fill="currentColor"/></svg>R&eacute;ponse directe du chef
@@ -729,6 +752,7 @@
                                                 </button>
                                             </form>
                                         </div>
+                                        @endif
 
                                         {{-- Annuler / Verrouillé --}}
                                         @if($demande->statut_code === 'affectee_agent')
@@ -850,6 +874,7 @@
                         'reponse_directe_chef' => 'R&eacute;ponse directe chef',
                         'reponse_redigee' => html_entity_decode('R&eacute;ponse r&eacute;dig&eacute;e', ENT_QUOTES, 'UTF-8'),
                         'envoi_reponse' => html_entity_decode('Envoi r&eacute;ponse', ENT_QUOTES, 'UTF-8'),
+                        'echec_envoi_reponse' => html_entity_decode('Echec d&apos;envoi', ENT_QUOTES, 'UTF-8'),
                     ];
                 @endphp
                 @forelse($recentChefActions as $entry)
@@ -858,8 +883,8 @@
                         <div class="space-y-1.5">
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="font-mono text-[11px] font-medium text-navy bg-navy-50 px-2 py-1 rounded">{{ $entry->numero_suivi }}</span>
-                                <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full {{ $entry->type_action === 'annulation_affectation_agent' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-navy-50 text-navy border border-navy-100' }}">
-                                    <span class="w-1.5 h-1.5 rounded-full {{ $entry->type_action === 'annulation_affectation_agent' ? 'bg-red-500' : 'bg-navy' }}"></span>
+                                <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full {{ in_array($entry->type_action, ['annulation_affectation_agent', 'echec_envoi_reponse'], true) ? 'bg-red-50 text-red-700 border border-red-200' : ($entry->type_action === 'envoi_reponse' ? 'bg-leaf-50 text-green-700 border border-green-200' : 'bg-navy-50 text-navy border border-navy-100') }}">
+                                    <span class="w-1.5 h-1.5 rounded-full {{ in_array($entry->type_action, ['annulation_affectation_agent', 'echec_envoi_reponse'], true) ? 'bg-red-500' : ($entry->type_action === 'envoi_reponse' ? 'bg-leaf' : 'bg-navy') }}"></span>
                                     {{ $actionLabels[$entry->type_action] ?? ucfirst(str_replace('_', ' ', (string) $entry->type_action)) }}
                                 </span>
                             </div>
@@ -897,6 +922,22 @@
 
     </main>
 
+<div
+    id="chef-delivery-toast"
+    class="pointer-events-none fixed right-4 top-24 z-50 w-[min(92vw,360px)] transition-all duration-300 ease-out"
+    style="opacity: 0; transform: translateY(8px); visibility: hidden;"
+    aria-live="polite"
+    aria-atomic="true"
+>
+    <div id="chef-delivery-toast-card" class="flex items-start gap-3 rounded-2xl border bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur">
+        <span id="chef-delivery-toast-icon" class="mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-white"></span>
+        <div>
+            <p id="chef-delivery-toast-title" class="text-sm font-semibold"></p>
+            <p id="chef-delivery-toast-message" class="mt-0.5 text-xs leading-5 text-neutral-500"></p>
+        </div>
+    </div>
+</div>
+
 <script>
 (function () {
     const eyeSvg = `
@@ -913,6 +954,80 @@
     const liveContent = document.getElementById('chef-live-content');
     const kpiContent = document.getElementById('chef-kpi-content');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const deliveryToast = document.getElementById('chef-delivery-toast');
+    const deliveryToastCard = document.getElementById('chef-delivery-toast-card');
+    const deliveryToastIcon = document.getElementById('chef-delivery-toast-icon');
+    const deliveryToastTitle = document.getElementById('chef-delivery-toast-title');
+    const deliveryToastMessage = document.getElementById('chef-delivery-toast-message');
+    let deliveryToastTimeout = null;
+    const deliverySuccessIcon = '<svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-7Z" stroke="currentColor" stroke-width="1.8"/><path d="m6 9 6 4 6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="m10.4 13.1 1.7 1.7 3.4-3.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const deliveryErrorIcon = '<svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 16.8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    const showDeliveryNotification = (kind, title, message) => {
+        if (!deliveryToast || !deliveryToastCard || !deliveryToastIcon || !deliveryToastTitle || !deliveryToastMessage) return;
+
+        if (kind === 'success') {
+            deliveryToastCard.className = 'flex items-start gap-3 rounded-2xl border border-green-200 bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur';
+            deliveryToastIcon.className = 'mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-leaf text-white';
+            deliveryToastIcon.innerHTML = deliverySuccessIcon;
+        } else {
+            deliveryToastCard.className = 'flex items-start gap-3 rounded-2xl border border-red-200 bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur';
+            deliveryToastIcon.className = 'mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-red-500 text-white';
+            deliveryToastIcon.innerHTML = deliveryErrorIcon;
+        }
+
+        deliveryToastTitle.textContent = title;
+        deliveryToastMessage.textContent = message;
+
+        window.clearTimeout(deliveryToastTimeout);
+        deliveryToast.style.visibility = 'visible';
+        deliveryToast.style.opacity = '1';
+        deliveryToast.style.transform = 'translateY(0)';
+
+        deliveryToastTimeout = window.setTimeout(() => {
+            deliveryToast.style.opacity = '0';
+            deliveryToast.style.transform = 'translateY(8px)';
+            window.setTimeout(() => {
+                if (deliveryToast.style.opacity === '0') {
+                    deliveryToast.style.visibility = 'hidden';
+                }
+            }, 320);
+        }, 4500);
+    };
+    const getDeliveryStateMap = (root) => {
+        const map = new Map();
+        (root?.querySelectorAll('[data-delivery-id][data-delivery-state]') || []).forEach((row) => {
+            map.set(String(row.dataset.deliveryId || ''), {
+                state: String(row.dataset.deliveryState || 'idle'),
+                label: String(row.dataset.deliveryLabel || '').trim(),
+            });
+        });
+
+        return map;
+    };
+    const summarizeDeliveryTransitions = (currentRoot, nextRoot) => {
+        const currentStates = getDeliveryStateMap(currentRoot);
+        const nextStates = getDeliveryStateMap(nextRoot);
+        const delivered = [];
+        const failed = [];
+
+        currentStates.forEach((entry, id) => {
+            if (entry.state !== 'pending') {
+                return;
+            }
+
+            const nextEntry = nextStates.get(id);
+            if (!nextEntry || nextEntry.state === 'sent') {
+                delivered.push(entry.label || id);
+                return;
+            }
+
+            if (nextEntry.state === 'failed') {
+                failed.push(nextEntry.label || entry.label || id);
+            }
+        });
+
+        return { delivered, failed };
+    };
 
     const animateCounters = (root = document) => {
         root.querySelectorAll('[data-countup]:not([data-countup-ready])').forEach((node) => {
@@ -936,6 +1051,9 @@
 
     const initDirectReplyRestrictions = (root = document) => {
     root.querySelectorAll('tr[id^="detail-a-"] form[action*="/reponse-directe"]').forEach((form) => {
+        const detailRow = form.closest('tr[id^="detail-a-"]');
+        if (detailRow?.dataset.agentAssigned !== '1') return;
+
         const card = form.closest('.bg-white');
         if (!card) return;
 
@@ -1087,8 +1205,32 @@
 
                 if (!nextContent) return;
 
+                const transitions = summarizeDeliveryTransitions(liveContent, nextContent);
+
                 liveContent.innerHTML = nextContent.innerHTML;
                 initChefInteractions(liveContent);
+
+                if (transitions.delivered.length > 0) {
+                    const firstLabel = transitions.delivered[0];
+                    showDeliveryNotification(
+                        'success',
+                        transitions.delivered.length > 1 ? 'Reponses envoyees' : 'Reponse envoyee',
+                        transitions.delivered.length > 1
+                            ? `${transitions.delivered.length} reponses ont ete confirmees par le systeme.`
+                            : `La demande ${firstLabel} a bien ete envoyee a l'usager.`
+                    );
+                }
+
+                if (transitions.failed.length > 0) {
+                    const firstLabel = transitions.failed[0];
+                    showDeliveryNotification(
+                        'error',
+                        'Echec d envoi',
+                        transitions.failed.length > 1
+                            ? `${transitions.failed.length} envois ont echoue. Une relance est possible.`
+                            : `L'envoi pour la demande ${firstLabel} a echoue. Vous pouvez relancer la reponse.`
+                    );
+                }
             } catch (error) {
                 console.warn('Rafraichissement chef de service interrompu.', error);
             } finally {

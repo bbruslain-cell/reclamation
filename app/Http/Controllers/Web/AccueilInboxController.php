@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Web\Concerns\InteractsWithDeliveryStatus;
 use App\Models\Demande;
 use App\Services\AccessControlService;
 use App\Services\DemandWorkflowService;
@@ -18,6 +19,8 @@ use RuntimeException;
 
 class AccueilInboxController extends Controller
 {
+    use InteractsWithDeliveryStatus;
+
     public function __construct(
         private readonly AccessControlService $access,
         private readonly DemandWorkflowService $workflow,
@@ -86,6 +89,9 @@ class AccueilInboxController extends Controller
                 'd.message',
                 'd.date_soumission',
                 'd.date_affectation_accueil',
+                'd.date_demande_envoi_usager',
+                'd.date_envoi_usager',
+                'd.date_echec_envoi_usager',
                 'd.alerte_accueil',
                 'st.code as statut_code',
                 'st.libelle as statut',
@@ -120,6 +126,11 @@ class AccueilInboxController extends Controller
             ->where('st.code', 'nouvelle')
             ->paginate(10, ['*'], 'nouvelles_page')
             ->withQueryString();
+        $nouvelles->setCollection(
+            $nouvelles->getCollection()->map(
+                fn ($demande) => $this->withDeliveryStatusMeta($demande)
+            )
+        );
         $affectees = $this->applySort(clone $listQuery, $sortBy, $sortDir)
             ->where(function ($query) use ($actor) {
                 $query->where('st.code', 'affectee_service');
@@ -134,6 +145,11 @@ class AccueilInboxController extends Controller
             })
             ->paginate(10, ['*'], 'affectees_page')
             ->withQueryString();
+        $affectees->setCollection(
+            $affectees->getCollection()->map(
+                fn ($demande) => $this->withDeliveryStatusMeta($demande)
+            )
+        );
 
         $demandIds = collect($nouvelles->items())
             ->merge($affectees->items())
@@ -149,7 +165,13 @@ class AccueilInboxController extends Controller
             ->leftJoin('usagers as u', 'u.id_usager', '=', 'd.id_usager')
             ->leftJoin('utilisateurs as actor_u', 'actor_u.id_utilisateur', '=', 'ha.id_utilisateur')
             ->leftJoin('services as s', 's.id_service', '=', 'ha.id_service_associe')
-            ->whereIn('ha.type_action', ['affectation_service', 'annulation_affectation_service', 'reponse_directe_accueil'])
+            ->whereIn('ha.type_action', [
+                'affectation_service',
+                'annulation_affectation_service',
+                'reponse_directe_accueil',
+                'envoi_reponse',
+                'echec_envoi_reponse',
+            ])
             ->orderByDesc('ha.date_action')
             ->limit(20)
             ->get([

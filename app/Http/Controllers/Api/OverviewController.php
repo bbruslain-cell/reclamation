@@ -13,9 +13,16 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use InvalidArgumentException;
 
 class OverviewController extends Controller
 {
+    private const ALLOWED_ALERT_COLUMNS = [
+        'd.alerte_accueil',
+        'd.alerte_chef',
+        'd.alerte_agent',
+    ];
+
     public function __construct(
         private readonly WorkingHoursSlaService $slaService,
         private readonly StepAlertService $stepAlerts
@@ -110,24 +117,23 @@ class OverviewController extends Controller
         $directAccueilMetricsForKpis = $this->buildDirectAccueilMetrics(clone $baseDemands);
         $directAccueilDansDelais = (int) $directAccueilMetricsForKpis->total_traitees_delai;
         $directAccueilEnRetard = max(0, (int) $directAccueilMetricsForKpis->total_traitees - $directAccueilDansDelais);
-        $nonDirectAccueilCondition = 'NOT '.$this->directAccueilExpression();
 
         $totalGlobalDansDelais = (clone $baseDemands)
             ->where('d.delai_alerte', 'dans_les_delais')
-            ->whereRaw($nonDirectAccueilCondition)
+            ->tap(fn (Builder $query) => $this->applyNonDirectAccueilFilter($query))
             ->count('d.id_demande') + $directAccueilDansDelais;
         $totalGlobalARisque = (clone $baseDemands)
             ->where('d.delai_alerte', 'a_risque')
-            ->whereRaw($nonDirectAccueilCondition)
+            ->tap(fn (Builder $query) => $this->applyNonDirectAccueilFilter($query))
             ->count('d.id_demande');
         $totalRetard = (clone $baseDemands)
             ->where('d.delai_alerte', 'en_retard')
-            ->whereRaw($nonDirectAccueilCondition)
+            ->tap(fn (Builder $query) => $this->applyNonDirectAccueilFilter($query))
             ->count('d.id_demande') + $directAccueilEnRetard;
         $totalClotureesDansDelai = (clone $baseDemands)
             ->where('st.code', 'cloturee')
             ->where('d.delai_alerte', 'dans_les_delais')
-            ->whereRaw($nonDirectAccueilCondition)
+            ->tap(fn (Builder $query) => $this->applyNonDirectAccueilFilter($query))
             ->count('d.id_demande') + $directAccueilDansDelais;
         $delaiMoyenTraitement = (clone $baseDemands)
             ->where('st.code', 'cloturee')
@@ -1447,9 +1453,10 @@ class OverviewController extends Controller
 
             if ($serviceCode === 'UCAS') {
                 $query->where(function (Builder $serviceQuery) use ($serviceId) {
-                    $serviceQuery
-                        ->where('s.id_service', $serviceId)
-                        ->orWhereRaw($this->directAccueilExpression());
+                    $serviceQuery->where('s.id_service', $serviceId);
+                    $serviceQuery->orWhere(function (Builder $directAccueilQuery) {
+                        $this->applyDirectAccueilFilter($directAccueilQuery);
+                    });
                 });
             } else {
                 $query->where('s.id_service', $serviceId);
@@ -1471,6 +1478,10 @@ class OverviewController extends Controller
 
     private function alertCounts(Builder $baseQuery, string $column): array
     {
+        if (!in_array($column, self::ALLOWED_ALERT_COLUMNS, true)) {
+            throw new InvalidArgumentException("Colonne d'alerte non autorisée: {$column}");
+        }
+
         $row = (clone $baseQuery)
             ->selectRaw("SUM(CASE WHEN {$column} = 'vert' THEN 1 ELSE 0 END) as vert")
             ->selectRaw("SUM(CASE WHEN {$column} = 'orange' THEN 1 ELSE 0 END) as orange")
@@ -1894,7 +1905,9 @@ class OverviewController extends Controller
         $metrics = (clone $filteredDemands)
             ->where(function (Builder $query) use ($directAccueilExistsExpression) {
                 $query
-                    ->whereRaw($directAccueilExistsExpression)
+                    ->where(function (Builder $directAccueilQuery) {
+                        $this->applyDirectAccueilFilter($directAccueilQuery);
+                    })
                     ->orWhere(function (Builder $serviceQuery) {
                         $serviceQuery
                             ->whereNotNull('s.id_service')
@@ -2063,6 +2076,28 @@ class OverviewController extends Controller
         )";
     }
 
+    private function applyDirectAccueilFilter(Builder $query): void
+    {
+        $query->whereExists(function (Builder $subQuery) {
+            $subQuery
+                ->selectRaw('1')
+                ->from('historique_actions as ha_direct_accueil')
+                ->whereColumn('ha_direct_accueil.id_demande', 'd.id_demande')
+                ->where('ha_direct_accueil.type_action', 'reponse_directe_accueil');
+        });
+    }
+
+    private function applyNonDirectAccueilFilter(Builder $query): void
+    {
+        $query->whereNotExists(function (Builder $subQuery) {
+            $subQuery
+                ->selectRaw('1')
+                ->from('historique_actions as ha_direct_accueil')
+                ->whereColumn('ha_direct_accueil.id_demande', 'd.id_demande')
+                ->where('ha_direct_accueil.type_action', 'reponse_directe_accueil');
+        });
+    }
+
     private function isWithinAccueilDirectDeadline(?string $startDate, ?string $endDate, int $configId): bool
     {
         if (!$startDate || !$endDate || $configId <= 0) {
@@ -2081,7 +2116,7 @@ class OverviewController extends Controller
     private function buildDirectAccueilMetrics(Builder $baseDemands): object
     {
         $rows = (clone $baseDemands)
-            ->whereRaw($this->directAccueilExpression())
+            ->tap(fn (Builder $query) => $this->applyDirectAccueilFilter($query))
             ->select(
                 'd.id_config_sla',
                 'd.date_soumission',

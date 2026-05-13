@@ -687,12 +687,16 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Usager</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Type</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Direction / service</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Envoi usager</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-neutral-100">
                 @forelse($affectees as $demande)
-                    <tr class="demand-row transition-colors duration-100">
+                    <tr class="demand-row transition-colors duration-100"
+                        data-delivery-id="{{ $demande->id_demande }}"
+                        data-delivery-label="{{ $demande->numero_suivi }}"
+                        data-delivery-state="{{ $demande->delivery_state ?? 'idle' }}">
                         <td class="px-4 py-3">
                             <span class="font-mono text-xs font-medium text-navy bg-navy-50 px-2 py-1 rounded">
                                 {{ $demande->numero_suivi }}
@@ -713,6 +717,9 @@
                             {{ trim(($demande->direction ?? '').($demande->service ? ' — '.$demande->service : '')) ?: '—' }}
                         </td>
                         <td class="px-4 py-3">
+                            @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'badge'])
+                        </td>
+                        <td class="px-4 py-3">
                             <button type="button"
                                 class="view-toggle inline-flex items-center gap-1.5 bg-gold-50 hover:bg-gold text-amber-700 hover:text-navy border border-gold-200 hover:border-gold text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150"
                                 data-target="assigned-detail-{{ $demande->id_demande }}" aria-expanded="false">
@@ -728,7 +735,7 @@
                     </tr>
 
                     <tr id="assigned-detail-{{ $demande->id_demande }}" class="detail-row" style="display:none;">
-                        <td colspan="6" class="px-4 py-4 bg-[linear-gradient(180deg,#fffdf7_0%,#f9fbfd_100%)] border-b border-neutral-100">
+                        <td colspan="7" class="px-4 py-4 bg-[linear-gradient(180deg,#fffdf7_0%,#f9fbfd_100%)] border-b border-neutral-100">
                             @php
                                 $pieces = $piecesByDemand->get($demande->id_demande, collect());
                                 $historyEntries = $historyByDemand->get($demande->id_demande, collect());
@@ -743,6 +750,7 @@
                                     'reponse_redigee' => 'Réponse rédigée',
                                     'reponse_directe_chef' => 'Réponse directe chef',
                                     'envoi_reponse' => 'Envoi réponse',
+                                    'echec_envoi_reponse' => 'Echec d\'envoi',
                                 ];
                             @endphp
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -803,7 +811,9 @@
                                     @endif
                                 </div>
 
-                                <div>
+                                <div class="space-y-3">
+                                    @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'panel'])
+
                                     <div class="bg-white border border-neutral-200 rounded-xl p-4">
                                         <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2 mb-3">
                                             <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -841,7 +851,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-12 text-center">
+                        <td colspan="7" class="px-4 py-12 text-center">
                             <div class="flex flex-col items-center gap-3 text-neutral-400">
                                 <div class="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center">
                                     <svg class="icon-svg text-xl" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -897,6 +907,8 @@
                         'affectation_service' => 'Affectation service',
                         'annulation_affectation_service' => 'Annulation affectation',
                         'reponse_directe_accueil' => 'Réponse directe accueil',
+                        'envoi_reponse' => 'Envoi réponse',
+                        'echec_envoi_reponse' => 'Echec d\'envoi',
                     ];
                 @endphp
                 @forelse($recentAccueilActions as $entry)
@@ -905,8 +917,8 @@
                             {{ \Illuminate\Support\Carbon::parse($entry->date_action)->format('d/m/Y H:i') }}
                         </td>
                         <td class="px-4 py-3">
-                            <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full {{ $entry->type_action === 'annulation_affectation_service' ? 'bg-red-50 text-red-700 border border-red-200' : ($entry->type_action === 'reponse_directe_accueil' ? 'bg-leaf-50 text-green-700 border border-green-200' : 'bg-navy-50 text-navy border border-navy-100') }}">
-                                <span class="w-1.5 h-1.5 rounded-full {{ $entry->type_action === 'annulation_affectation_service' ? 'bg-red-500' : ($entry->type_action === 'reponse_directe_accueil' ? 'bg-leaf' : 'bg-navy') }}"></span>
+                            <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full {{ in_array($entry->type_action, ['annulation_affectation_service', 'echec_envoi_reponse'], true) ? 'bg-red-50 text-red-700 border border-red-200' : (in_array($entry->type_action, ['reponse_directe_accueil', 'envoi_reponse'], true) ? 'bg-leaf-50 text-green-700 border border-green-200' : 'bg-navy-50 text-navy border border-navy-100') }}">
+                                <span class="w-1.5 h-1.5 rounded-full {{ in_array($entry->type_action, ['annulation_affectation_service', 'echec_envoi_reponse'], true) ? 'bg-red-500' : (in_array($entry->type_action, ['reponse_directe_accueil', 'envoi_reponse'], true) ? 'bg-leaf' : 'bg-navy') }}"></span>
                                 {{ $actionLabels[$entry->type_action] ?? ucfirst(str_replace('_', ' ', (string) $entry->type_action)) }}
                             </span>
                         </td>
@@ -972,6 +984,22 @@
     </div>
 </div>
 
+<div
+    id="accueil-delivery-toast"
+    class="pointer-events-none fixed right-4 top-44 z-50 w-[min(92vw,360px)] transition-all duration-300 ease-out"
+    style="opacity: 0; transform: translateY(8px); visibility: hidden;"
+    aria-live="polite"
+    aria-atomic="true"
+>
+    <div id="accueil-delivery-toast-card" class="flex items-start gap-3 rounded-2xl border bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur">
+        <span id="accueil-delivery-toast-icon" class="mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-white"></span>
+        <div>
+            <p id="accueil-delivery-toast-title" class="text-sm font-semibold"></p>
+            <p id="accueil-delivery-toast-message" class="mt-0.5 text-xs leading-5 text-neutral-500"></p>
+        </div>
+    </div>
+</div>
+
 <!-- ═══════════════════ FOOTER ═══════════════════ -->
 <footer class="border-t border-neutral-200 bg-white mt-8">
     <div class="max-w-screen-xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-neutral-400">
@@ -998,7 +1026,15 @@
     const kpiContent = document.getElementById('accueil-kpi-content');
     const newDemandToast = document.getElementById('accueil-new-demand-toast');
     const newDemandToastMessage = document.getElementById('accueil-new-demand-toast-message');
+    const deliveryToast = document.getElementById('accueil-delivery-toast');
+    const deliveryToastCard = document.getElementById('accueil-delivery-toast-card');
+    const deliveryToastIcon = document.getElementById('accueil-delivery-toast-icon');
+    const deliveryToastTitle = document.getElementById('accueil-delivery-toast-title');
+    const deliveryToastMessage = document.getElementById('accueil-delivery-toast-message');
     let newDemandToastTimeout = null;
+    let deliveryToastTimeout = null;
+    const deliverySuccessIcon = '<svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-7Z" stroke="currentColor" stroke-width="1.8"/><path d="m6 9 6 4 6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="m10.4 13.1 1.7 1.7 3.4-3.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const deliveryErrorIcon = '<svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 16.8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
     const getNewDemandCount = (node) => Number(node?.dataset?.newDemandCount || 0);
 
@@ -1027,6 +1063,40 @@
         }, 4500);
     };
 
+    const showDeliveryNotification = (kind, title, message) => {
+        if (!deliveryToast || !deliveryToastCard || !deliveryToastIcon || !deliveryToastTitle || !deliveryToastMessage) {
+            return;
+        }
+
+        if (kind === 'success') {
+            deliveryToastCard.className = 'flex items-start gap-3 rounded-2xl border border-green-200 bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur';
+            deliveryToastIcon.className = 'mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-leaf text-white';
+            deliveryToastIcon.innerHTML = deliverySuccessIcon;
+        } else {
+            deliveryToastCard.className = 'flex items-start gap-3 rounded-2xl border border-red-200 bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur';
+            deliveryToastIcon.className = 'mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-red-500 text-white';
+            deliveryToastIcon.innerHTML = deliveryErrorIcon;
+        }
+
+        deliveryToastTitle.textContent = title;
+        deliveryToastMessage.textContent = message;
+
+        window.clearTimeout(deliveryToastTimeout);
+        deliveryToast.style.visibility = 'visible';
+        deliveryToast.style.opacity = '1';
+        deliveryToast.style.transform = 'translateY(0)';
+
+        deliveryToastTimeout = window.setTimeout(() => {
+            deliveryToast.style.opacity = '0';
+            deliveryToast.style.transform = 'translateY(8px)';
+            window.setTimeout(() => {
+                if (deliveryToast.style.opacity === '0') {
+                    deliveryToast.style.visibility = 'hidden';
+                }
+            }, 320);
+        }, 4500);
+    };
+
     const getVisibleNewDemandIds = (root) => Array.from(root?.querySelectorAll('[data-new-demand-row][data-demand-id]') || [])
         .map((row) => String(row.dataset.demandId || '').trim())
         .filter(Boolean);
@@ -1035,6 +1105,43 @@
         const currentIds = new Set(getVisibleNewDemandIds(currentRoot));
 
         return getVisibleNewDemandIds(nextRoot).filter((id) => !currentIds.has(id)).length;
+    };
+
+    const getDeliveryStateMap = (root) => {
+        const map = new Map();
+        (root?.querySelectorAll('[data-delivery-id][data-delivery-state]') || []).forEach((row) => {
+            map.set(String(row.dataset.deliveryId || ''), {
+                state: String(row.dataset.deliveryState || 'idle'),
+                label: String(row.dataset.deliveryLabel || '').trim(),
+            });
+        });
+
+        return map;
+    };
+
+    const summarizeDeliveryTransitions = (currentRoot, nextRoot) => {
+        const currentStates = getDeliveryStateMap(currentRoot);
+        const nextStates = getDeliveryStateMap(nextRoot);
+        const delivered = [];
+        const failed = [];
+
+        currentStates.forEach((entry, id) => {
+            if (entry.state !== 'pending') {
+                return;
+            }
+
+            const nextEntry = nextStates.get(id);
+            if (!nextEntry || nextEntry.state === 'sent') {
+                delivered.push(entry.label || id);
+                return;
+            }
+
+            if (nextEntry.state === 'failed') {
+                failed.push(nextEntry.label || entry.label || id);
+            }
+        });
+
+        return { delivered, failed };
     };
 
     const animateCounters = (root = document) => {
@@ -1267,6 +1374,7 @@
                 const nextKpiContent = nextDocument.getElementById('accueil-kpi-content');
                 const nextContent = nextDocument.getElementById('accueil-live-content');
                 let newDemandDifference = nextContent ? countAddedVisibleNewDemands(liveContent, nextContent) : 0;
+                const deliveryTransitions = nextContent ? summarizeDeliveryTransitions(liveContent, nextContent) : { delivered: [], failed: [] };
 
                 if (nextKpiContent && kpiContent) {
                     const currentNewDemandCount = getNewDemandCount(kpiContent);
@@ -1284,6 +1392,28 @@
 
                 if (newDemandDifference > 0) {
                     showNewDemandNotification(newDemandDifference);
+                }
+
+                if (deliveryTransitions.delivered.length > 0) {
+                    const firstLabel = deliveryTransitions.delivered[0];
+                    showDeliveryNotification(
+                        'success',
+                        deliveryTransitions.delivered.length > 1 ? 'Reponses envoyees' : 'Reponse envoyee',
+                        deliveryTransitions.delivered.length > 1
+                            ? `${deliveryTransitions.delivered.length} reponses ont ete confirmees par le systeme.`
+                            : `La demande ${firstLabel} a bien ete envoyee a l'usager.`
+                    );
+                }
+
+                if (deliveryTransitions.failed.length > 0) {
+                    const firstLabel = deliveryTransitions.failed[0];
+                    showDeliveryNotification(
+                        'error',
+                        'Echec d envoi',
+                        deliveryTransitions.failed.length > 1
+                            ? `${deliveryTransitions.failed.length} envois ont echoue. Une relance est possible.`
+                            : `L'envoi pour la demande ${firstLabel} a echoue. Vous pouvez relancer la reponse.`
+                    );
                 }
             } catch (error) {
                 console.warn('Rafraîchissement accueil interrompu.', error);

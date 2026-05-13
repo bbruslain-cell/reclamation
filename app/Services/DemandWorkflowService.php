@@ -311,6 +311,7 @@ class DemandWorkflowService
                 ->update([
                     'id_envoyeur' => $actorId,
                     'date_demande_envoi_usager' => $now,
+                    'date_echec_envoi_usager' => null,
                     'updated_at' => $now,
                 ]);
 
@@ -318,6 +319,7 @@ class DemandWorkflowService
                 ->where('id_demande', $demandId)
                 ->update([
                     'date_demande_envoi_usager' => $now,
+                    'date_echec_envoi_usager' => null,
                     'updated_at' => $now,
                 ]);
 
@@ -385,6 +387,7 @@ class DemandWorkflowService
                 ->update([
                     'id_envoyeur' => $actorId,
                     'date_demande_envoi_usager' => null,
+                    'date_echec_envoi_usager' => null,
                     'date_envoi_usager' => $now,
                     'updated_at' => $now,
                 ]);
@@ -394,6 +397,7 @@ class DemandWorkflowService
                 ->update([
                     'id_statut' => $statusCloturee,
                     'date_demande_envoi_usager' => null,
+                    'date_echec_envoi_usager' => null,
                     'date_envoi_usager' => $now,
                     'date_cloture' => $now,
                     'heures_ouvrees_cloture' => $elapsed,
@@ -414,18 +418,20 @@ class DemandWorkflowService
         $this->refreshDemandSla($demandId);
     }
 
-    public function markQueuedFinalResponseFailed(int $demandId, int $responseId, Throwable $exception): void
+    public function markQueuedFinalResponseFailed(int $actorId, int $demandId, int $responseId, Throwable $exception): void
     {
-        DB::transaction(function () use ($demandId, $responseId): void {
+        DB::transaction(function () use ($actorId, $demandId, $responseId, $exception): void {
             $demand = DB::table('demandes')->where('id_demande', $demandId)->lockForUpdate()->first();
             $response = DB::table('reponses')->where('id_reponse', $responseId)->lockForUpdate()->first();
+            $failedAt = now();
 
             if ($response && !$response->date_envoi_usager) {
                 DB::table('reponses')
                     ->where('id_reponse', $responseId)
                     ->update([
                         'date_demande_envoi_usager' => null,
-                        'updated_at' => now(),
+                        'date_echec_envoi_usager' => $failedAt,
+                        'updated_at' => $failedAt,
                     ]);
             }
 
@@ -434,8 +440,22 @@ class DemandWorkflowService
                     ->where('id_demande', $demandId)
                     ->update([
                         'date_demande_envoi_usager' => null,
-                        'updated_at' => now(),
+                        'date_echec_envoi_usager' => $failedAt,
+                        'updated_at' => $failedAt,
                     ]);
+
+                $errorMessage = trim((string) $exception->getMessage());
+                $this->logAction(
+                    demandId: $demandId,
+                    userId: $actorId,
+                    type: 'echec_envoi_reponse',
+                    oldStatusId: $demand->id_statut,
+                    newStatusId: $demand->id_statut,
+                    serviceId: $demand->id_service_courant,
+                    comment: $errorMessage !== ''
+                        ? 'Echec envoi usager : '.$errorMessage
+                        : 'Echec envoi usager'
+                );
             }
         });
 

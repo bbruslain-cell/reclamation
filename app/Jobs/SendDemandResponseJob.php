@@ -50,6 +50,7 @@ class SendDemandResponseJob implements ShouldQueue
     public function failed(Throwable $exception): void
     {
         app(DemandWorkflowService::class)->markQueuedFinalResponseFailed(
+            actorId: $this->actorId,
             demandId: $this->demandId,
             responseId: $this->responseId,
             exception: $exception

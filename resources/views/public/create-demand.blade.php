@@ -172,7 +172,7 @@
             <!-- Card header -->
             <div class="px-6 py-5 border-b border-navy-600 flex flex-col items-center justify-center text-center bg-navy-500">
            <div class="w-full">
-               <h2 class="font-semibold text-white text-2xl tracking-wide">
+               <h2 class="font-semibold text-white text-lg sm:text-2xl tracking-wide">
                    Remplissez le Formulaire Relative à Votre Réclamation.
                </h2>
                       <p class="text-sky-50 text-sm mt-1">

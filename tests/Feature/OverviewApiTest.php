@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class OverviewApiTest extends TestCase
@@ -218,6 +219,8 @@ class OverviewApiTest extends TestCase
     public function test_overview_reports_direct_accueil_responses_under_ucas(): void
     {
         $this->seedOverviewFixtures();
+        config(['queue.default' => 'sync']);
+        Mail::fake();
 
         $this->post('/reclamations', [
             'nom' => 'Mouila',
@@ -275,6 +278,8 @@ class OverviewApiTest extends TestCase
     public function test_overview_marks_overdue_direct_accueil_response_as_out_of_time(): void
     {
         $this->seed();
+        config(['queue.default' => 'sync']);
+        Mail::fake();
 
         $this->post('/reclamations', [
             'nom' => 'Mouila',
@@ -299,7 +304,7 @@ class OverviewApiTest extends TestCase
         DB::table('demandes')
             ->where('id_demande', $demandId)
             ->update([
-                'date_soumission' => now()->subDays(3),
+                'date_soumission' => now()->subDays(5),
                 'updated_at' => now(),
             ]);
 

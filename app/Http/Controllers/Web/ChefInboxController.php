@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Web\Concerns\InteractsWithDeliveryStatus;
 use App\Http\Controllers\Web\Concerns\InteractsWithServiceWindow;
 use App\Models\Demande;
 use App\Services\AccessControlService;
@@ -20,6 +21,7 @@ use RuntimeException;
 
 class ChefInboxController extends Controller
 {
+    use InteractsWithDeliveryStatus;
     use InteractsWithServiceWindow;
 
     public function __construct(
@@ -72,6 +74,9 @@ class ChefInboxController extends Controller
             'd.date_soumission',
             'd.date_affectation_accueil',
             'd.date_affectation_agent',
+            'd.date_demande_envoi_usager',
+            'd.date_envoi_usager',
+            'd.date_echec_envoi_usager',
             'd.alerte_chef',
             'd.alerte_agent',
             'd.id_service_courant',
@@ -153,7 +158,9 @@ class ChefInboxController extends Controller
             ->withQueryString();
         $pending->setCollection(
             $pending->getCollection()->map(
-                fn ($demande) => $this->withServiceWindowMeta($demande, $this->slaService)
+                fn ($demande) => $this->withDeliveryStatusMeta(
+                    $this->withServiceWindowMeta($demande, $this->slaService)
+                )
             )
         );
 
@@ -164,7 +171,9 @@ class ChefInboxController extends Controller
             ->withQueryString();
         $assigned->setCollection(
             $assigned->getCollection()->map(
-                fn ($demande) => $this->withServiceWindowMeta($demande, $this->slaService)
+                fn ($demande) => $this->withDeliveryStatusMeta(
+                    $this->withServiceWindowMeta($demande, $this->slaService)
+                )
             )
         );
 
@@ -189,6 +198,7 @@ class ChefInboxController extends Controller
                 'reponse_directe_chef',
                 'reponse_redigee',
                 'envoi_reponse',
+                'echec_envoi_reponse',
             ])
             ->orderByDesc('ha.date_action')
             ->limit(20)
