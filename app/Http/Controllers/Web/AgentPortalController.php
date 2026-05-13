@@ -37,7 +37,7 @@ class AgentPortalController extends Controller
             return redirect($defaultSpace['href']);
         }
 
-        return redirect('/login');
+        abort(403, 'Aucun espace accessible pour cet utilisateur. Verifiez ses roles et permissions.');
     }
 
     private function availableSpaces(Utilisateur $actor, array $roles): array

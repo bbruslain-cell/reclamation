@@ -7,6 +7,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class AccessControlService
 {
@@ -59,13 +61,28 @@ class AccessControlService
 
     public function roleCodes(int $userId): array
     {
-        $user = Utilisateur::query()->find($userId);
-        if (!$user) {
+        if (!Utilisateur::query()->where('id_utilisateur', $userId)->exists()) {
             return [];
         }
 
-        return $user->roles()
-            ->pluck('code')
+        $spatieRoles = collect();
+        if (Schema::hasTable('model_has_roles')) {
+            $spatieRoles = DB::table('model_has_roles as mhr')
+                ->join('roles as r', 'r.id_role', '=', 'mhr.id_role')
+                ->where('mhr.model_type', Utilisateur::class)
+                ->where('mhr.model_id', $userId)
+                ->where('r.actif', true)
+                ->pluck('r.code');
+        }
+
+        $legacyRoles = DB::table('utilisateur_role as ur')
+            ->join('roles as r', 'r.id_role', '=', 'ur.id_role')
+            ->where('ur.id_utilisateur', $userId)
+            ->where('r.actif', true)
+            ->pluck('r.code');
+
+        return $spatieRoles
+            ->merge($legacyRoles)
             ->map(static function ($value) {
                 $code = (string) $value;
 
@@ -113,7 +130,32 @@ class AccessControlService
             return false;
         }
 
-        return $user->checkPermissionTo($permissionCode);
+        if (in_array('admin', $this->roleCodes($userId), true)) {
+            return true;
+        }
+
+        $hasLegacyPermission = DB::table('utilisateur_role as ur')
+            ->join('roles as r', 'r.id_role', '=', 'ur.id_role')
+            ->join('permission_role as pr', 'pr.id_role', '=', 'r.id_role')
+            ->join('permissions as p', 'p.id_permission', '=', 'pr.id_permission')
+            ->where('ur.id_utilisateur', $userId)
+            ->where('r.actif', true)
+            ->where(function ($query) use ($permissionCode): void {
+                $query
+                    ->where('p.code', $permissionCode)
+                    ->orWhere('p.name', $permissionCode);
+            })
+            ->exists();
+
+        if ($hasLegacyPermission) {
+            return true;
+        }
+
+        try {
+            return $user->checkPermissionTo($permissionCode);
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     public function assertPermission(int $userId, string $permissionCode): void

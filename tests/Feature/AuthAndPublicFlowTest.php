@@ -842,6 +842,10 @@ class AuthAndPublicFlowTest extends TestCase
         $adminId = (int) DB::table('utilisateurs')
             ->where('email', 'admin@anbg.ga')
             ->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->where('id_utilisateur', $adminId)
+            ->update(['changement_mdp_requis' => false]);
+
         $roleId = (int) DB::table('roles')
             ->where('code', 'chef_direction')
             ->value('id_role');
@@ -877,6 +881,48 @@ class AuthAndPublicFlowTest extends TestCase
         $this->assertDatabaseMissing('perimetre_service', [
             'id_utilisateur' => $userId,
         ]);
+    }
+
+    public function test_admin_space_resolves_from_legacy_role_even_when_spatie_pivot_is_missing(): void
+    {
+        $this->seed();
+
+        $adminId = (int) DB::table('utilisateurs')
+            ->where('email', 'admin@anbg.ga')
+            ->value('id_utilisateur');
+
+        DB::table('utilisateurs')
+            ->where('id_utilisateur', $adminId)
+            ->update(['changement_mdp_requis' => false]);
+
+        DB::table('model_has_roles')
+            ->where('model_type', \App\Models\Utilisateur::class)
+            ->where('model_id', $adminId)
+            ->delete();
+
+        $this->withHeader('X-User-Id', (string) $adminId)
+            ->get('/espace')
+            ->assertRedirect('/admin');
+    }
+
+    public function test_authenticated_user_without_space_gets_forbidden_instead_of_login_loop(): void
+    {
+        $this->seed();
+
+        $userId = (int) DB::table('utilisateurs')->insertGetId([
+            'nom' => 'Sans',
+            'prenom' => 'Role',
+            'email' => 'sans.role@example.com',
+            'password_hash' => bcrypt('Password@123'),
+            'actif' => true,
+            'changement_mdp_requis' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], 'id_utilisateur');
+
+        $this->withHeader('X-User-Id', (string) $userId)
+            ->get('/espace')
+            ->assertForbidden();
     }
 
     public function test_admin_forces_ucas_service_for_accueil_role(): void
