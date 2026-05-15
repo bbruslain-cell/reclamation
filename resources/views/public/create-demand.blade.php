@@ -4,7 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/public-demand.js'])
-    <title>Plateforme réclamations - ANBG</title>
+    <title>Plateforme Réclamation - ANBG</title>
+    <meta property="og:title" content="Plateforme Réclamation - ANBG">
+    <meta property="og:url" content="https://vps-92c74632.vps.ovh.net">
+    <meta property="og:description" content="Plateforme de gestion des réclamations">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
