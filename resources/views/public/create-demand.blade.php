@@ -106,14 +106,14 @@
             <div class="flex items-center gap-3">
                 <a href="https://whatsapp.com/channel/0029Va9x0uYChq6Vl1wyP305" target="_blank" rel="noopener"
                    aria-label="Chaine WhatsApp ANBG"
-                   class="w-10 h-10 rounded-lg bg-white/10 hover:bg-green-400/30 flex items-center justify-center text-white transition-colors duration-150">
-                    <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                   class="w-9 h-9 rounded-lg bg-white/10 hover:bg-green-400/30 flex items-center justify-center text-white transition-colors duration-150">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                         <path d="M12.04 3.5a8.42 8.42 0 0 0-7.16 12.86L4 20.5l4.24-1.1a8.42 8.42 0 1 0 3.8-15.9Zm0 1.55a6.87 6.87 0 0 1 5.84 10.5 6.84 6.84 0 0 1-8.94 2.48l-.3-.18-2.52.66.67-2.46-.2-.32a6.87 6.87 0 0 1 5.45-10.68Zm-2.9 3.54c-.15 0-.4.05-.62.3-.21.25-.81.79-.81 1.93s.83 2.24.94 2.39c.12.15 1.61 2.58 4.02 3.52 1.99.78 2.4.63 2.83.59.44-.04 1.41-.58 1.6-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.15-.46-.27-.25-.12-1.43-.7-1.65-.78-.22-.08-.38-.12-.54.12-.16.25-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.95-1.2-.72-.64-1.2-1.43-1.34-1.67-.14-.24-.01-.38.11-.5.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.41h-.29Z"/>
                     </svg>
                 </a>
                 <a href="https://www.facebook.com/anbggabon" target="_blank" rel="noopener"
-                   class="w-10 h-10 rounded-lg bg-white/10 hover:bg-sky-400/30 flex items-center justify-center text-white transition-colors duration-150">
-                    <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                   class="w-9 h-9 rounded-lg bg-white/10 hover:bg-sky-400/30 flex items-center justify-center text-white transition-colors duration-150">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                         <path d="M13.5 21v-7h2.3l.4-2.8h-2.7V9.4c0-.8.2-1.3 1.4-1.3H16V5.6c-.6-.1-1.3-.1-2-.1-2 0-3.4 1.2-3.4 3.5v2.2H8.5V14h2.1v7h2.9Z"/>
                     </svg>
                 </a>
