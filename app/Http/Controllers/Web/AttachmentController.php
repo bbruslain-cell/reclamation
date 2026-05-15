@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Demande;
 use App\Services\AccessControlService;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+
 
 class AttachmentController extends Controller
 {
@@ -61,7 +63,10 @@ class AttachmentController extends Controller
         $disk = $this->resolveAttachmentDisk((string) $piece->chemin_fichier);
         abort_unless($disk !== null, 404);
 
-        return Storage::disk($disk)->download(
+        /** @var FilesystemAdapter $storage */
+        $storage = Storage::disk($disk);
+
+        return $storage->download(
             (string) $piece->chemin_fichier,
             (string) $piece->nom_fichier,
             [

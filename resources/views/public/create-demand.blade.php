@@ -3,14 +3,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/public-demand.js'])
     <title>Plateforme réclamations - ANBG</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <style>
-        [v-cloak] { display: none; }
+        [v-if], [v-else] { display: none; }
 
         /* Transitions */
         .field-group { transition: opacity 0.3s ease, transform 0.3s ease; }
@@ -79,7 +78,7 @@
 </head>
 <body class="bg-white font-sans text-navy-500 antialiased">
 
-<div id="app" v-cloak>
+<div id="app">
     <!-- NAVBAR -->
     <header class="bg-navy-500 sticky top-0 z-50 shadow-md">
         <div class="max-w-screen-xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 2xl:px-10 h-16 flex items-center justify-between">
@@ -102,8 +101,15 @@
             </div>
             <!-- Réseaux sociaux -->
             <div class="flex items-center gap-3">
+                <a href="https://whatsapp.com/channel/0029Va9x0uYChq6Vl1wyP305" target="_blank" rel="noopener"
+                   aria-label="Chaine WhatsApp ANBG"
+                   class="w-10 h-10 rounded-lg bg-white/10 hover:bg-green-400/30 flex items-center justify-center text-white transition-colors duration-150">
+                    <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12.04 3.5a8.42 8.42 0 0 0-7.16 12.86L4 20.5l4.24-1.1a8.42 8.42 0 1 0 3.8-15.9Zm0 1.55a6.87 6.87 0 0 1 5.84 10.5 6.84 6.84 0 0 1-8.94 2.48l-.3-.18-2.52.66.67-2.46-.2-.32a6.87 6.87 0 0 1 5.45-10.68Zm-2.9 3.54c-.15 0-.4.05-.62.3-.21.25-.81.79-.81 1.93s.83 2.24.94 2.39c.12.15 1.61 2.58 4.02 3.52 1.99.78 2.4.63 2.83.59.44-.04 1.41-.58 1.6-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.15-.46-.27-.25-.12-1.43-.7-1.65-.78-.22-.08-.38-.12-.54.12-.16.25-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.95-1.2-.72-.64-1.2-1.43-1.34-1.67-.14-.24-.01-.38.11-.5.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.41h-.29Z"/>
+                    </svg>
+                </a>
                 <a href="https://www.facebook.com/anbggabon" target="_blank" rel="noopener"
-                   class="w-8 h-8 rounded-lg bg-white/10 hover:bg-sky-400/30 flex items-center justify-center text-white transition-colors duration-150">
+                   class="w-10 h-10 rounded-lg bg-white/10 hover:bg-sky-400/30 flex items-center justify-center text-white transition-colors duration-150">
                     <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                         <path d="M13.5 21v-7h2.3l.4-2.8h-2.7V9.4c0-.8.2-1.3 1.4-1.3H16V5.6c-.6-.1-1.3-.1-2-.1-2 0-3.4 1.2-3.4 3.5v2.2H8.5V14h2.1v7h2.9Z"/>
                     </svg>
@@ -173,7 +179,7 @@
             <div class="px-6 py-5 border-b border-navy-600 flex flex-col items-center justify-center text-center bg-navy-500">
            <div class="w-full">
                <h2 class="font-semibold text-white text-lg sm:text-2xl tracking-wide">
-                   Remplissez le Formulaire Relative à Votre Réclamation.
+                   Remplissez le Formulaire Relatif à Votre Réclamation.
                </h2>
                       <p class="text-sky-50 text-sm mt-1">
                    Les champs marqués d'un <span class="text-gold-300 font-bold">*</span> sont obligatoires.
@@ -268,12 +274,9 @@
                                            focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150 cursor-pointer"
                                 >
                                     <option value="">- Sélectionner -</option>
-                                    <option value="Élève">Élève</option>
-                                    <option value="Étudiant">Étudiant</option>
-                                    <option value="Parent / Tuteur">Parent / Tuteur</option>
-                                    <option value="Enseignant">Enseignant</option>
-                                    <option value="Professionnel">Professionnel</option>
-                                    <option value="Autre">Autre</option>
+                                    @foreach($usagerStatuses as $status)
+                                        <option value="{{ $status }}">{{ $status }}</option>
+                                    @endforeach
                                 </select>
                                 <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none text-xs">
                                     <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -320,9 +323,8 @@
                                 <span
                                     class="text-[11px] font-medium"
                                     :class="requiresEtablissement ? 'text-amber-600' : 'text-neutral-400'"
-                                >
-                                    @{{ requiresEtablissement ? 'Obligatoire pour les élèves et étudiants' : 'Optionnel pour les autres statuts' }}
-                                </span>
+                                    v-text="requiresEtablissement ? 'Obligatoire pour les élèves et étudiants' : 'Optionnel pour les autres statuts'"
+                                ></span>
                             </div>
                             <div class="relative">
                                 <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-sm pointer-events-none">
@@ -380,7 +382,9 @@
                                            focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150 cursor-pointer"
                                 >
                                     <option value="">- Sélectionner -</option>
-                                    <option v-for="cat in categories" :key="cat" :value="cat">@{{ cat }}</option>
+                                    @foreach(($categoriesByType['reclamation'] ?? []) as $category)
+                                        <option value="{{ $category }}" @selected(old('categorie') === $category)>{{ $category }}</option>
+                                    @endforeach
                                 </select>
                                 <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none text-xs">
                                     <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -398,7 +402,7 @@
                         </label>
                         <input
                             id="objet" name="objet" type="text"
-                            v-model="form.objet" readonly tabindex="-1" required
+                            v-model="form.objet" readonly tabindex="-1"
                             placeholder="Sélectionnez une catégorie ci-dessus"
                             class="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-100 text-neutral-500 placeholder-neutral-400
                                    cursor-not-allowed transition-all duration-150"
@@ -421,7 +425,7 @@
                             <label for="message" class="block text-sm font-medium text-navy-500">
                                 Message <span class="text-red-500">*</span>
                             </label>
-                            <span class="char-count">@{{ form.message.length }} / 2000 caractères</span>
+                            <span class="char-count" v-text="`${form.message.length} / 2000 caractères`"></span>
                         </div>
                         <textarea
                             id="message" name="message"
@@ -503,7 +507,7 @@
                             :class="submitting
                                 ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
                                 : 'bg-sky-500 hover:bg-navy-600 text-white shadow-btn hover:shadow-btn-hover'"
-                            class="inline-flex items-center justify-center gap-2.5 font-medium text-sm px-8 py-3 rounded-xl transition-all duration-200 w-full sm:w-auto"
+                            class="inline-flex items-center justify-center gap-2.5 bg-sky-500 text-white shadow-btn hover:bg-navy-600 hover:shadow-btn-hover font-medium text-sm px-8 py-3 rounded-xl transition-all duration-200 w-full sm:w-auto"
                         >
                             <!-- Spinner pendant l'envoi -->
                             <svg v-if="submitting" class="icon-svg animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -514,7 +518,7 @@
                                 <path d="M4 11.5 19 5l-4.8 14-3.1-5.1L4 11.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                                 <path d="M10.8 13.8 19 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                             </svg>
-                            @{{ submitting ? 'Envoi en cours…' : 'Soumettre ma demande' }}
+                            <span v-text="submitting ? 'Envoi en cours…' : 'Soumettre ma demande'"></span>
                         </button>
                     </div>
                 </div>
@@ -534,168 +538,40 @@
 
 </div><!-- #app -->
 
-<script>
-    const categoriesByType = {
-        reclamation: [
-            "Demande de modification d'attestation d'attribution de bourse ou maintien",
-            "Reclamation du paiement des frais de scolarite",
-            "Reclamation sur les RIB non valides sur eBourse",
-            "Recours apres deliberation de la CT",
-            "Reclamation diverses"
+{{-- Public-demand behavior lives in resources/js/public-demand.js. --}}
+@php
+    $publicDemandState = [
+        'categoriesByType' => $categoriesByType,
+        'old' => [
+            'nom' => old('nom', ''),
+            'prenom' => old('prenom', ''),
+            'email' => old('email', ''),
+            'statut_usager' => old('statut_usager', ''),
+            'pays' => old('pays', ''),
+            'etablissement' => old('etablissement', ''),
+            'type_demande_code' => 'reclamation',
+            'categorie' => old('categorie', ''),
+            'objet' => old('objet', ''),
+            'message' => old('message', ''),
+            'consentement' => (bool) old('consentement', false),
         ],
-        autre: ["Autre"]
-    };
-
-    const app = Vue.createApp({
-        data() {
-            return {
-                form: {
-                    nom:               @json(old('nom', '')),
-                    prenom:            @json(old('prenom', '')),
-                    email:             @json(old('email', '')),
-                    statut_usager:     @json(old('statut_usager', '')),
-                    pays:              @json(old('pays', '')),
-                    etablissement:     @json(old('etablissement', '')),
-                    type_demande_code: 'reclamation',
-                    categorie:         @json(old('categorie', '')),
-                    objet:             @json(old('objet', '')),
-                    message:           @json(old('message', '')),
-                    consentement:      @json((bool) old('consentement', false)),
-                },
-                errors: {
-                    nom:               @json($errors->first('nom')),
-                    prenom:            @json($errors->first('prenom')),
-                    email:             @json($errors->first('email')),
-                    statut_usager:     @json($errors->first('statut_usager')),
-                    pays:              @json($errors->first('pays')),
-                    etablissement:     @json($errors->first('etablissement')),
-                    objet:             @json($errors->first('objet')),
-                    message:           @json($errors->first('message')),
-                    piece_jointe:      @json($errors->first('piece_jointe')),
-                    consentement:      @json($errors->first('consentement')),
-                },
-                categories:  [],
-                // ✅ MODIF 2 : état de soumission
-                submitting: false,
-            };
-        },
-        mounted() {
-            this.form.type_demande_code = 'reclamation';
-            this.fillCategories();
-            this.setupDropzone();
-        },
-        computed: {
-            requiresEtablissement() {
-                return ['Élève', 'Étudiant'].includes(this.form.statut_usager);
-            }
-        },
-        methods: {
-            fillCategories() {
-                this.categories = categoriesByType.reclamation;
-                if (!this.categories.includes(this.form.categorie)) {
-                    this.form.categorie = '';
-                }
-            },
-            handleStatutUsagerChange() {
-                this.clearError('statut_usager');
-                if (!this.requiresEtablissement) {
-                    this.clearError('etablissement');
-                }
-            },
-            applyCategory() {
-                this.form.objet = this.form.categorie;
-                if (this.form.objet) {
-                    this.clearError('objet');
-                }
-            },
-            clearError(field) {
-                if (this.errors[field]) {
-                    this.errors[field] = null;
-                }
-            },
-
-            // ✅ MODIF 2 : protection double soumission
-            handleSubmit(e) {
-                if (this.submitting) {
-                    e.preventDefault();
-                    return;
-                }
-                this.submitting = true;
-                // Réactiver après 8s en cas d'erreur serveur ou timeout
-                setTimeout(() => { this.submitting = false; }, 8000);
-            },
-
-            setupDropzone() {
-                document.addEventListener('dragover', e => e.preventDefault());
-                document.addEventListener('drop', e => e.preventDefault());
-
-                const dz    = document.getElementById('dropzone');
-                const input = document.getElementById('piece_jointe');
-                const list  = document.getElementById('file-list');
-                if (!dz || !input) return;
-
-                // ✅ MODIF 1 : constantes de validation fichier
-                const MAX_SIZE = 3.5 * 1024 * 1024; // 3,5 Mo en octets
-                const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
-
-                const refreshList = () => {
-                    list.innerHTML = '';
-                    Array.from(input.files || []).forEach(file => {
-                        const ext  = file.name.split('.').pop().toUpperCase();
-                        const size = (file.size / 1024).toFixed(0);
-                        const div  = document.createElement('div');
-                        div.className = 'flex items-center gap-2.5 bg-sky-50 border border-sky-100 text-navy-500 text-xs px-3 py-2 rounded-lg';
-                        div.innerHTML = `
-                            <span class="w-7 h-7 rounded bg-sky-100 flex items-center justify-center font-medium text-[10px] text-sky-400 flex-shrink-0">${ext}</span>
-                            <span class="flex-1 font-medium truncate">${file.name}</span>
-                            <span class="text-sky-400">${size} Ko</span>
-                        `;
-                        list.appendChild(div);
-                    });
-                };
-
-                // ✅ MODIF 1 : validation taille et type avant acceptation du fichier
-                const applyFiles = files => {
-                    if (!files || files.length === 0) return;
-
-                    const file = files[0];
-
-                    // Vérification de la taille
-                    if (file.size > MAX_SIZE) {
-                        this.errors.piece_jointe = `Fichier trop lourd (${(file.size / 1024 / 1024).toFixed(1)} Mo). Maximum autorisé : 3,5 Mo.`;
-                        return;
-                    }
-
-                    // Vérification du type MIME
-                    if (!ALLOWED_TYPES.includes(file.type)) {
-                        this.errors.piece_jointe = 'Format non accepté. Utilisez PDF, JPG ou PNG.';
-                        return;
-                    }
-
-                    // Fichier valide : effacer l'erreur et affecter
-                    this.errors.piece_jointe = null;
-                    const dt = new DataTransfer();
-                    dt.items.add(file);
-                    input.files = dt.files;
-                    refreshList();
-                };
-
-                dz.addEventListener('click',    () => input.click());
-                dz.addEventListener('keypress', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
-                dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dropzone-active'); });
-                dz.addEventListener('dragleave',    () => dz.classList.remove('dropzone-active'));
-                dz.addEventListener('drop', e => {
-                    e.preventDefault();
-                    dz.classList.remove('dropzone-active');
-                    if (e.dataTransfer?.files?.length) applyFiles(e.dataTransfer.files);
-                });
-
-                // ✅ MODIF 1 : input change passe aussi par applyFiles (couvre le clic)
-                input.addEventListener('change', () => applyFiles(input.files));
-            }
-        }
-    });
-    app.mount('#app');
+        'errors' => [
+            'nom' => $errors->first('nom'),
+            'prenom' => $errors->first('prenom'),
+            'email' => $errors->first('email'),
+            'statut_usager' => $errors->first('statut_usager'),
+            'pays' => $errors->first('pays'),
+            'etablissement' => $errors->first('etablissement'),
+            'categorie' => $errors->first('categorie'),
+            'objet' => $errors->first('objet'),
+            'message' => $errors->first('message'),
+            'piece_jointe' => $errors->first('piece_jointe'),
+            'consentement' => $errors->first('consentement'),
+        ],
+    ];
+@endphp
+<script type="application/json" id="public-demand-state">
+@json($publicDemandState)
 </script>
 </body>
 </html>

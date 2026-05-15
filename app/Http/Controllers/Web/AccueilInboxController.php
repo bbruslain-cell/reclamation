@@ -280,7 +280,7 @@ class AccueilInboxController extends Controller
                 throw new RuntimeException('Service invalide ou inactif.');
             }
             if ((int) $serviceDirectionId !== (int) $payload['id_direction']) {
-                throw new RuntimeException('Le service sÃ©lectionnÃ© n appartient pas Ã  la direction choisie.');
+                throw new RuntimeException("Le service sélectionné n'appartient pas à la direction choisie.");
             }
 
             $this->workflow->assignDemand(

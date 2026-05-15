@@ -48,7 +48,7 @@ class AgentPortalController extends Controller
             $spaces['admin'] = [
                 'code' => 'admin',
                 'title' => 'Administration',
-                'description' => 'Gerer les utilisateurs, les roles, les referentiels et les parametres.',
+                'description' => 'Gerer les utilisateurs, les rôles, les referentiels et les paramètres.',
                 'href' => '/admin',
                 'badge' => 'Configuration',
             ];
@@ -68,7 +68,7 @@ class AgentPortalController extends Controller
             $spaces['chef'] = [
                 'code' => 'chef',
                 'title' => 'Chef de service',
-                'description' => 'Piloter le traitement du service, affecter les demandes aux  agents et suivre le delai partager.',
+                'description' => 'Piloter le traitement du service, affecter les demandes aux  agents et suivre le délai partager.',
                 'href' => '/chef/inbox',
                 'badge' => 'Operationnel',
             ];

@@ -347,7 +347,7 @@ class ChefInboxController extends Controller
             }
 
             if ((int) ($demandMeta->id_agent_traitant ?? 0) > 0) {
-                throw new RuntimeException('Le chef de service ne peut plus répondre directement après l affectation à un agent.');
+                throw new RuntimeException("Le chef de service ne peut plus répondre directement après l'affectation à un agent.");
             }
 
             if (!in_array((string) $demandMeta->statut_code, ['affectee_service', 'reponse_prete'], true)) {

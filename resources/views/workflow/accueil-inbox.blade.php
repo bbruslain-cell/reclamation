@@ -131,7 +131,7 @@
 </header>
 
 <!-- ═══════════════════ MAIN ═══════════════════ -->
-<main class="max-w-screen-xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+<main class="max-w-screen-xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-5">
 
     <!-- Toasts -->
     @if(session('success'))
@@ -187,12 +187,12 @@
         ])->filter()->values();
     @endphp
 
-    <section class="hero-shell rounded-[28px] px-6 py-6 sm:px-8 sm:py-7 text-white shadow-card">
+    <section class="hero-shell rounded-[22px] sm:rounded-[28px] px-4 py-5 sm:px-8 sm:py-7 text-white shadow-card">
         <div class="relative z-10 grid gap-6 lg:grid-cols-[1.45fr_0.85fr] lg:items-end">
             <div class="space-y-4">
                 
                 <div class="space-y-6">
-                    <h1 class="text-2xl font-bold leading-tight sm:text-[2rem]">Pilotage opérationnel des demandes</h1>
+                    <h1 class="text-xl font-bold leading-tight sm:text-[2rem]">Pilotage opérationnel des demandes</h1>
                     <p class="max-w-3xl text-sm leading-6 text-white/78 sm:text-[15px]">
                     </p>
                 </div>
@@ -228,7 +228,7 @@
     </section>
 
     <section id="accueil-kpi-content" data-new-demand-count="{{ $summary->total_nouvelles }}" class="flex flex-wrap items-stretch justify-center gap-3">
-        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#1c203d_0%,#2a3163_100%)] px-4 py-4 text-white shadow-card">
+        <article class="kpi-card aspect-square w-[calc(50%_-_0.375rem)] min-w-[132px] max-w-[146px] rounded-[18px] sm:rounded-[22px] bg-[linear-gradient(135deg,#1c203d_0%,#2a3163_100%)] px-3 py-3 sm:px-4 sm:py-4 text-white shadow-card">
             <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
                 <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/12">
                     <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -241,7 +241,7 @@
             </div>
         </article>
 
-        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#3996d3_0%,#1c203d_120%)] px-4 py-4 text-white shadow-card">
+        <article class="kpi-card aspect-square w-[calc(50%_-_0.375rem)] min-w-[132px] max-w-[146px] rounded-[18px] sm:rounded-[22px] bg-[linear-gradient(135deg,#3996d3_0%,#1c203d_120%)] px-3 py-3 sm:px-4 sm:py-4 text-white shadow-card">
             <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
                 <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/12">
                     <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -256,7 +256,7 @@
 
 
 
-        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#fff7df_0%,#ffe28b_100%)] px-4 py-4 text-[#8a5b00] shadow-card">
+        <article class="kpi-card aspect-square w-[calc(50%_-_0.375rem)] min-w-[132px] max-w-[146px] rounded-[18px] sm:rounded-[22px] bg-[linear-gradient(135deg,#fff7df_0%,#ffe28b_100%)] px-3 py-3 sm:px-4 sm:py-4 text-[#8a5b00] shadow-card">
             <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
                 <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/60">
                     <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -270,7 +270,7 @@
             </div>
         </article>
 
-        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#ffe7e7_0%,#ffc9c9_100%)] px-4 py-4 text-[#8b1d1d] shadow-card">
+        <article class="kpi-card aspect-square w-[calc(50%_-_0.375rem)] min-w-[132px] max-w-[146px] rounded-[18px] sm:rounded-[22px] bg-[linear-gradient(135deg,#ffe7e7_0%,#ffc9c9_100%)] px-3 py-3 sm:px-4 sm:py-4 text-[#8b1d1d] shadow-card">
             <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
                 <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/60">
                     <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -286,8 +286,8 @@
     </section>
 
     <!-- ── FILTRES ── -->
-    <div class="surface-card rounded-[26px] overflow-hidden">
-        <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center gap-2">
+    <div class="surface-card rounded-[20px] sm:rounded-[26px] overflow-hidden">
+        <div class="section-title-bar px-4 py-4 sm:px-5 border-b border-white/70 flex items-center gap-2">
             <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M5 6h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
                 <path d="M8 12h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
@@ -298,10 +298,10 @@
             </svg>
             <h2 class="text-sm font-semibold text-navy">Filtres et tri des Demandes</h2>
         </div>
-        <div class="px-5 py-4">
-            <form method="get" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="px-4 py-4 sm:px-5">
+            <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 
-                <div class="col-span-2 sm:col-span-4">
+                <div class="sm:col-span-2 lg:col-span-4">
                     <div class="relative">
                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm pointer-events-none">
                             <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -354,9 +354,9 @@
                     </select>
                 </div>
 
-                <div class="col-span-2 sm:col-span-4 flex justify-end pt-1">
+                <div class="sm:col-span-2 lg:col-span-4 flex justify-stretch sm:justify-end pt-1">
                     <button type="submit"
-                        class="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,#1c203d_0%,#3996d3_100%)] px-5 py-2.5 text-sm font-medium text-white shadow-badge transition-transform duration-200 hover:-translate-y-0.5">
+                        class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#1c203d_0%,#3996d3_100%)] px-5 py-2.5 text-sm font-medium text-white shadow-badge transition-transform duration-200 hover:-translate-y-0.5">
                         <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path d="M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                             <path d="M7 12h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -371,8 +371,8 @@
 
     <div id="accueil-live-content" data-refresh-url="{{ request()->fullUrl() }}" data-refresh-interval="20000" class="space-y-4">
     <!-- ── TABLE DEMANDES ── -->
-    <div class="surface-card rounded-[26px] overflow-hidden">
-        <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center justify-between">
+    <div class="surface-card rounded-[20px] sm:rounded-[26px] overflow-hidden">
+        <div class="section-title-bar px-4 py-4 sm:px-5 border-b border-white/70 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-2">
                 <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M9 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
@@ -391,7 +391,7 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <table class="min-w-[760px] w-full">
                 <thead>
                     <tr class="table-head border-b border-white/10">
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Numéro</th>
@@ -455,11 +455,11 @@
 
                     <!-- Ligne détail (cachée par défaut) -->
                     <tr id="detail-{{ $demande->id_demande }}" class="detail-row" style="display:none;">
-                        <td colspan="6" class="px-4 py-4 bg-[linear-gradient(180deg,#f8fbfe_0%,#f4f7fb_100%)] border-b border-neutral-100">
+                        <td colspan="6" class="px-3 py-3 sm:px-4 sm:py-4 bg-[linear-gradient(180deg,#f8fbfe_0%,#f4f7fb_100%)] border-b border-neutral-100">
                             @php
                                 $pieces = $piecesByDemand->get($demande->id_demande, collect());
                             @endphp
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div class="grid max-w-[calc(100vw_-_2rem)] grid-cols-1 gap-4 sm:max-w-none lg:grid-cols-2">
 
                                 <!-- Colonne gauche : détail demande -->
                                 <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
@@ -656,14 +656,14 @@
 
         <!-- Pagination -->
         @if($nouvelles->hasPages())
-        <div class="px-5 py-4 border-t border-neutral-100 bg-white/70">
+        <div class="px-4 py-4 sm:px-5 border-t border-neutral-100 bg-white/70">
             {{ $nouvelles->links() }}
         </div>
         @endif
     </div>
 
-    <div class="surface-card rounded-[26px] overflow-hidden">
-        <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center justify-between">
+    <div class="surface-card rounded-[20px] sm:rounded-[26px] overflow-hidden">
+        <div class="section-title-bar px-4 py-4 sm:px-5 border-b border-white/70 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-2">
                 <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M5 7.5A2.5 2.5 0 0 1 7.5 5H18a2 2 0 0 1 2 2v9.5A2.5 2.5 0 0 1 17.5 19h-10A2.5 2.5 0 0 1 5 16.5v-9Z" stroke="currentColor" stroke-width="1.8"/>
@@ -679,7 +679,7 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <table class="min-w-[900px] w-full">
                 <thead>
                     <tr class="table-head border-b border-white/10">
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Numéro</th>
@@ -735,7 +735,7 @@
                     </tr>
 
                     <tr id="assigned-detail-{{ $demande->id_demande }}" class="detail-row" style="display:none;">
-                        <td colspan="7" class="px-4 py-4 bg-[linear-gradient(180deg,#fffdf7_0%,#f9fbfd_100%)] border-b border-neutral-100">
+                        <td colspan="7" class="px-3 py-3 sm:px-4 sm:py-4 bg-[linear-gradient(180deg,#fffdf7_0%,#f9fbfd_100%)] border-b border-neutral-100">
                             @php
                                 $pieces = $piecesByDemand->get($demande->id_demande, collect());
                                 $historyEntries = $historyByDemand->get($demande->id_demande, collect());
@@ -753,7 +753,7 @@
                                     'echec_envoi_reponse' => 'Echec d\'envoi',
                                 ];
                             @endphp
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div class="grid max-w-[calc(100vw_-_2rem)] grid-cols-1 gap-4 sm:max-w-none lg:grid-cols-2">
                                 <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
                                     <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2">
                                         <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -869,14 +869,14 @@
         </div>
 
         @if($affectees->hasPages())
-        <div class="px-5 py-4 border-t border-neutral-100 bg-white/70">
+        <div class="px-4 py-4 sm:px-5 border-t border-neutral-100 bg-white/70">
             {{ $affectees->links() }}
         </div>
         @endif
     </div>
 
-    <div class="surface-card rounded-[26px] overflow-hidden">
-        <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center justify-between">
+    <div class="surface-card rounded-[20px] sm:rounded-[26px] overflow-hidden">
+        <div class="section-title-bar px-4 py-4 sm:px-5 border-b border-white/70 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-2">
                 <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M3 4v5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -889,7 +889,7 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <table class="min-w-[980px] w-full">
                 <thead>
                     <tr class="table-head border-b border-white/10">
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Date</th>
@@ -1002,7 +1002,7 @@
 
 <!-- ═══════════════════ FOOTER ═══════════════════ -->
 <footer class="border-t border-neutral-200 bg-white mt-8">
-    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-neutral-400">
+    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 py-4 flex flex-col items-center justify-between gap-1 text-center text-xs text-neutral-400 sm:flex-row sm:text-left">
         <span>© {{ date('Y') }} Agence Nationale des Bourses du Gabon</span>
         <span class="text-neutral-400 font-medium">Constructeur d'avenir</span>
     </div>

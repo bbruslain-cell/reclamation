@@ -14,6 +14,31 @@ use Illuminate\View\View;
 
 class PublicDemandController extends Controller
 {
+    private const USAGER_STATUSES = [
+        'Élève',
+        'Étudiant',
+        'Parent / Tuteur',
+        'Enseignant',
+        'Professionnel',
+        'Autre',
+    ];
+
+    private const USAGER_STATUS_ALIASES = [
+        'Eleve',
+        'Etudiant',
+    ];
+
+    private const CATEGORIES_BY_TYPE = [
+        'reclamation' => [
+            "Demande de modification d'attestation d'attribution de bourse ou maintien",
+            'Réclamation du paiement des frais de scolarité',
+            'Réclamation sur les RIB non validés sur eBourse',
+            'Recours après déliberation de la CT',
+            'Réclamation diverses',
+        ],
+        'autre' => ['Autre'],
+    ];
+
     public function create(): View
     {
         $types = DB::table('parametres')
@@ -22,7 +47,11 @@ class PublicDemandController extends Controller
             ->orderBy('ordre_affichage')
             ->get(['code', 'libelle']);
 
-        return view('public.create-demand', ['types' => $types]);
+        return view('public.create-demand', [
+            'types' => $types,
+            'usagerStatuses' => self::USAGER_STATUSES,
+            'categoriesByType' => self::CATEGORIES_BY_TYPE,
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -31,7 +60,7 @@ class PublicDemandController extends Controller
             'nom' => ['required', 'string', 'max:255'],
             'prenom' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
-            'statut_usager' => ['required', 'string', 'max:100'],
+            'statut_usager' => ['required', 'string', Rule::in($this->allowedUsagerStatuses())],
             'pays' => ['required', 'string', 'max:120'],
             'etablissement' => [
                 Rule::requiredIf(fn () => in_array($this->normalizeUsagerStatus((string) $request->input('statut_usager')), ['eleve', 'etudiant'], true)),
@@ -40,11 +69,25 @@ class PublicDemandController extends Controller
                 'max:255',
             ],
             'categorie' => ['nullable', 'string', 'max:255'],
-            'objet' => ['required', 'string', 'max:255'],
-            'message' => ['required', 'string', 'min:10'],
+            'objet' => ['nullable', 'string', 'max:255'],
+            'message' => ['required', 'string', 'min:10', 'max:2000'],
             'piece_jointe' => ['nullable', 'file', 'max:3584', 'mimes:pdf,jpg,jpeg,png'],
             'consentement' => ['accepted'],
+        ], [
+            'statut_usager.in' => 'Statut usager invalide.',
+            'message.min' => 'Le message doit contenir au moins 10 caractères.',
+            'message.max' => 'Le message ne doit pas dépasser 2000 caractères.',
         ]);
+
+        $payload['objet'] = filled($payload['objet'] ?? null)
+            ? trim((string) $payload['objet'])
+            : trim((string) ($payload['categorie'] ?? ''));
+
+        if ($payload['objet'] === '') {
+            throw ValidationException::withMessages([
+                'categorie' => 'La catégorie est requise.',
+            ]);
+        }
 
         $configSlaId = DB::table('config_sla')->where('actif', true)->value('id_config_sla');
         if (!$configSlaId) {
@@ -81,7 +124,7 @@ class PublicDemandController extends Controller
                 'id_type_demande' => $typeId,
                 'id_statut' => $statusId,
                 'id_config_sla' => $configSlaId,
-                'objet' => trim($payload['objet']),
+                'objet' => $payload['objet'],
                 'categorie' => !empty($payload['categorie']) ? trim($payload['categorie']) : null,
                 'message' => trim($payload['message']),
                 'date_soumission' => $now,
@@ -146,7 +189,7 @@ class PublicDemandController extends Controller
         });
 
         return redirect('/reclamations/nouvelle')
-            ->with('success', "Votre demande est enregistree avec succes. Numero de suivi : {$tracking}");
+            ->with('success', "Votre demande est enregistrée avec succès. Numero de suivi : {$tracking}");
     }
 
     private function createUsagerSnapshot(array $payload): int
@@ -220,6 +263,14 @@ class PublicDemandController extends Controller
             ->value();
     }
 
+    /**
+     * @return list<string>
+     */
+    private function allowedUsagerStatuses(): array
+    {
+        return array_values(array_unique(array_merge(self::USAGER_STATUSES, self::USAGER_STATUS_ALIASES)));
+    }
+
     private function ensureAllowedAttachment(UploadedFile $file): void
     {
         $extension = strtolower((string) $file->getClientOriginalExtension());
@@ -230,7 +281,7 @@ class PublicDemandController extends Controller
 
         if (!in_array($extension, $allowedExtensions, true) || !in_array($mime, $allowedMimes, true)) {
             throw ValidationException::withMessages([
-                'piece_jointe' => 'Format de fichier non autorise. Utilisez PDF, JPG ou PNG.',
+                'piece_jointe' => 'Format de fichier non autorisé. Utilisez PDF, JPG ou PNG.',
             ]);
         }
     }

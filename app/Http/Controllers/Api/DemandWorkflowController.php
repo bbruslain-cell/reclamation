@@ -174,7 +174,7 @@ class DemandWorkflowController extends Controller
                 comment: $payload['commentaire'] ?? null
             );
 
-            return response()->json(['message' => 'Demande affectee', 'result' => $result]);
+            return response()->json(['message' => 'Demande affectée', 'result' => $result]);
         } catch (AuthorizationException $e) {
             return response()->json(['message' => $e->getMessage()], 403);
         } catch (ValidationException $e) {
@@ -220,7 +220,7 @@ class DemandWorkflowController extends Controller
                 ->where('r.code', 'agent')
                 ->exists();
             if (!$agentHasRole) {
-                throw new RuntimeException('L utilisateur selectionne n est pas un agent.');
+                throw new RuntimeException("L'utilisateur selectionné n'est pas un agent.");
             }
 
             $result = $this->workflow->assignAgent(
@@ -230,7 +230,7 @@ class DemandWorkflowController extends Controller
                 comment: $payload['commentaire'] ?? null
             );
 
-            return response()->json(['message' => 'Demande affectee a un agent', 'result' => $result]);
+            return response()->json(['message' => 'Demande affectée a un agent', 'result' => $result]);
         } catch (AuthorizationException $e) {
             return response()->json(['message' => $e->getMessage()], 403);
         } catch (ValidationException $e) {
@@ -261,7 +261,7 @@ class DemandWorkflowController extends Controller
                 comment: $payload['commentaire'] ?? null
             );
 
-            return response()->json(['message' => 'Affectation agent annulee', 'result' => $result]);
+            return response()->json(['message' => 'Affectation agent annulée', 'result' => $result]);
         } catch (AuthorizationException $e) {
             return response()->json(['message' => $e->getMessage()], 403);
         } catch (ValidationException $e) {
@@ -296,7 +296,7 @@ class DemandWorkflowController extends Controller
                 typeCode: $payload['type_reponse_code'] ?? null
             );
 
-            return response()->json(['message' => 'Reponse enregistree', 'result' => $result]);
+            return response()->json(['message' => 'Reponse enregistrée', 'result' => $result]);
         } catch (AuthorizationException $e) {
             return response()->json(['message' => $e->getMessage()], 403);
         } catch (ValidationException $e) {
@@ -325,7 +325,7 @@ class DemandWorkflowController extends Controller
             );
 
             return response()->json([
-                'message' => 'Reponse mise en file. La demande sera cloturee apres confirmation d envoi.',
+                'message' => "Reponse mise en file. La demande sera cloturée après confirmation d'envoi.",
                 'result' => $result,
             ]);
         } catch (AuthorizationException $e) {
@@ -351,7 +351,7 @@ class DemandWorkflowController extends Controller
         }
 
         if ((int) ($demand->id_agent_traitant ?? 0) > 0) {
-            throw new AuthorizationException('Le chef de service ne peut plus repondre directement apres affectation a un agent.');
+            throw new AuthorizationException('Le chef de service ne peut plus repondre directement après affectation à un agent.');
         }
     }
 }

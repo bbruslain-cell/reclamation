@@ -38,7 +38,7 @@ class OverviewController extends Controller
             $actor = $access->requireActor($request);
             $userId = (int) $actor->id_utilisateur;
             if (Gate::forUser($actor)->denies('dashboard.view')) {
-                throw new AuthorizationException('Acces tableau de bord refuse.');
+                throw new AuthorizationException('Accès aux tableaux de bord refusé.');
             }
 
             $roleCodes = $access->roleCodes($userId);

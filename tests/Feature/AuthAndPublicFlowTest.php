@@ -103,6 +103,50 @@ class AuthAndPublicFlowTest extends TestCase
         Storage::disk('public')->assertMissing((string) DB::table('pieces_jointes')->value('chemin_fichier'));
     }
 
+    public function test_public_form_has_security_headers_and_uses_local_vue_bundle(): void
+    {
+        $this->seed();
+
+        $response = $this->get('/reclamations/nouvelle');
+
+        $response
+            ->assertOk()
+            ->assertHeader('X-Frame-Options', 'DENY')
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+            ->assertSee('id="public-demand-state"', false)
+            ->assertDontSee('https://unpkg.com/vue', false);
+
+        $csp = (string) $response->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString("default-src 'self'", $csp);
+        $this->assertStringContainsString("frame-ancestors 'none'", $csp);
+        $this->assertStringContainsString("object-src 'none'", $csp);
+    }
+
+    public function test_public_submission_rejects_tampered_status_value(): void
+    {
+        $this->seed();
+
+        $this->from('/reclamations/nouvelle')->post('/reclamations', [
+            'nom' => 'Zap',
+            'prenom' => 'Scanner',
+            'email' => 'zap@example.com',
+            'statut_usager' => 'Élève AND 1=1 --',
+            'pays' => 'Gabon',
+            'etablissement' => '',
+            'objet' => 'Objet test',
+            'message' => 'Message de test suffisamment long.',
+            'consentement' => 'on',
+        ])
+            ->assertRedirect('/reclamations/nouvelle')
+            ->assertSessionHasErrors('statut_usager');
+
+        $this->assertDatabaseMissing('usagers', [
+            'email' => 'zap@example.com',
+        ]);
+    }
+
     public function test_public_submission_with_existing_email_creates_a_new_usager_snapshot(): void
     {
         $this->seed();
