@@ -158,15 +158,15 @@ class DirectionInboxController extends Controller
             'serviceSummary' => [
                 'services_actifs' => $servicePerformance->count(),
                 'service_plus_charge' => $serviceMostLoaded
-                    ? trim(($serviceMostLoaded['service_code'] !== '' ? $serviceMostLoaded['service_code'].' - ' : '').$serviceMostLoaded['service'])
+                    ? $this->serviceCodeLabel($serviceMostLoaded)
                     : '-',
                 'demandes_plus_charge' => (int) ($serviceMostLoaded['total_demandes'] ?? 0),
                 'service_plus_retard' => $serviceMostLate && (int) $serviceMostLate['total_en_retard'] > 0
-                    ? trim(($serviceMostLate['service_code'] !== '' ? $serviceMostLate['service_code'].' - ' : '').$serviceMostLate['service'])
+                    ? $this->serviceCodeLabel($serviceMostLate)
                     : '-',
                 'retards_max' => (int) ($serviceMostLate['total_en_retard'] ?? 0),
                 'meilleur_service' => $serviceMostCompliant
-                    ? trim(($serviceMostCompliant['service_code'] !== '' ? $serviceMostCompliant['service_code'].' - ' : '').$serviceMostCompliant['service'])
+                    ? $this->serviceCodeLabel($serviceMostCompliant)
                     : '-',
                 'meilleur_taux' => (float) ($serviceMostCompliant['taux_conformite'] ?? 0),
             ],
@@ -177,6 +177,17 @@ class DirectionInboxController extends Controller
                 ->get(['code', 'libelle']),
             'canPilotage' => Gate::forUser($actor)->allows('dashboard.view'),
         ]);
+    }
+
+    private function serviceCodeLabel(array $service): string
+    {
+        $code = trim((string) ($service['service_code'] ?? ''));
+
+        if ($code !== '') {
+            return $code;
+        }
+
+        return trim((string) ($service['service'] ?? '')) ?: '-';
     }
 
     public function rediger(Request $request, int $id): RedirectResponse
@@ -192,7 +203,7 @@ class DirectionInboxController extends Controller
 
             Gate::forUser($actor)->authorize('view', $demand);
 
-            throw new AuthorizationException('Le chef de direction dispose d un acces en consultation uniquement.');
+            throw new AuthorizationException("Le chef de direction dispose d'un acces en consultation uniquement.");
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
@@ -206,7 +217,7 @@ class DirectionInboxController extends Controller
             return;
         }
 
-        throw new AuthorizationException('Acces reserve au chef de direction.');
+        throw new AuthorizationException("Accès reserve au chef de direction.");
     }
 }
 

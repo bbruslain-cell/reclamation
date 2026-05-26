@@ -63,9 +63,9 @@
         ? trim(trim(((string) ($currentService['code'] ?? '')).' - '.((string) ($currentService['libelle'] ?? ''))), ' -')
         : null;
     $dashboardNavLabel = 'Dashboard CIQ';
-    $dashboardPageEyebrow = 'Controle interne et qualite';
-    $dashboardPageTitle = 'Dashboard graphique des reclamations';
-    $dashboardPageSubtitle = 'Vue dediee aux graphiques decisionnels : volumes recus, performance des directions, evolution et services.';
+    $dashboardPageEyebrow = 'Contrôle interne et qualité';
+    $dashboardPageTitle = 'Dashboard graphique des réclamations';
+    $dashboardPageSubtitle = 'Vue dédiée aux graphiques décisionnels : volumes reçus, performance des directions, évolution et services.';
 
     if (in_array('chef_direction', $roleCodes, true)) {
         $dashboardNavLabel = 'Dashboard direction';
@@ -74,8 +74,8 @@
             ? 'Dashboard graphique - '.$currentDirectionLabel
             : 'Dashboard graphique de direction';
         $dashboardPageSubtitle = $currentDirectionLabel
-            ? 'Vue graphique dediee a la direction '.$currentDirectionLabel.', limitee aux services de votre perimetre.'
-            : 'Vue graphique dediee a votre direction, limitee aux services de votre perimetre.';
+            ? 'Vue graphique dédiée à la '.$currentDirectionLabel.', limitée aux services de votre périmètre.'
+            : 'Vue graphique dédiée à votre direction, limitée aux services de votre périmètre.';
     } elseif (in_array('chef_service', $roleCodes, true)) {
         $dashboardNavLabel = 'Dashboard service';
         $dashboardPageEyebrow = 'Pilotage de service';
@@ -83,17 +83,17 @@
             ? 'Dashboard graphique - '.$currentServiceLabel
             : 'Dashboard graphique de service';
         $dashboardPageSubtitle = $currentServiceLabel
-            ? 'Vue graphique dediee au service '.$currentServiceLabel.', limitee a votre perimetre.'
-            : 'Vue graphique dediee a votre service, limitee a votre perimetre.';
+            ? 'Vue graphique dédiée au '.$currentServiceLabel.', limitée à votre périmètre.'
+            : 'Vue graphique dédiée à votre service, limitée à votre périmètre.';
     } elseif (in_array('dg', $roleCodes, true)) {
-        $dashboardNavLabel = 'Dashboard direction generale';
-        $dashboardPageEyebrow = 'Direction generale';
+        $dashboardNavLabel = 'Dashboard direction générale';
+        $dashboardPageEyebrow = 'Direction générale';
         $dashboardPageTitle = 'Dashboard graphique global';
-        $dashboardPageSubtitle = 'Vue graphique de synthese pour la direction generale.';
+        $dashboardPageSubtitle = 'Vue graphique de synthèse pour la direction générale.';
     } elseif (in_array('lecture_seule', $roleCodes, true)) {
         $dashboardNavLabel = 'Dashboard lecture seule';
         $dashboardPageEyebrow = 'Lecture seule';
-        $dashboardPageSubtitle = 'Vue graphique consultative, sans action sur les donnees.';
+        $dashboardPageSubtitle = 'Vue graphique consultative, sans action sur les données.';
     }
 
     $totalReclamations = (int) ($typeTotals['reclamation']['total'] ?? 0);
@@ -163,6 +163,31 @@
         ->sortByDesc('taux')
         ->values();
     $serviceSlaAverage = $serviceSlaRows->isNotEmpty() ? round((float) $serviceSlaRows->avg('taux'), 1) : 0.0;
+
+    $rankingPalette = ['#3996d3', '#8fc043', '#f59e0b', '#a78bfa', '#fb7185', '#2dd4bf', '#818cf8', '#f472b6', '#34d399', '#38bdf8', '#fbbf24', '#60a5fa'];
+    $countryDemandRows = collect($overviewData['demandes_par_pays'] ?? [])
+        ->map(function ($row, int $index) use ($rankingPalette) {
+            return [
+                'label' => trim((string) data_get($row, 'pays', '-')) ?: '-',
+                'total_demandes' => (int) data_get($row, 'total_demandes', 0),
+                'color' => $rankingPalette[$index % count($rankingPalette)],
+            ];
+        })
+        ->filter(fn (array $row) => $row['label'] !== '-' && $row['total_demandes'] > 0)
+        ->values();
+    $countryDemandTotal = (int) $countryDemandRows->sum('total_demandes');
+
+    $establishmentDemandRows = collect($overviewData['demandes_par_etablissement'] ?? [])
+        ->map(function ($row, int $index) use ($rankingPalette) {
+            return [
+                'label' => trim((string) data_get($row, 'etablissement', '-')) ?: '-',
+                'total_demandes' => (int) data_get($row, 'total_demandes', 0),
+                'color' => $rankingPalette[$index % count($rankingPalette)],
+            ];
+        })
+        ->filter(fn (array $row) => $row['label'] !== '-' && $row['total_demandes'] > 0)
+        ->values();
+    $establishmentDemandTotal = (int) $establishmentDemandRows->sum('total_demandes');
 
     $evolutionTemporelle = $overviewData['evolution_temporelle'] ?? [];
     $reclamationEvolutionLabels = collect(data_get($evolutionTemporelle, 'labels', []))->values();
@@ -282,7 +307,11 @@
         }
     </style>
 </head>
-<body class="font-sans text-navy min-h-screen">
+<body
+    class="font-sans text-navy min-h-screen"
+    data-dashboard-data-url="{{ url('/pilotage/data') }}"
+    data-dashboard-refresh-interval="20000"
+>
     <header class="bg-navy sticky top-0 z-50 shadow-md">
         <div class="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
@@ -337,19 +366,19 @@
                 <div class="hero-kpi-grid grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <div class="hero-kpi-card rounded-2xl border border-white/15 bg-white/10 p-3 text-white backdrop-blur">
                         <p class="hero-kpi-label text-white/65">Réclamations</p>
-                        <p class="hero-kpi-value mt-2 text-[1.95rem] font-bold">{{ number_format($totalReclamations, 0, ',', ' ') }}</p>
+                        <p class="hero-kpi-value mt-2 text-[1.95rem] font-bold" data-dashboard-value="total-reclamations">{{ number_format($totalReclamations, 0, ',', ' ') }}</p>
                     </div>
                     <div class="hero-kpi-card rounded-2xl border border-white/15 bg-white/10 p-3 text-white backdrop-blur">
                         <p class="hero-kpi-label text-white/65">Clôturées</p>
-                        <p class="hero-kpi-value mt-2 text-[1.95rem] font-bold">{{ number_format((int) ($kpis['total_traitees'] ?? 0), 0, ',', ' ') }}</p>
+                        <p class="hero-kpi-value mt-2 text-[1.95rem] font-bold" data-dashboard-value="total-traitees">{{ number_format((int) ($kpis['total_traitees'] ?? 0), 0, ',', ' ') }}</p>
                     </div>
                     <div class="hero-kpi-card rounded-2xl border border-white/15 bg-white/10 p-3 text-white backdrop-blur">
                         <p class="hero-kpi-label text-white/65">En retard</p>
-                        <p class="hero-kpi-value mt-2 text-[1.95rem] font-bold">{{ number_format((int) ($kpis['global_en_retard'] ?? 0), 0, ',', ' ') }}</p>
+                        <p class="hero-kpi-value mt-2 text-[1.95rem] font-bold" data-dashboard-value="global-en-retard">{{ number_format((int) ($kpis['global_en_retard'] ?? 0), 0, ',', ' ') }}</p>
                     </div>
                     <div class="hero-kpi-card rounded-2xl border border-white/15 bg-white/10 p-3 text-white backdrop-blur">
                         <p class="hero-kpi-label text-white/65">Dans délais</p>
-                        <p class="hero-kpi-value mt-2 text-[1.95rem] font-bold">{{ $formatPercent($kpis['taux_traitement_dans_delais'] ?? 0) }}</p>
+                        <p class="hero-kpi-value mt-2 text-[1.95rem] font-bold" data-dashboard-value="taux-traitement-delai">{{ $formatPercent($kpis['taux_traitement_dans_delais'] ?? 0) }}</p>
                     </div>
                 </div>
             </div>
@@ -416,14 +445,14 @@
                         </a>
                     @endif
                 </div>
-                <div class="relative mx-auto mt-5 donut-wrap">
+                <div id="direction-demand-donut-wrap" class="relative mx-auto mt-5 donut-wrap">
                     @if($directionDonutTotal > 0)
                         <canvas id="direction-demand-donut-chart"></canvas>
                     @else
                         <div class="flex h-full items-center justify-center rounded-full border border-dashed border-neutral-200 bg-neutral-50 text-center text-sm text-neutral-400">Aucune donnée à afficher.</div>
                     @endif
                 </div>
-                <div class="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+                <div id="direction-demand-donut-legend" class="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
                     @forelse($directionDonutRows as $row)
                         <div class="inline-flex max-w-full items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 shadow-soft">
                             <span class="legend-dot flex-shrink-0" style="background-color: {{ $row['color'] }}"></span>
@@ -450,11 +479,11 @@
                         @endif
                         <div class="w-fit rounded-2xl bg-white/90 px-4 py-2 text-right shadow-soft">
                             <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">Moyenne</p>
-                            <p class="mt-1 text-xl font-bold text-navy">{{ number_format($directionSlaAverage, 1, ',', ' ') }} %</p>
+                            <p class="mt-1 text-xl font-bold text-navy" data-dashboard-value="direction-sla-average">{{ number_format($directionSlaAverage, 1, ',', ' ') }} %</p>
                         </div>
                     </div>
                 </div>
-                <div class="chart-wrap mt-5">
+                <div id="direction-sla-bar-wrap" class="chart-wrap mt-5">
                     @if($directionSlaRows->isNotEmpty())
                         <canvas id="direction-sla-bar-chart"></canvas>
                     @else
@@ -479,16 +508,16 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div class="rounded-2xl bg-white/90 px-4 py-2 text-center shadow-soft">
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-400">Reçues</p>
-                                <p class="mt-1 text-xl font-bold text-sky">{{ number_format($reclamationEvolutionTotal, 0, ',', ' ') }}</p>
+                                <p class="mt-1 text-xl font-bold text-sky" data-dashboard-value="reclamation-evolution-total">{{ number_format($reclamationEvolutionTotal, 0, ',', ' ') }}</p>
                             </div>
                             <div class="rounded-2xl bg-white/90 px-4 py-2 text-center shadow-soft">
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-400">Clôturées</p>
-                                <p class="mt-1 text-xl font-bold text-leaf">{{ number_format($reclamationEvolutionClosedTotal, 0, ',', ' ') }}</p>
+                                <p class="mt-1 text-xl font-bold text-leaf" data-dashboard-value="reclamation-evolution-closed-total">{{ number_format($reclamationEvolutionClosedTotal, 0, ',', ' ') }}</p>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="chart-wrap chart-wrap-line mt-5">
+                <div id="reclamation-evolution-line-wrap" class="chart-wrap chart-wrap-line mt-5">
                     @if($reclamationEvolutionLabels->isNotEmpty())
                         <canvas id="reclamation-evolution-line-chart"></canvas>
                     @else
@@ -522,15 +551,71 @@
                         @endif
                         <div class="w-fit rounded-2xl bg-white/90 px-4 py-2 text-right shadow-soft">
                             <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">Moyenne</p>
-                            <p class="mt-1 text-xl font-bold text-navy">{{ number_format($serviceSlaAverage, 1, ',', ' ') }} %</p>
+                            <p class="mt-1 text-xl font-bold text-navy" data-dashboard-value="service-sla-average">{{ number_format($serviceSlaAverage, 1, ',', ' ') }} %</p>
                         </div>
                     </div>
                 </div>
-                <div class="chart-wrap mt-5">
+                <div id="service-sla-bar-wrap" class="chart-wrap mt-5">
                     @if($serviceSlaRows->isNotEmpty())
                         <canvas id="service-sla-bar-chart"></canvas>
                     @else
                         <div class="flex h-full items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 text-center text-sm text-neutral-400">Aucun service clôturé sur la période.</div>
+                    @endif
+                </div>
+            </article>
+
+            <article class="chart-card rounded-3xl p-5">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">Origine usagers</p>
+                        <h2 class="mt-2 text-base font-semibold text-navy">Pays les plus demandeurs</h2>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+                        @if ($canExportPilotage)
+                            <a href="{{ url('/pilotage/export/country-demand-ranking/pdf') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="export-pdf inline-flex w-fit items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors">
+                                <svg class="icon-svg h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+                                <span>PDF</span>
+                            </a>
+                        @endif
+                        <div class="w-fit rounded-2xl bg-white/90 px-4 py-2 text-right shadow-soft">
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">Demandes</p>
+                            <p class="mt-1 text-xl font-bold text-navy" data-dashboard-value="country-demand-total">{{ number_format($countryDemandTotal, 0, ',', ' ') }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="country-demand-bar-wrap" class="chart-wrap mt-5">
+                    @if($countryDemandRows->isNotEmpty())
+                        <canvas id="country-demand-bar-chart"></canvas>
+                    @else
+                        <div class="flex h-full items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 text-center text-sm text-neutral-400">Aucun pays renseigné sur la période.</div>
+                    @endif
+                </div>
+            </article>
+
+            <article class="chart-card rounded-3xl p-5">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">Origine usagers</p>
+                        <h2 class="mt-2 text-base font-semibold text-navy">Établissements les plus demandeurs</h2>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+                        @if ($canExportPilotage)
+                            <a href="{{ url('/pilotage/export/establishment-demand-ranking/pdf') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="export-pdf inline-flex w-fit items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors">
+                                <svg class="icon-svg h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+                                <span>PDF</span>
+                            </a>
+                        @endif
+                        <div class="w-fit rounded-2xl bg-white/90 px-4 py-2 text-right shadow-soft">
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">Demandes</p>
+                            <p class="mt-1 text-xl font-bold text-navy" data-dashboard-value="establishment-demand-total">{{ number_format($establishmentDemandTotal, 0, ',', ' ') }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="establishment-demand-bar-wrap" class="chart-wrap mt-5">
+                    @if($establishmentDemandRows->isNotEmpty())
+                        <canvas id="establishment-demand-bar-chart"></canvas>
+                    @else
+                        <div class="flex h-full items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 text-center text-sm text-neutral-400">Aucun établissement renseigné sur la période.</div>
                     @endif
                 </div>
             </article>
@@ -542,6 +627,8 @@
             const directionDemandRows = @json($directionDonutRows->values()->all());
             const directionSlaRows = @json($directionSlaRows->values()->all());
             const serviceSlaRows = @json($serviceSlaRows->values()->all());
+            const countryDemandRows = @json($countryDemandRows->values()->all());
+            const establishmentDemandRows = @json($establishmentDemandRows->values()->all());
             const reclamationEvolutionData = @json($reclamationEvolutionData);
             const periodSelect = document.getElementById('periode');
             const dateFrom = document.getElementById('date_from');
@@ -695,6 +782,75 @@
                 });
             }
 
+            function initDemandRankingBarChart(canvasId, rows) {
+                const canvas = document.getElementById(canvasId);
+
+                if (!canvas || !rows.length || typeof Chart === 'undefined') {
+                    return;
+                }
+
+                new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: rows.map((row) => row.label),
+                        datasets: [{
+                            label: 'Demandes',
+                            data: rows.map((row) => Number(row.total_demandes || 0)),
+                            backgroundColor: rows.map((row) => row.color),
+                            borderColor: rows.map((row) => row.color),
+                            borderWidth: 1,
+                            borderRadius: 12,
+                            borderSkipped: false,
+                            barThickness: 22,
+                        }],
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 900, easing: 'easeOutQuart' },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(28, 32, 61, 0.07)' },
+                                ticks: {
+                                    precision: 0,
+                                    color: '#667085',
+                                },
+                            },
+                            y: {
+                                grid: { display: false },
+                                ticks: {
+                                    color: '#1c203d',
+                                    font: { weight: 600 },
+                                    callback(value) { return truncateChartLabel(this.getLabelForValue(value), 24); },
+                                },
+                            },
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#1c203d',
+                                titleColor: '#ffffff',
+                                bodyColor: '#eaf4fb',
+                                padding: 12,
+                                cornerRadius: 12,
+                                callbacks: {
+                                    title(items) {
+                                        return rows[items[0]?.dataIndex ?? -1]?.label || items[0]?.label || '';
+                                    },
+                                    label(context) {
+                                        const value = new Intl.NumberFormat('fr-FR').format(Number(context.parsed.x || 0));
+
+                                        return ` ${value} demande(s)`;
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+            }
+
             function initReclamationEvolutionLineChart() {
                 const canvas = document.getElementById('reclamation-evolution-line-chart');
                 const labels = Array.isArray(reclamationEvolutionData.labels) ? reclamationEvolutionData.labels : [];
@@ -796,7 +952,607 @@
             initDirectionDemandDonutChart();
             initHorizontalBarChart('direction-sla-bar-chart', directionSlaRows, (row) => row.direction);
             initHorizontalBarChart('service-sla-bar-chart', serviceSlaRows, (row) => row.service);
+            initDemandRankingBarChart('country-demand-bar-chart', countryDemandRows);
+            initDemandRankingBarChart('establishment-demand-bar-chart', establishmentDemandRows);
             initReclamationEvolutionLineChart();
+
+            const dashboardDataUrl = document.body?.dataset.dashboardDataUrl || '/pilotage/data';
+            const dashboardRefreshInterval = Math.max(Number(document.body?.dataset.dashboardRefreshInterval || 20000), 10000);
+            const dashboardNumberFormatter = new Intl.NumberFormat('fr-FR');
+            const dashboardPercentFormatter = new Intl.NumberFormat('fr-FR', {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+            });
+            const directionDemandPalette = @json($directionDonutPalette);
+            const demandRankingPalette = @json($rankingPalette);
+            const chartEmptyClasses = 'flex h-full items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 text-center text-sm text-neutral-400';
+            const donutEmptyClasses = 'flex h-full items-center justify-center rounded-full border border-dashed border-neutral-200 bg-neutral-50 text-center text-sm text-neutral-400';
+            let dashboardRefreshing = false;
+
+            function dashboardNumber(value) {
+                return Number.isFinite(Number(value)) ? Number(value) : 0;
+            }
+
+            function dashboardRound(value, decimals = 1) {
+                const factor = Math.pow(10, decimals);
+                return Math.round(dashboardNumber(value) * factor) / factor;
+            }
+
+            function dashboardAverage(rows, key) {
+                if (!rows.length) {
+                    return 0;
+                }
+
+                return rows.reduce((sum, row) => sum + dashboardNumber(row[key]), 0) / rows.length;
+            }
+
+            function normalizeDashboardText(value, fallback = '-') {
+                const text = `${value ?? ''}`.trim();
+
+                return text !== '' ? text : fallback;
+            }
+
+            function escapeDashboardHtml(value) {
+                const node = document.createElement('span');
+                node.textContent = `${value ?? ''}`;
+
+                return node.innerHTML;
+            }
+
+            function setDashboardValue(key, value) {
+                document.querySelectorAll(`[data-dashboard-value="${key}"]`).forEach((node) => {
+                    node.textContent = value;
+                });
+            }
+
+            function destroyDashboardChart(canvas) {
+                if (!canvas || typeof Chart === 'undefined') {
+                    return;
+                }
+
+                Chart.getChart(canvas)?.destroy();
+            }
+
+            function ensureDashboardCanvas(wrapperId, canvasId, hasData, emptyMessage, emptyClasses) {
+                const wrapper = document.getElementById(wrapperId);
+
+                if (!wrapper) {
+                    return null;
+                }
+
+                const currentCanvas = document.getElementById(canvasId);
+
+                if (!hasData) {
+                    destroyDashboardChart(currentCanvas);
+                    wrapper.innerHTML = `<div class="${emptyClasses}">${escapeDashboardHtml(emptyMessage)}</div>`;
+
+                    return null;
+                }
+
+                if (!currentCanvas) {
+                    wrapper.innerHTML = `<canvas id="${canvasId}"></canvas>`;
+                }
+
+                return document.getElementById(canvasId);
+            }
+
+            function normalizeDirectionDemandRows(data) {
+                const rows = Array.isArray(data?.par_direction) ? data.par_direction : [];
+                const mappedRows = rows
+                    .map((row) => {
+                        const direction = normalizeDashboardText(row.direction_code ?? row.direction, '-');
+
+                        return {
+                            direction,
+                            direction_libelle: normalizeDashboardText(row.direction, '-'),
+                            total: Math.max(0, Math.round(dashboardNumber(row.total))),
+                        };
+                    })
+                    .filter((row) => {
+                        const label = row.direction.toLocaleLowerCase('fr-FR');
+
+                        return row.total > 0
+                            && row.direction !== '-'
+                            && !label.includes('non affect');
+                    });
+                const total = mappedRows.reduce((sum, row) => sum + row.total, 0);
+
+                return mappedRows.map((row, index) => ({
+                    ...row,
+                    color: directionDemandPalette[index % directionDemandPalette.length],
+                    percent: total > 0 ? dashboardRound((row.total / total) * 100, 1) : 0,
+                }));
+            }
+
+            function normalizeSlaRows(rows, type) {
+                return (Array.isArray(rows) ? rows : [])
+                    .map((row) => {
+                        const taux = dashboardRound(row.taux_reponse_dans_delais, 1);
+                        const codeKey = type === 'direction' ? 'direction_code' : 'service_code';
+                        const labelKey = type === 'direction' ? 'direction' : 'service';
+                        const code = normalizeDashboardText(row[codeKey] ?? row[labelKey], '-');
+                        const label = normalizeDashboardText(row[labelKey], '-');
+                        const normalizedRow = {
+                            total_cloturees: Math.max(0, Math.round(dashboardNumber(row.total_cloturees))),
+                            total_cloturees_delai: Math.max(0, Math.round(dashboardNumber(row.total_cloturees_delai))),
+                            taux,
+                            color: taux >= 80 ? '#34d399' : (taux >= 60 ? '#fbbf24' : '#fb7185'),
+                        };
+
+                        if (type === 'direction') {
+                            return {
+                                ...normalizedRow,
+                                direction: code,
+                                direction_libelle: label,
+                            };
+                        }
+
+                        return {
+                            ...normalizedRow,
+                            service: code,
+                            service_libelle: label,
+                            direction: normalizeDashboardText(row.direction, '-'),
+                        };
+                    })
+                    .filter((row) => row[type] !== '-' && row.total_cloturees > 0)
+                    .sort((a, b) => b.taux - a.taux);
+            }
+
+            function normalizeDemandRankingRows(rows, labelKey) {
+                return (Array.isArray(rows) ? rows : [])
+                    .map((row, index) => ({
+                        label: normalizeDashboardText(row[labelKey], '-'),
+                        total_demandes: Math.max(0, Math.round(dashboardNumber(row.total_demandes))),
+                        color: demandRankingPalette[index % demandRankingPalette.length],
+                    }))
+                    .filter((row) => row.label !== '-' && row.total_demandes > 0);
+            }
+
+            function normalizeReclamationEvolution(data) {
+                const evolution = data?.evolution_temporelle || {};
+                const series = evolution.series || {};
+
+                return {
+                    labels: Array.isArray(evolution.labels) ? evolution.labels : [],
+                    recues: Array.isArray(series.reclamations_recues)
+                        ? series.reclamations_recues.map((value) => Math.max(0, Math.round(dashboardNumber(value))))
+                        : [],
+                    cloturees: Array.isArray(series.demandes_cloturees)
+                        ? series.demandes_cloturees.map((value) => Math.max(0, Math.round(dashboardNumber(value))))
+                        : [],
+                };
+            }
+
+            function renderDirectionLegend(rows) {
+                const legend = document.getElementById('direction-demand-donut-legend');
+
+                if (!legend) {
+                    return;
+                }
+
+                if (!rows.length) {
+                    legend.innerHTML = '<span class="text-xs text-neutral-400">Aucune direction disponible</span>';
+
+                    return;
+                }
+
+                legend.innerHTML = rows.map((row) => `
+                    <div class="inline-flex max-w-full items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 shadow-soft">
+                        <span class="legend-dot flex-shrink-0" style="background-color: ${escapeDashboardHtml(row.color)}"></span>
+                        <span class="max-w-[10rem] truncate">${escapeDashboardHtml(row.direction)}</span>
+                    </div>
+                `).join('');
+            }
+
+            function renderDirectionDemandChart(rows) {
+                renderDirectionLegend(rows);
+
+                const canvas = ensureDashboardCanvas(
+                    'direction-demand-donut-wrap',
+                    'direction-demand-donut-chart',
+                    rows.length > 0,
+                    'Aucune donnée à afficher.',
+                    donutEmptyClasses
+                );
+
+                if (!canvas || typeof Chart === 'undefined') {
+                    return;
+                }
+
+                destroyDashboardChart(canvas);
+
+                const total = rows.reduce((sum, row) => sum + dashboardNumber(row.total), 0);
+
+                new Chart(canvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: rows.map((row) => row.direction),
+                        datasets: [{
+                            data: rows.map((row) => dashboardNumber(row.total)),
+                            backgroundColor: rows.map((row) => row.color),
+                            borderColor: '#ffffff',
+                            borderWidth: 5,
+                            borderRadius: 8,
+                            spacing: 4,
+                            hoverOffset: 10,
+                        }],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '68%',
+                        animation: { animateRotate: true, animateScale: true, duration: 650, easing: 'easeOutQuart' },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                displayColors: true,
+                                backgroundColor: '#1c203d',
+                                titleColor: '#ffffff',
+                                bodyColor: '#eaf4fb',
+                                padding: 12,
+                                cornerRadius: 12,
+                                callbacks: {
+                                    label(context) {
+                                        const value = dashboardNumber(context.parsed);
+                                        const percent = total > 0 ? dashboardPercentFormatter.format((value / total) * 100) : '0,0';
+
+                                        return ` ${dashboardNumberFormatter.format(value)} demande(s) - ${percent} %`;
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+            }
+
+            function renderHorizontalDashboardChart(canvasId, wrapperId, rows, labelResolver, titleResolver, emptyMessage) {
+                const canvas = ensureDashboardCanvas(wrapperId, canvasId, rows.length > 0, emptyMessage, chartEmptyClasses);
+
+                if (!canvas || typeof Chart === 'undefined') {
+                    return;
+                }
+
+                destroyDashboardChart(canvas);
+
+                new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: rows.map(labelResolver),
+                        datasets: [{
+                            label: 'Taux dans les délais',
+                            data: rows.map((row) => dashboardNumber(row.taux)),
+                            backgroundColor: rows.map((row) => row.color),
+                            borderColor: rows.map((row) => row.color),
+                            borderWidth: 1,
+                            borderRadius: 12,
+                            borderSkipped: false,
+                            barThickness: 22,
+                        }],
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 650, easing: 'easeOutQuart' },
+                        scales: {
+                            x: {
+                                min: 0,
+                                max: 100,
+                                grid: { color: 'rgba(28, 32, 61, 0.07)' },
+                                ticks: {
+                                    color: '#667085',
+                                    callback(value) { return `${value} %`; },
+                                },
+                            },
+                            y: {
+                                grid: { display: false },
+                                ticks: {
+                                    color: '#1c203d',
+                                    font: { weight: 600 },
+                                    callback(value) { return truncateChartLabel(this.getLabelForValue(value), 24); },
+                                },
+                            },
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#1c203d',
+                                titleColor: '#ffffff',
+                                bodyColor: '#eaf4fb',
+                                padding: 12,
+                                cornerRadius: 12,
+                                callbacks: {
+                                    title(items) {
+                                        const row = rows[items[0]?.dataIndex ?? -1] ?? {};
+
+                                        return titleResolver(row, items[0]?.label || '');
+                                    },
+                                    label(context) {
+                                        const row = rows[context.dataIndex] ?? {};
+                                        const taux = dashboardPercentFormatter.format(dashboardNumber(row.taux));
+                                        const cloturees = dashboardNumberFormatter.format(dashboardNumber(row.total_cloturees));
+                                        const delai = dashboardNumberFormatter.format(dashboardNumber(row.total_cloturees_delai));
+
+                                        return ` ${taux} % dans les délais (${delai}/${cloturees})`;
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+            }
+
+            function renderDemandRankingChart(canvasId, wrapperId, rows, emptyMessage) {
+                const canvas = ensureDashboardCanvas(wrapperId, canvasId, rows.length > 0, emptyMessage, chartEmptyClasses);
+
+                if (!canvas || typeof Chart === 'undefined') {
+                    return;
+                }
+
+                destroyDashboardChart(canvas);
+
+                new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: rows.map((row) => row.label),
+                        datasets: [{
+                            label: 'Demandes',
+                            data: rows.map((row) => dashboardNumber(row.total_demandes)),
+                            backgroundColor: rows.map((row) => row.color),
+                            borderColor: rows.map((row) => row.color),
+                            borderWidth: 1,
+                            borderRadius: 12,
+                            borderSkipped: false,
+                            barThickness: 22,
+                        }],
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 650, easing: 'easeOutQuart' },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(28, 32, 61, 0.07)' },
+                                ticks: {
+                                    precision: 0,
+                                    color: '#667085',
+                                },
+                            },
+                            y: {
+                                grid: { display: false },
+                                ticks: {
+                                    color: '#1c203d',
+                                    font: { weight: 600 },
+                                    callback(value) { return truncateChartLabel(this.getLabelForValue(value), 24); },
+                                },
+                            },
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#1c203d',
+                                titleColor: '#ffffff',
+                                bodyColor: '#eaf4fb',
+                                padding: 12,
+                                cornerRadius: 12,
+                                callbacks: {
+                                    title(items) {
+                                        return rows[items[0]?.dataIndex ?? -1]?.label || items[0]?.label || '';
+                                    },
+                                    label(context) {
+                                        const value = dashboardNumberFormatter.format(dashboardNumber(context.parsed.x));
+
+                                        return ` ${value} demande(s)`;
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+            }
+
+            function renderReclamationEvolutionChart(data) {
+                const canvas = ensureDashboardCanvas(
+                    'reclamation-evolution-line-wrap',
+                    'reclamation-evolution-line-chart',
+                    data.labels.length > 0,
+                    'Aucune évolution disponible sur la période.',
+                    chartEmptyClasses
+                );
+
+                if (!canvas || typeof Chart === 'undefined') {
+                    return;
+                }
+
+                destroyDashboardChart(canvas);
+
+                const context = canvas.getContext('2d');
+                const skyGradient = context.createLinearGradient(0, 0, 0, 300);
+                skyGradient.addColorStop(0, 'rgba(57, 150, 211, 0.24)');
+                skyGradient.addColorStop(1, 'rgba(57, 150, 211, 0.02)');
+
+                new Chart(canvas, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            {
+                                label: 'Réclamations reçues',
+                                data: data.recues.map((value) => dashboardNumber(value)),
+                                borderColor: '#3996d3',
+                                backgroundColor: skyGradient,
+                                fill: true,
+                                tension: 0.42,
+                                borderWidth: 3,
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                pointBackgroundColor: '#ffffff',
+                                pointBorderColor: '#3996d3',
+                                pointBorderWidth: 2,
+                            },
+                            {
+                                label: 'Réclamations clôturées',
+                                data: data.cloturees.map((value) => dashboardNumber(value)),
+                                borderColor: '#8fc043',
+                                backgroundColor: 'rgba(143, 192, 67, 0.12)',
+                                fill: false,
+                                tension: 0.42,
+                                borderWidth: 3,
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                pointBackgroundColor: '#ffffff',
+                                pointBorderColor: '#8fc043',
+                                pointBorderWidth: 2,
+                            },
+                        ],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 650, easing: 'easeOutQuart' },
+                        interaction: { mode: 'index', intersect: false },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#667085', maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
+                            },
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(28, 32, 61, 0.07)' },
+                                ticks: { precision: 0, color: '#667085' },
+                            },
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#1c203d',
+                                titleColor: '#ffffff',
+                                bodyColor: '#eaf4fb',
+                                padding: 12,
+                                cornerRadius: 12,
+                                callbacks: {
+                                    label(context) {
+                                        const value = dashboardNumberFormatter.format(dashboardNumber(context.parsed.y));
+
+                                        return ` ${context.dataset.label}: ${value}`;
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+            }
+
+            function updateDashboard(data) {
+                const kpis = data?.kpis || {};
+                const typeRows = Array.isArray(data?.par_type) ? data.par_type : [];
+                const totalReclamations = dashboardNumber(typeRows.find((row) => row.code === 'reclamation')?.total);
+                const directionDemand = normalizeDirectionDemandRows(data);
+                const directionSla = normalizeSlaRows(data?.performance_directions, 'direction');
+                const serviceSla = normalizeSlaRows(data?.kpi_services, 'service');
+                const countryDemand = normalizeDemandRankingRows(data?.demandes_par_pays, 'pays');
+                const establishmentDemand = normalizeDemandRankingRows(data?.demandes_par_etablissement, 'etablissement');
+                const evolution = normalizeReclamationEvolution(data);
+
+                setDashboardValue('total-reclamations', dashboardNumberFormatter.format(totalReclamations));
+                setDashboardValue('total-traitees', dashboardNumberFormatter.format(dashboardNumber(kpis.total_traitees)));
+                setDashboardValue('global-en-retard', dashboardNumberFormatter.format(dashboardNumber(kpis.global_en_retard)));
+                setDashboardValue('taux-traitement-delai', `${dashboardPercentFormatter.format(dashboardNumber(kpis.taux_traitement_dans_delais))} %`);
+                setDashboardValue('direction-sla-average', `${dashboardPercentFormatter.format(dashboardAverage(directionSla, 'taux'))} %`);
+                setDashboardValue('service-sla-average', `${dashboardPercentFormatter.format(dashboardAverage(serviceSla, 'taux'))} %`);
+                setDashboardValue('reclamation-evolution-total', dashboardNumberFormatter.format(evolution.recues.reduce((sum, value) => sum + dashboardNumber(value), 0)));
+                setDashboardValue('reclamation-evolution-closed-total', dashboardNumberFormatter.format(evolution.cloturees.reduce((sum, value) => sum + dashboardNumber(value), 0)));
+                setDashboardValue('country-demand-total', dashboardNumberFormatter.format(countryDemand.reduce((sum, row) => sum + dashboardNumber(row.total_demandes), 0)));
+                setDashboardValue('establishment-demand-total', dashboardNumberFormatter.format(establishmentDemand.reduce((sum, row) => sum + dashboardNumber(row.total_demandes), 0)));
+
+                renderDirectionDemandChart(directionDemand);
+                renderHorizontalDashboardChart(
+                    'direction-sla-bar-chart',
+                    'direction-sla-bar-wrap',
+                    directionSla,
+                    (row) => row.direction,
+                    (row, fallback) => row.direction_libelle || fallback,
+                    'Aucune direction clôturée sur la période.'
+                );
+                renderReclamationEvolutionChart(evolution);
+                renderHorizontalDashboardChart(
+                    'service-sla-bar-chart',
+                    'service-sla-bar-wrap',
+                    serviceSla,
+                    (row) => row.service,
+                    (row, fallback) => row.service_libelle || fallback,
+                    'Aucun service clôturé sur la période.'
+                );
+                renderDemandRankingChart(
+                    'country-demand-bar-chart',
+                    'country-demand-bar-wrap',
+                    countryDemand,
+                    'Aucun pays renseigné sur la période.'
+                );
+                renderDemandRankingChart(
+                    'establishment-demand-bar-chart',
+                    'establishment-demand-bar-wrap',
+                    establishmentDemand,
+                    'Aucun établissement renseigné sur la période.'
+                );
+            }
+
+            function dashboardRefreshUrl() {
+                const url = new URL(dashboardDataUrl, window.location.origin);
+                const currentUrl = new URL(window.location.href);
+
+                currentUrl.searchParams.forEach((value, key) => {
+                    if (!key.startsWith('_')) {
+                        url.searchParams.set(key, value);
+                    }
+                });
+                url.searchParams.set('_dashboard_refresh', Date.now().toString());
+
+                return url.toString();
+            }
+
+            async function refreshDashboard() {
+                if (dashboardRefreshing || document.hidden) {
+                    return;
+                }
+
+                dashboardRefreshing = true;
+
+                try {
+                    const response = await fetch(dashboardRefreshUrl(), {
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        credentials: 'same-origin',
+                    });
+
+                    if (response.status === 401) {
+                        window.location.href = '/login';
+                        return;
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`Refresh dashboard failed: ${response.status}`);
+                    }
+
+                    updateDashboard(await response.json());
+                } catch (error) {
+                    console.warn(error);
+                } finally {
+                    dashboardRefreshing = false;
+                }
+            }
+
+            window.setInterval(refreshDashboard, dashboardRefreshInterval);
+            window.addEventListener('focus', refreshDashboard);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    refreshDashboard();
+                }
+            });
         })();
     </script>
 </body>

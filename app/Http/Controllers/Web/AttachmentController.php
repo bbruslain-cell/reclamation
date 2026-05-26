@@ -66,15 +66,19 @@ class AttachmentController extends Controller
         /** @var FilesystemAdapter $storage */
         $storage = Storage::disk($disk);
 
-        return $storage->download(
-            (string) $piece->chemin_fichier,
-            (string) $piece->nom_fichier,
-            [
-                'Content-Type' => $this->safeMimeType((string) $piece->nom_fichier, (string) ($piece->type_mime ?? '')),
-                'X-Content-Type-Options' => 'nosniff',
-                'Content-Security-Policy' => "default-src 'none'; sandbox",
-            ]
-        );
+        $path = (string) $piece->chemin_fichier;
+        $filename = (string) $piece->nom_fichier;
+        $headers = [
+            'Content-Type' => $this->safeMimeType($filename, (string) ($piece->type_mime ?? '')),
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Security-Policy' => "default-src 'none'; sandbox",
+        ];
+
+        if ($request->boolean('preview')) {
+            return $storage->response($path, $filename, $headers, 'inline');
+        }
+
+        return $storage->download($path, $filename, $headers);
     }
 
     private function resolveAttachmentDisk(string $path): ?string

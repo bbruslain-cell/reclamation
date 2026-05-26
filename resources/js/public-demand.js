@@ -150,12 +150,12 @@ if (appRoot && stateNode) {
                     const file = files[0];
 
                     if (file.size > maxSize) {
-                        this.errors.piece_jointe = `Fichier trop lourd (${(file.size / 1024 / 1024).toFixed(1)} Mo). Maximum autorise : 3,5 Mo.`;
+                        this.errors.piece_jointe = `Fichier trop lourd (${(file.size / 1024 / 1024).toFixed(1)} Mo). Maximum autorisé : 3,5 Mo.`;
                         return;
                     }
 
                     if (!allowedTypes.includes(file.type)) {
-                        this.errors.piece_jointe = 'Format non accepte. Utilisez PDF, JPG ou PNG.';
+                        this.errors.piece_jointe = 'Format non accepté. Utilisez des formats PDF, JPG ou PNG.';
                         return;
                     }
 

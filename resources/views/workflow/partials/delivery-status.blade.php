@@ -20,8 +20,8 @@
                 </svg>
             </span>
             <div>
-                <p class="text-sm font-semibold text-navy">Envoi en cours vers l&apos;usager</p>
-                <p class="mt-1 text-xs leading-5 text-neutral-500">La demande restera ouverte jusqu&apos;&agrave; confirmation technique de l&apos;envoi.</p>
+                <p class="text-sm font-semibold text-navy">Envoi en cours vers l'usager</p>
+                <p class="mt-1 text-xs leading-5 text-neutral-500">La demande restera ouverte jusqu'à confirmation technique de l'envoi.</p>
             </div>
         </div>
     @elseif($deliveryState === 'failed')
@@ -34,8 +34,8 @@
                 </svg>
             </span>
             <div>
-                <p class="text-sm font-semibold text-navy">&Eacute;chec d&apos;envoi</p>
-                <p class="mt-1 text-xs leading-5 text-neutral-500">Le dernier essai a &eacute;chou&eacute;{{ $failedAt ? ' le '.$failedAt : '' }}. La demande reste ouverte et l&apos;envoi peut &ecirc;tre relanc&eacute;.</p>
+                <p class="text-sm font-semibold text-navy">Échec d'envoi</p>
+                <p class="mt-1 text-xs leading-5 text-neutral-500">Le dernier essai a échoué{{ $failedAt ? ' le '.$failedAt : '' }}. La demande reste ouverte et l'envoi peut être relancé.</p>
             </div>
         </div>
     @elseif($deliveryState === 'sent')
@@ -48,8 +48,8 @@
                 </svg>
             </span>
             <div>
-                <p class="text-sm font-semibold text-navy">R&eacute;ponse envoy&eacute;e &agrave; l&apos;usager</p>
-                <p class="mt-1 text-xs leading-5 text-neutral-500">{{ $sentAt ? 'Confirmation enregistr&eacute;e le '.$sentAt.'.' : 'La confirmation d&apos;envoi a bien &eacute;t&eacute; enregistr&eacute;e.' }}</p>
+                <p class="text-sm font-semibold text-navy">Réponse envoyée à l'usager</p>
+                <p class="mt-1 text-xs leading-5 text-neutral-500">{{ $sentAt ? 'Confirmation enregistrée le '.$sentAt.'.' : "La confirmation d'envoi a bien été enregistrée." }}</p>
             </div>
         </div>
     @elseif($deliveryState === 'ready')
@@ -61,8 +61,8 @@
                 </svg>
             </span>
             <div>
-                <p class="text-sm font-semibold text-navy">R&eacute;ponse pr&ecirc;te pour envoi</p>
-                <p class="mt-1 text-xs leading-5 text-neutral-500">L&apos;usager n&apos;a pas encore re&ccedil;u la notification finale.</p>
+                <p class="text-sm font-semibold text-navy">Réponse prête pour envoi</p>
+                <p class="mt-1 text-xs leading-5 text-neutral-500">L'usager n'a pas encore reçu la notification finale.</p>
             </div>
         </div>
     @endif
@@ -83,7 +83,7 @@
                 <path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 <path d="M12 16.8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
-            &Eacute;chec d&apos;envoi
+            Échec d'envoi
         </span>
     @elseif($deliveryState === 'sent')
         <span class="mt-1 inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-leaf-50 px-2.5 py-1 font-sans text-[11px] font-semibold text-green-700">
@@ -100,7 +100,7 @@
                 <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-7Z" stroke="currentColor" stroke-width="1.8"/>
                 <path d="m6 9 6 4 6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            R&eacute;ponse pr&ecirc;te
+            Réponse prête
         </span>
     @endif
 @endif

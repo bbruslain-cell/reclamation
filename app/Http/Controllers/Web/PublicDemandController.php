@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -39,6 +40,18 @@ class PublicDemandController extends Controller
         'autre' => ['Autre'],
     ];
 
+    private const ACCEPTED_EMAIL_TLDS = [
+        'com', 'net', 'org', 'edu', 'gov', 'info', 'biz', 'pro', 'name',
+        'ga', 'fr', 'gq', 'cm', 'cg', 'cd', 'cf', 'td', 'sn', 'ci', 'bj', 'tg', 'bf', 'ml', 'ne',
+        'ng', 'gh', 'ke', 'rw', 'ug', 'tz', 'za', 'ma', 'tn', 'dz', 'eg', 'ao', 'mz', 'mg', 'mu',
+        'us', 'ca', 'uk', 'de', 'es', 'it', 'pt', 'be', 'ch', 'nl', 'lu', 'ie', 'se', 'no', 'dk',
+        'fi', 'pl', 'cz', 'at', 'gr', 'ro', 'bg', 'hu', 'sk', 'si', 'hr', 'lt', 'lv', 'ee',
+        'br', 'mx', 'ar', 'cl', 'co', 'pe', 'uy', 'py', 'ec', 'bo',
+        'au', 'nz', 'jp', 'kr', 'cn', 'in', 'sg', 'my', 'id', 'ph', 'th', 'vn', 'hk', 'tw',
+        'ae', 'sa', 'qa', 'il', 'tr',
+        'io', 'ai', 'app', 'dev', 'cloud', 'online', 'site', 'tech', 'store', 'shop', 'me', 'tv',
+    ];
+
     public function create(): View
     {
         $types = DB::table('parametres')
@@ -51,37 +64,47 @@ class PublicDemandController extends Controller
             'types' => $types,
             'usagerStatuses' => self::USAGER_STATUSES,
             'categoriesByType' => self::CATEGORIES_BY_TYPE,
+            'acceptedEmailTldPattern' => $this->acceptedEmailTldPattern(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $payload = $request->validate([
-            'nom' => ['required', 'string', 'max:255'],
-            'prenom' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
+            'nom' => ['required', 'string', 'max:255', $this->personNameRule(), $this->safePublicTextRule()],
+            'prenom' => ['required', 'string', 'max:255', $this->personNameRule(), $this->safePublicTextRule()],
+            'email' => ['required', 'string', 'max:255', 'email:rfc', $this->emailDomainRule()],
             'statut_usager' => ['required', 'string', Rule::in($this->allowedUsagerStatuses())],
-            'pays' => ['required', 'string', 'max:120'],
+            'pays' => ['required', 'string', 'max:120', $this->personNameRule(), $this->safePublicTextRule()],
             'etablissement' => [
                 Rule::requiredIf(fn () => in_array($this->normalizeUsagerStatus((string) $request->input('statut_usager')), ['eleve', 'etudiant'], true)),
                 'nullable',
                 'string',
                 'max:255',
+                $this->organizationNameRule(),
+                $this->safePublicTextRule(),
             ],
-            'categorie' => ['nullable', 'string', 'max:255'],
-            'objet' => ['nullable', 'string', 'max:255'],
-            'message' => ['required', 'string', 'min:10', 'max:2000'],
+            'categorie' => ['nullable', 'string', 'max:255', Rule::in($this->allowedCategories()), $this->safePublicTextRule()],
+            'objet' => ['nullable', 'string', 'max:255', $this->safePublicTextRule()],
+            'message' => ['required', 'string', 'min:10', 'max:2000', $this->safePublicTextRule()],
             'piece_jointe' => ['nullable', 'file', 'max:3584', 'mimes:pdf,jpg,jpeg,png'],
             'consentement' => ['accepted'],
         ], [
             'statut_usager.in' => 'Statut usager invalide.',
+            'nom.regex' => 'Le nom contient des caracteres non autorises.',
+            'prenom.regex' => 'Le prenom contient des caracteres non autorises.',
+            'pays.regex' => 'Le pays contient des caracteres non autorises.',
+            'etablissement.regex' => "L'etablissement contient des caracteres non autorises.",
+            'categorie.in' => 'Categorie invalide.',
+            'email.email' => 'Veuillez saisir une adresse email valide avec un domaine complet, par exemple nom@example.com.',
+            'email.regex' => 'Veuillez saisir une adresse email valide avec un domaine complet, par exemple nom@example.com.',
             'message.min' => 'Le message doit contenir au moins 10 caractères.',
             'message.max' => 'Le message ne doit pas dépasser 2000 caractères.',
         ]);
 
-        $payload['objet'] = filled($payload['objet'] ?? null)
-            ? trim((string) $payload['objet'])
-            : trim((string) ($payload['categorie'] ?? ''));
+        $payload['objet'] = filled($payload['categorie'] ?? null)
+            ? trim((string) $payload['categorie'])
+            : trim((string) ($payload['objet'] ?? ''));
 
         if ($payload['objet'] === '') {
             throw ValidationException::withMessages([
@@ -168,7 +191,7 @@ class PublicDemandController extends Controller
 
                 $path = $file->store('pieces_jointes', 'local');
                 $pieceId = DB::table('pieces_jointes')->insertGetId([
-                    'nom_fichier' => $file->getClientOriginalName(),
+                    'nom_fichier' => $this->safeOriginalFilename($file),
                     'chemin_fichier' => $path,
                     'taille_octets' => $file->getSize(),
                     'type_mime' => $file->getMimeType() ?: 'application/octet-stream',
@@ -269,6 +292,89 @@ class PublicDemandController extends Controller
     private function allowedUsagerStatuses(): array
     {
         return array_values(array_unique(array_merge(self::USAGER_STATUSES, self::USAGER_STATUS_ALIASES)));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function allowedCategories(): array
+    {
+        return array_values(array_unique(array_merge(...array_values(self::CATEGORIES_BY_TYPE))));
+    }
+
+    private function personNameRule(): string
+    {
+        return 'regex:/^[\p{L}\p{M}][\p{L}\p{M}\s.\'\x{2019}-]*$/u';
+    }
+
+    private function organizationNameRule(): string
+    {
+        return 'regex:/^[\p{L}\p{M}0-9][\p{L}\p{M}0-9\s.\'\x{2019},()\/-]*$/u';
+    }
+
+    private function safePublicTextRule(): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail): void {
+            if ($value === null || $value === '') {
+                return;
+            }
+
+            $text = (string) $value;
+
+            if (!mb_check_encoding($text, 'UTF-8')) {
+                $fail($this->unsafePublicTextMessage($attribute));
+                return;
+            }
+
+            if (preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', $text) === 1) {
+                $fail($this->unsafePublicTextMessage($attribute));
+                return;
+            }
+
+            if (preg_match('/[<>]|&(?:lt|gt);|javascript\s*:|vbscript\s*:|data\s*:\s*text\/html|on[a-z]+\s*=/iu', $text) === 1) {
+                $fail($this->unsafePublicTextMessage($attribute));
+                return;
+            }
+
+            if (preg_match('/--|\/\*|\*\/|\b(?:union\s+select|select\s+.+\s+from|insert\s+into|update\s+\w+\s+set|delete\s+from|drop\s+(?:table|database)|alter\s+table|truncate\s+table|(?:or|and)\s+\d+\s*=\s*\d+)\b/iu', $text) === 1) {
+                $fail($this->unsafePublicTextMessage($attribute));
+            }
+        };
+    }
+
+    private function unsafePublicTextMessage(string $attribute): string
+    {
+        $label = str_replace('_', ' ', $attribute);
+
+        return "Le champ {$label} contient des caracteres ou expressions non autorises.";
+    }
+
+    private function emailDomainRule(): string
+    {
+        return "regex:/^[A-Z0-9._%+\\-']+@(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\\.)+(?:".$this->acceptedEmailTldPattern().')$/i';
+    }
+
+    private function acceptedEmailTldPattern(): string
+    {
+        return implode('|', self::ACCEPTED_EMAIL_TLDS);
+    }
+
+    private function safeOriginalFilename(UploadedFile $file): string
+    {
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+        $baseName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $baseName = Str::of($baseName)
+            ->ascii()
+            ->replaceMatches('/[^A-Za-z0-9._-]+/', '_')
+            ->trim('._-')
+            ->limit(80, '')
+            ->value();
+
+        if ($baseName === '') {
+            $baseName = 'piece_jointe';
+        }
+
+        return $extension !== '' ? "{$baseName}.{$extension}" : $baseName;
     }
 
     private function ensureAllowedAttachment(UploadedFile $file): void

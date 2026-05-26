@@ -499,7 +499,7 @@ class AccueilInboxController extends Controller
                 comment: $payload['commentaire'] ?? null
             );
 
-            return redirect()->back()->with('success', 'Affectation annulÃ©e et demande retournÃ©e Ã  l accueil.');
+            return redirect()->back()->with('success', "Affectation annulée et demande retournée à l'accueil.");
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         } catch (ValidationException $e) {

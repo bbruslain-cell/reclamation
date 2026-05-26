@@ -1,13 +1,14 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <title>Connexion - Espace agents ANBG</title>
+@extends('layouts.app')
+
+@section('title', 'Connexion - Espace agents ANBG')
+
+@push('preconnect')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+@endpush
+
+@push('styles')
     <style>
         :root {
             --anbg-navy:  #1c203d;
@@ -297,8 +298,9 @@
             .brand-logo-box img { height: 80px; }
         }
     </style>
-</head>
-<body>
+@endpush
+
+@section('content')
 <main class="login-shell">
     <div class="login-card">
 
@@ -328,7 +330,6 @@
                 </div>
             @endif
 
-            {{-- route('login') au lieu de '/login'  --}}
             <form method="POST" action="{{ route('login') }}" autocomplete="on" id="login-form">
                 @csrf
 
@@ -431,6 +432,9 @@
     </div>
 </main>
 
+@endsection
+
+@push('scripts')
 <script>
     (function () {
 
@@ -507,5 +511,4 @@
 
     })();
 </script>
-</body>
-</html>
+@endpush

@@ -29,8 +29,8 @@ trait InteractsWithServiceWindow
             $demand->service_window_remaining_hours = $deadlineHours;
             $demand->service_window_overdue_hours = 0.0;
             $demand->service_window_tone = 'neutral';
-            $demand->service_window_label = 'Fenetre '.$this->formatServiceWindowHours($deadlineHours).' a demarrer';
-            $demand->service_window_hint = 'Le compteur commence apres affectation accueil.';
+            $demand->service_window_label = 'Fenetre '.$this->formatServiceWindowHours($deadlineHours).' a démarré';
+            $demand->service_window_hint = "Le compteur commence après l'affectation de l'accueil.";
 
             return $demand;
         }
@@ -62,12 +62,12 @@ trait InteractsWithServiceWindow
             default => 'green',
         };
         $demand->service_window_label = match (true) {
-            $overdueHours > 0 => 'Delai depasse de '.$this->formatServiceWindowHours($overdueHours),
-            $remainingHours <= 0 => 'Echeance atteinte',
-            default => 'Delai restant '.$this->formatServiceWindowHours($remainingHours),
+            $overdueHours > 0 => 'Delai depassé de '.$this->formatServiceWindowHours($overdueHours),
+            $remainingHours <= 0 => 'Echéance atteinte',
+            default => 'Délai restant '.$this->formatServiceWindowHours($remainingHours),
         };
         $demand->service_window_hint = $this->formatServiceWindowHours($elapsedHours)
-            .' / '.$this->formatServiceWindowHours($deadlineHours).' consommees';
+            .' / '.$this->formatServiceWindowHours($deadlineHours).' consommées';
 
         return $demand;
     }

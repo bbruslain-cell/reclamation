@@ -1,13 +1,15 @@
-<!doctype html>
-<html lang="fr">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Choix de l'espace | ANBG</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+@extends('layouts.app')
+
+@section('title', "Choix de l'espace | ANBG")
+@section('body_class', 'min-h-screen bg-neutral-100 font-sans text-navy')
+
+@push('preconnect')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+@endpush
+
+@push('styles')
     <style>
         i[class*='fa-'] {
             display: inline-block;
@@ -43,8 +45,9 @@
         .fa-star::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m12 2 2.9 6 6.6 1-4.8 4.7 1.1 6.6L12 17.3 6.2 20.3l1.1-6.6L2.5 9l6.6-1L12 2Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m12 2 2.9 6 6.6 1-4.8 4.7 1.1 6.6L12 17.3 6.2 20.3l1.1-6.6L2.5 9l6.6-1L12 2Z'/%3E%3C/svg%3E"); }
         .fa-arrow-right::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m13.3 5.3-1.4 1.4 4.3 4.3H4v2h12.2l-4.3 4.3 1.4 1.4 6.7-6.7-6.7-6.7Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m13.3 5.3-1.4 1.4 4.3 4.3H4v2h12.2l-4.3 4.3 1.4 1.4 6.7-6.7-6.7-6.7Z'/%3E%3C/svg%3E"); }
     </style>
-</head>
-<body class="min-h-screen bg-neutral-100 font-sans text-navy">
+@endpush
+
+@section('content')
     <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(57,150,211,0.18),_transparent_32%),linear-gradient(180deg,_#f8f9fa_0%,_#eef3f7_100%)]">
         <header class="bg-navy text-white shadow-sm">
             <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
@@ -61,7 +64,7 @@
                     @csrf
                     <button type="submit" class="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium hover:bg-white/20 transition-colors duration-150">
                         <i class="fas fa-right-from-bracket text-[10px]"></i>
-                        <span>Deconnexion</span>
+                        <span>Déconnexion</span>
                     </button>
                 </form>
             </div>
@@ -104,5 +107,4 @@
             </section>
         </main>
     </div>
-</body>
-</html>
+@endsection

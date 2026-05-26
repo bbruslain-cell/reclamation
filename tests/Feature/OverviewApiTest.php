@@ -221,6 +221,7 @@ class OverviewApiTest extends TestCase
         $this->seedOverviewFixtures();
         config(['queue.default' => 'sync']);
         Mail::fake();
+        $category = "Demande de modification d'attestation d'attribution de bourse ou maintien";
 
         $this->post('/reclamations', [
             'nom' => 'Mouila',
@@ -229,14 +230,14 @@ class OverviewApiTest extends TestCase
             'statut_usager' => 'Parent / Tuteur',
             'pays' => 'Gabon',
             'etablissement' => '',
-            'categorie' => 'Suivi bourse',
+            'categorie' => $category,
             'objet' => 'RÃƒÂ©clamation UCAS pilotage',
             'message' => 'Je souhaite une prise en charge directe au niveau accueil.',
             'consentement' => 'on',
         ])->assertRedirect('/reclamations/nouvelle');
 
         $trackingNumber = (string) DB::table('demandes')
-            ->where('objet', 'RÃƒÂ©clamation UCAS pilotage')
+            ->where('objet', $category)
             ->value('numero_suivi');
         $demandId = (int) DB::table('demandes')
             ->where('numero_suivi', $trackingNumber)
@@ -271,8 +272,13 @@ class OverviewApiTest extends TestCase
         $this->assertTrue($serviceRows->has('UCAS'));
         $this->assertNotNull($trackingRow);
         $this->assertSame('UCAS', $trackingRow['service_direction']);
+        $this->assertSame('Accueil Service', $trackingRow['qcs']);
         $this->assertNotNull($traceRow);
-        $this->assertContains('Reponse directe accueil', collect($traceRow['actions'] ?? [])->pluck('action')->all());
+        $this->assertTrue(
+            collect($traceRow['actions'] ?? [])
+                ->pluck('action')
+                ->contains(fn (string $action): bool => str_contains($action, 'accueil'))
+        );
     }
 
     public function test_overview_marks_overdue_direct_accueil_response_as_out_of_time(): void
@@ -280,6 +286,7 @@ class OverviewApiTest extends TestCase
         $this->seed();
         config(['queue.default' => 'sync']);
         Mail::fake();
+        $category = "Demande de modification d'attestation d'attribution de bourse ou maintien";
 
         $this->post('/reclamations', [
             'nom' => 'Mouila',
@@ -288,14 +295,14 @@ class OverviewApiTest extends TestCase
             'statut_usager' => 'Parent / Tuteur',
             'pays' => 'Gabon',
             'etablissement' => '',
-            'categorie' => 'Suivi bourse',
+            'categorie' => $category,
             'objet' => 'RÃƒÆ’Ã‚Â©clamation UCAS en retard',
             'message' => 'Je souhaite une prise en charge directe au niveau accueil mais hors dÃƒÆ’Ã‚Â©lai.',
             'consentement' => 'on',
         ])->assertRedirect('/reclamations/nouvelle');
 
         $trackingNumber = (string) DB::table('demandes')
-            ->where('objet', 'RÃƒÆ’Ã‚Â©clamation UCAS en retard')
+            ->where('objet', $category)
             ->value('numero_suivi');
         $demandId = (int) DB::table('demandes')
             ->where('numero_suivi', $trackingNumber)

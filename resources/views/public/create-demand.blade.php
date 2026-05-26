@@ -1,16 +1,57 @@
-<!doctype html>
-<html lang="fr">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/public-demand.js'])
-    <title>Plateforme Réclamation - ANBG</title>
+@php
+    $vite = ['resources/css/app.css', 'resources/js/app.js', 'resources/js/public-demand.js'];
+@endphp
+
+@extends('layouts.app')
+
+@php
+    $publicDemandState = [
+        'categoriesByType' => $categoriesByType,
+        'old' => [
+            'nom' => old('nom', ''),
+            'prenom' => old('prenom', ''),
+            'email' => old('email', ''),
+            'statut_usager' => old('statut_usager', ''),
+            'pays' => old('pays', ''),
+            'etablissement' => old('etablissement', ''),
+            'type_demande_code' => 'reclamation',
+            'categorie' => old('categorie', ''),
+            'objet' => old('objet', ''),
+            'message' => old('message', ''),
+            'consentement' => (bool) old('consentement', false),
+        ],
+        'errors' => [
+            'nom' => $errors->first('nom'),
+            'prenom' => $errors->first('prenom'),
+            'email' => $errors->first('email'),
+            'statut_usager' => $errors->first('statut_usager'),
+            'pays' => $errors->first('pays'),
+            'etablissement' => $errors->first('etablissement'),
+            'categorie' => $errors->first('categorie'),
+            'objet' => $errors->first('objet'),
+            'message' => $errors->first('message'),
+            'piece_jointe' => $errors->first('piece_jointe'),
+            'consentement' => $errors->first('consentement'),
+        ],
+    ];
+@endphp
+
+@section('title', 'Plateforme Réclamation - ANBG')
+@section('body_class', 'bg-white font-sans text-navy-500 antialiased')
+
+@push('meta')
     <meta property="og:title" content="Plateforme Réclamation - ANBG">
     <meta property="og:url" content="https://vps-92c74632.vps.ovh.net">
     <meta property="og:description" content="Plateforme de gestion des réclamations">
+@endpush
+
+@push('preconnect')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+@endpush
+
+@push('styles')
     <style>
         [v-if], [v-else] { display: none; }
 
@@ -78,9 +119,9 @@
         .animate-spin { animation: spin 0.8s linear infinite; }
 
     </style>
-</head>
-<body class="bg-white font-sans text-navy-500 antialiased">
+@endpush
 
+@section('content')
 <div id="app">
     <!-- NAVBAR -->
     <header class="bg-navy-500 sticky top-0 z-50 shadow-md">
@@ -97,7 +138,7 @@
                             Agence Nationale des Bourses du Gabon
                         </span>
                         <div class="text-sky-300 text-[9px] sm:text-xs font-light tracking-wider uppercase mt-0.5 sm:mt-0">
-                            Plateforme Reclamation
+                            Plateforme Réclamation
                         </div>
                     </div> 
                 </a>
@@ -253,6 +294,9 @@
                                 <input
                                     id="email" name="email" type="email"
                                     v-model="form.email" @input="clearError('email')" required autocomplete="email"
+                                    inputmode="email"
+                                    pattern="[A-Za-z0-9._%+\-']+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+(?:{{ $acceptedEmailTldPattern }})"
+                                    title="Saisissez une adresse email complète, par exemple nom@example.com"
                                     placeholder="prenom.nom@email.com"
                                     class="w-full pl-9 pr-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
                                            focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150"
@@ -541,40 +585,11 @@
 
 </div><!-- #app -->
 
+@endsection
+
+@push('scripts')
 {{-- Public-demand behavior lives in resources/js/public-demand.js. --}}
-@php
-    $publicDemandState = [
-        'categoriesByType' => $categoriesByType,
-        'old' => [
-            'nom' => old('nom', ''),
-            'prenom' => old('prenom', ''),
-            'email' => old('email', ''),
-            'statut_usager' => old('statut_usager', ''),
-            'pays' => old('pays', ''),
-            'etablissement' => old('etablissement', ''),
-            'type_demande_code' => 'reclamation',
-            'categorie' => old('categorie', ''),
-            'objet' => old('objet', ''),
-            'message' => old('message', ''),
-            'consentement' => (bool) old('consentement', false),
-        ],
-        'errors' => [
-            'nom' => $errors->first('nom'),
-            'prenom' => $errors->first('prenom'),
-            'email' => $errors->first('email'),
-            'statut_usager' => $errors->first('statut_usager'),
-            'pays' => $errors->first('pays'),
-            'etablissement' => $errors->first('etablissement'),
-            'categorie' => $errors->first('categorie'),
-            'objet' => $errors->first('objet'),
-            'message' => $errors->first('message'),
-            'piece_jointe' => $errors->first('piece_jointe'),
-            'consentement' => $errors->first('consentement'),
-        ],
-    ];
-@endphp
 <script type="application/json" id="public-demand-state">
 @json($publicDemandState)
 </script>
-</body>
-</html>
+@endpush

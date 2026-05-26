@@ -15,7 +15,7 @@ class SlaSeeder extends Seeder
         ]);
 
         DB::table('config_sla')->updateOrInsert(
-            ['nom' => 'SLA ANBG 24h Ouvrees'],
+            ['nom' => 'SUIVI ANBG 24h Ouvrées'],
             [
                 'delai_max_heures' => 24,
                 'fuseau_horaire' => 'Africa/Libreville',
@@ -28,7 +28,7 @@ class SlaSeeder extends Seeder
         );
 
         $configId = DB::table('config_sla')
-            ->where('nom', 'SLA ANBG 24h Ouvrees')
+            ->where('nom', 'SUIVI ANBG 24h Ouvrées')
             ->value('id_config_sla');
 
         if (!$configId) {

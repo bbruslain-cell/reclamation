@@ -506,13 +506,7 @@
                                         <p class="text-xs text-neutral-400 mb-1.5">Pièces jointes</p>
                                         <div class="space-y-1.5">
                                             @foreach($pieces as $piece)
-                                            <a href="/pieces-jointes/{{ $piece->id_piece_jointe }}" target="_blank" rel="noopener"
-                                               class="flex items-center gap-2 bg-sky-50 border border-sky-100 text-sky text-xs font-medium px-3 py-2 rounded-lg hover:bg-sky-100 transition-colors duration-150">
-                                                <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                    <path d="M8.5 12.5 13 8a3 3 0 1 1 4.2 4.2l-6 6a5 5 0 1 1-7.1-7.1l6.3-6.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                </svg>
-                                                {{ $piece->nom_fichier }}
-                                            </a>
+                                            @include('workflow.partials.attachment-actions', ['piece' => $piece])
                                             @endforeach
                                         </div>
                                     </div>
@@ -620,6 +614,8 @@
                                             </div>
                                             <button
                                                 type="submit"
+                                                data-submit-loading
+                                                data-loading-label="Envoi en cours..."
                                                 class="w-full flex items-center justify-center gap-2 bg-leaf hover:bg-green-600 text-white text-sm font-medium py-2.5 rounded-lg transition-colors duration-150"
                                             >
                                                 <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -748,9 +744,9 @@
                                     'affectation_agent' => 'Affectation agent',
                                     'annulation_affectation_agent' => 'Annulation affectation agent',
                                     'reponse_redigee' => 'Réponse rédigée',
-                                    'reponse_directe_chef' => 'Réponse directe chef',
-                                    'envoi_reponse' => 'Envoi réponse',
-                                    'echec_envoi_reponse' => 'Echec d\'envoi',
+                                    'reponse_directe_chef' => 'Réponse directe du chef',
+                                    'envoi_reponse' => 'Envoi de la réponse',
+                                    'echec_envoi_reponse' => 'Échec d\'envoi',
                                 ];
                             @endphp
                             <div class="grid max-w-[calc(100vw_-_2rem)] grid-cols-1 gap-4 sm:max-w-none lg:grid-cols-2">
@@ -798,13 +794,7 @@
                                         <p class="text-xs text-neutral-400 mb-1.5">Pièces jointes</p>
                                         <div class="space-y-1.5">
                                             @foreach($pieces as $piece)
-                                            <a href="/pieces-jointes/{{ $piece->id_piece_jointe }}" target="_blank" rel="noopener"
-                                               class="flex items-center gap-2 bg-sky-50 border border-sky-100 text-sky text-xs font-medium px-3 py-2 rounded-lg hover:bg-sky-100 transition-colors duration-150">
-                                                <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                    <path d="M8.5 12.5 13 8a3 3 0 1 1 4.2 4.2l-6 6a5 5 0 1 1-7.1-7.1l6.3-6.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                </svg>
-                                                {{ $piece->nom_fichier }}
-                                            </a>
+                                            @include('workflow.partials.attachment-actions', ['piece' => $piece])
                                             @endforeach
                                         </div>
                                     </div>
@@ -906,9 +896,9 @@
                     $actionLabels = [
                         'affectation_service' => 'Affectation service',
                         'annulation_affectation_service' => 'Annulation affectation',
-                        'reponse_directe_accueil' => 'Réponse directe accueil',
-                        'envoi_reponse' => 'Envoi réponse',
-                        'echec_envoi_reponse' => 'Echec d\'envoi',
+                        'reponse_directe_accueil' => 'Réponse directe de l\'accueil',
+                        'envoi_reponse' => 'Envoi de la réponse',
+                        'echec_envoi_reponse' => 'Échec d\'envoi',
                     ];
                 @endphp
                 @forelse($recentAccueilActions as $entry)
@@ -1315,19 +1305,41 @@
         initGlobalDropGuard();
         initUploadWidgets(root);
         initViewToggles(root);
+        window.initAnbgSubmitLoading?.(root);
     };
 
     const hasFocusedControl = () => {
         const active = document.activeElement;
         if (!active || !liveContent || !liveContent.contains(active)) return false;
 
-        return ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(active.tagName) || active.isContentEditable;
+        return ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName) || active.isContentEditable;
     };
 
-    const hasOpenDetail = () => {
-        if (!liveContent) return false;
+    const openDetailIds = () => {
+        if (!liveContent) return [];
 
-        return Array.from(liveContent.querySelectorAll('.detail-row')).some((row) => row.style.display !== 'none');
+        return Array.from(liveContent.querySelectorAll('.detail-row'))
+            .filter((row) => window.getComputedStyle(row).display !== 'none')
+            .map((row) => row.id);
+    };
+
+    const restoreOpenDetails = (ids) => {
+        ids.forEach((id) => {
+            const row = document.getElementById(id);
+            if (!row) return;
+
+            row.style.display = '';
+
+            const btn = Array.from(document.querySelectorAll('.view-toggle'))
+                .find((candidate) => candidate.dataset.target === id);
+            if (!btn) return;
+
+            btn.setAttribute('aria-expanded', 'true');
+            const iconWrap = btn.querySelector('.toggle-icon');
+            const label = Array.from(btn.querySelectorAll('span')).find((span) => !span.classList.contains('toggle-icon'));
+            if (iconWrap) iconWrap.innerHTML = eyeOffSvg;
+            if (label) label.textContent = 'Masquer';
+        });
     };
 
     const hasDirtyForm = () => {
@@ -1341,7 +1353,7 @@
             return true;
         }
 
-        return hasFocusedControl() || hasOpenDetail() || hasDirtyForm();
+        return hasFocusedControl() || hasDirtyForm();
     };
 
     const initAccueilAutoRefresh = () => {
@@ -1387,8 +1399,11 @@
 
                 if (!nextContent) return;
 
+                const openedDetails = openDetailIds();
+
                 liveContent.innerHTML = nextContent.innerHTML;
                 initAccueilInteractions(liveContent);
+                restoreOpenDetails(openedDetails);
 
                 if (newDemandDifference > 0) {
                     showNewDemandNotification(newDemandDifference);
@@ -1398,10 +1413,10 @@
                     const firstLabel = deliveryTransitions.delivered[0];
                     showDeliveryNotification(
                         'success',
-                        deliveryTransitions.delivered.length > 1 ? 'Reponses envoyees' : 'Reponse envoyee',
+                        deliveryTransitions.delivered.length > 1 ? "Réponses envoyées" : 'Réponse envoyée',
                         deliveryTransitions.delivered.length > 1
-                            ? `${deliveryTransitions.delivered.length} reponses ont ete confirmees par le systeme.`
-                            : `La demande ${firstLabel} a bien ete envoyee a l'usager.`
+                            ? `${deliveryTransitions.delivered.length} réponses ont été confirmées par le système.`
+                            : `La demande ${firstLabel} a bien été envoyée à l'usager.`
                     );
                 }
 
@@ -1409,10 +1424,10 @@
                     const firstLabel = deliveryTransitions.failed[0];
                     showDeliveryNotification(
                         'error',
-                        'Echec d envoi',
+                        "Échec d'envoi",
                         deliveryTransitions.failed.length > 1
-                            ? `${deliveryTransitions.failed.length} envois ont echoue. Une relance est possible.`
-                            : `L'envoi pour la demande ${firstLabel} a echoue. Vous pouvez relancer la reponse.`
+                            ? `${deliveryTransitions.failed.length} envois ont échoué. Une relance est possible.`
+                            : `L'envoi pour la demande ${firstLabel} a échoué. Vous pouvez relancer la réponse.`
                     );
                 }
             } catch (error) {

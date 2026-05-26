@@ -141,7 +141,7 @@
                         <svg class="icon-svg text-[15px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2H5V5h5V3Zm9.7 9-4.2-4.2-1.4 1.4 1.8 1.8H9v2h6.9l-1.8 1.8 1.4 1.4 4.2-4.2Z" fill="currentColor"/>
                         </svg>
-                        <span class="hidden sm:inline">D&eacute;connexion</span>
+                        <span class="hidden sm:inline">Déconnexion</span>
                     </button>
                 </form>
             </div>
@@ -160,7 +160,7 @@
                 <div>
                     <h1 class="text-white text-xl font-medium leading-snug mb-1">Espace Chef de service</h1>
                     <p class="max-w-3xl text-sm leading-6 text-white/78">
-                        Vue op&eacute;rationnelle du <span class="font-semibold text-white">{{ $serviceSummary['service_label'] ?? 'Service non renseign&eacute;' }}</span>
+                        Vue opérationnelle du <span class="font-semibold text-white">{{ $serviceSummary['service_label'] ?? 'Service non renseigné' }}</span>
                     </p>
 
                 </div>
@@ -196,7 +196,7 @@
                         </svg>
                     </span>
                     <input name="search" value="{{ $search }}"
-                        placeholder="Recherche : num&eacute;ro suivi, objet, usager&hellip;"
+                        placeholder="Recherche : numéro suivi, objet, usager"
                         class="field w-full pl-9 pr-4 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy placeholder-neutral-400 transition-all duration-150">
                 </div>
                 <button type="submit"
@@ -218,7 +218,7 @@
                             <path d="M5 3h14l3 9v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7l3-9Zm1.4 2L4.1 12H9l1 2h4l1-2h4.9L17.6 5H6.4Z" fill="currentColor"/>
                         </svg>
                     </span>
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">Demandes affect&eacute;es</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">Demandes affectées</p>
                     <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ (int) ($serviceSummary['total_sans_agent'] ?? 0) }}">{{ number_format((int) ($serviceSummary['total_sans_agent'] ?? 0), 0, ',', ' ') }}</p>
                 </div>
             </article>
@@ -243,7 +243,7 @@
                             <path d="M9 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-6 2-6 4.5V20h8.5a6 6 0 0 1-.5-2.5c0-1.7.7-3.2 1.8-4.3A8.8 8.8 0 0 0 9 13Z" fill="currentColor"/>
                         </svg>
                     </span>
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/72">Demandes assign&eacute;es</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/72">Demandes assignées</p>
                     <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ (int) ($serviceSummary['total_suivies'] ?? 0) }}">{{ number_format((int) ($serviceSummary['total_suivies'] ?? 0), 0, ',', ' ') }}</p>
                 </div>
             </article>
@@ -270,12 +270,12 @@
                     <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <path d="M5 3h14l3 9v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7l3-9Zm1.4 2L4.1 12H9l1 2h4l1-2h4.9L17.6 5H6.4Z" fill="currentColor"/>
                     </svg>
-                    <h2 class="text-sm font-semibold text-navy">Demandes sans agent assign&eacute;</h2>
+                    <h2 class="text-sm font-semibold text-navy">Demandes sans agent assigné</h2>
                     <span class="ml-1 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky">
                         {{ $pending->total() }}
                     </span>
                 </div>
-                <p class="text-xs text-neutral-400 hidden sm:block">&Agrave; affecter ou traiter directement</p>
+                <p class="text-xs text-neutral-400 hidden sm:block">À affecter ou traiter directement</p>
             </div>
 
             <div class="overflow-x-auto">
@@ -321,11 +321,11 @@
                                     </span>
                                 @elseif($demande->alerte_chef === 'orange')
                                     <span class="inline-flex items-center gap-1.5 bg-gold-50 text-amber-700 border border-amber-200 text-xs font-medium px-2.5 py-1 rounded-full">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0"></span> &Agrave; risque
+                                        <span class="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0"></span> À risque
                                     </span>
                                 @else
                                     <span class="inline-flex items-center gap-1.5 bg-leaf-50 text-green-700 border border-green-200 text-xs font-medium px-2.5 py-1 rounded-full">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-leaf flex-shrink-0"></span> Dans les d&eacute;lais
+                                        <span class="w-1.5 h-1.5 rounded-full bg-leaf flex-shrink-0"></span> Dans les délais
                                     </span>
                                 @endif
                             </td>
@@ -367,14 +367,14 @@
                                     $historyLabels = [
                                         'soumission_usager' => 'Soumission usager',
                                         'soumission' => 'Soumission',
-                                        'categorie_usager' => html_entity_decode('Cat&eacute;gorie choisie', ENT_QUOTES, 'UTF-8'),
+                                        'categorie_usager' => html_entity_decode('Catégorie choisie', ENT_QUOTES, 'UTF-8'),
                                         'affectation_service' => 'Affectation service',
                                         'affectation_agent' => 'Affectation agent',
-                                        'annulation_affectation_agent' => 'Annulation affectation agent',
-                                        'reponse_redigee' => html_entity_decode('R&eacute;ponse r&eacute;dig&eacute;e', ENT_QUOTES, 'UTF-8'),
-                                        'reponse_directe_chef' => 'R&eacute;ponse directe chef',
-                                        'envoi_reponse' => html_entity_decode('Envoi r&eacute;ponse', ENT_QUOTES, 'UTF-8'),
-                                        'echec_envoi_reponse' => html_entity_decode('Echec d&apos;envoi', ENT_QUOTES, 'UTF-8'),
+                                        'annulation_affectation_agent' => "Annulation d'affectation agent",
+                                        'reponse_redigee' => html_entity_decode('Réponse rédigée', ENT_QUOTES, 'UTF-8'),
+                                        'reponse_directe_chef' => 'Réponse directe du chef',
+                                        'envoi_reponse' => html_entity_decode('Envoi de la réponse', ENT_QUOTES, 'UTF-8'),
+                                        'echec_envoi_reponse' => html_entity_decode("Échec d'envoi", ENT_QUOTES, 'UTF-8'),
                                     ];
                                 @endphp
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -406,24 +406,21 @@
                                                 <p class="text-sm text-navy">{{ $demande->usager_pays ?: '-' }}</p>
                                             </div>
                                             <div>
-                                                <p class="text-xs text-neutral-400">&Eacute;tablissement</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_etablissement ?: 'Non renseigne' }}</p>
+                                                <p class="text-xs text-neutral-400">Etablissement</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_etablissement ?: 'Non renseigné' }}</p>
                                             </div>
                                         </div>
                                         @if($pieces->isNotEmpty())
                                         <div>
-                                            <p class="text-xs text-neutral-400 mb-1.5">Pi&egrave;ces jointes</p>
+                                            <p class="text-xs text-neutral-400 mb-1.5">Pièces jointes</p>
                                             <div class="space-y-1.5">
                                                 @foreach($pieces as $piece)
-                                                <a href="/pieces-jointes/{{ $piece->id_piece_jointe }}" target="_blank" rel="noopener"
-                                                    class="flex items-center gap-2 bg-sky-50 border border-sky-100 text-sky text-xs font-medium px-3 py-2 rounded-lg hover:bg-sky-100 transition-colors duration-150">
-                                                    <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8.5 12.5 13 8a3 3 0 1 1 4.2 4.2l-6 6a5 5 0 1 1-7.1-7.1l6.3-6.3 1.4 1.4-6.3 6.3a3 3 0 1 0 4.2 4.2l6-6a1 1 0 1 0-1.4-1.4l-4.5 4.5-1.4-1.4Z" fill="currentColor"/></svg> {{ $piece->nom_fichier }}
-                                                </a>
+                                                @include('workflow.partials.attachment-actions', ['piece' => $piece])
                                                 @endforeach
                                             </div>
                                         </div>
                                         @else
-                                        <p class="text-xs text-neutral-400 italic">Aucune pi&egrave;ce jointe.</p>
+                                        <p class="text-xs text-neutral-400 italic">Aucune pièce jointe.</p>
                                         @endif
                                     </div>
 
@@ -441,12 +438,12 @@
                                                 @csrf @method('put')
                                                 <select name="id_agent" required
                                                     class="field w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy appearance-none transition-all duration-150">
-                                                    <option value="">&mdash; Choisir un agent &mdash;</option>
+                                                    <option value="">- Choisir un agent -</option>
                                                     @foreach($agentsByService->get($demande->id_service_courant, collect()) as $agent)
                                                         <option value="{{ $agent->id_utilisateur }}">{{ $agent->prenom }} {{ $agent->nom }}</option>
                                                     @endforeach
                                                 </select>
-                                                <input name="commentaire" placeholder="Commentaire optionnel&hellip;"
+                                                <input name="commentaire" placeholder="Commentaire optionnelle"
                                                     class="field w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy placeholder-neutral-400 transition-all duration-150">
                                                 <button type="submit"
                                                     class="w-full flex items-center justify-center gap-2 bg-navy hover:bg-navy-600 text-white text-sm font-medium py-2.5 rounded-xl transition-colors duration-150">
@@ -455,7 +452,7 @@
                                             </form>
                                         </div>
 
-                                        {{-- R&eacute;ponse directe --}}
+                                        {{-- Réponse directe --}}
                                         @if(($demande->delivery_state ?? 'idle') !== 'pending')
                                         <div class="bg-white border border-neutral-200 rounded-xl p-4">
                                             <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2 mb-3">
@@ -468,11 +465,13 @@
                                                     class="field w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy placeholder-neutral-400 resize-y transition-all duration-150"></textarea>
                                                 <label for="chef-direct-files-{{ $demande->id_demande }}" class="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-neutral-200 hover:border-sky rounded-lg p-3 cursor-pointer transition-colors duration-150 bg-neutral-50 hover:bg-sky-50">
                                                     <svg class="icon-svg text-neutral-400 text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 11a4 4 0 0 0 1 7Zm6-6V8h-2v4H8l4 4 4-4h-3Z" fill="currentColor"/></svg>
-                                                    <span class="text-xs text-neutral-400">Pi&egrave;ces jointes (optionnel)</span>
-                                                    <span class="file-selection-feedback text-[11px] text-neutral-400 text-center">Aucun fichier s&eacute;lectionn&eacute;</span>
+                                                    <span class="text-xs text-neutral-400">Pièces jointes (optionnel)</span>
+                                                    <span class="file-selection-feedback text-[11px] text-neutral-400 text-center">Aucun fichier sélectionné</span>
                                                     <input id="chef-direct-files-{{ $demande->id_demande }}" type="file" name="pieces_jointes[]" multiple class="hidden" data-file-feedback>
                                                 </label>
                                                 <button type="submit"
+                                                    data-submit-loading
+                                                    data-loading-label="Envoi en cours..."
                                                     class="w-full flex items-center justify-center gap-2 bg-sky hover:bg-sky-600 text-white text-sm font-medium py-2.5 rounded-xl transition-colors duration-150">
                                                     <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 6h18v12H3V6Zm2 2v1l7 4 7-4V8l-7 4-7-4Zm11.2 5.8-1.4 1.4-1.3-1.3-1.4 1.4 2.7 2.7 4.8-4.8-1.4-1.4-3.4 3.4Z" fill="currentColor"/></svg> Envoyer la r&eacute;ponse
                                                 </button>
@@ -523,7 +522,7 @@
                                             @endif
                                         </div>
                                         @empty
-                                        <p class="text-sm text-neutral-400">Aucune action enregistr&eacute;e pour cette demande.</p>
+                                        <p class="text-sm text-neutral-400">Aucune action enregistrée pour cette demande.</p>
                                         @endforelse
                                     </div>
                                 </div>
@@ -562,7 +561,7 @@
                     <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <path d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Zm-5 8v-1c0-2.8 2.8-5 5-5s5 2.2 5 5v1H7Zm4-8 1 2 1-2h-2Zm1 3-1.5 5h3L12 15Z" fill="currentColor"/>
                     </svg>
-                    <h2 class="text-sm font-semibold text-navy">Demandes avec agent assigne</h2>
+                    <h2 class="text-sm font-semibold text-navy">Demandes avec agent assigné</h2>
                     <span class="ml-1 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky">
                         {{ $assigned->total() }}
                     </span>
@@ -574,7 +573,7 @@
                 <table class="w-full font-sans table-readability">
                     <thead>
                         <tr class="table-head border-b border-white/10">
-                            <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">N&deg; Suivi</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">N° suivi</th>
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Usager</th>
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Agent</th>
                             <th class="px-4 py-3 text-left text-[11px] font-semibold text-white uppercase tracking-wider">Statut / envoi</th>
@@ -616,11 +615,11 @@
                                     </span>
                                 @elseif($demande->alerte_agent === 'orange')
                                     <span class="inline-flex items-center gap-1.5 bg-gold-50 text-amber-700 border border-amber-200 text-xs font-medium px-2.5 py-1 rounded-full">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0"></span> &Agrave; risque
+                                        <span class="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0"></span> À risque
                                     </span>
                                 @else
                                     <span class="inline-flex items-center gap-1.5 bg-leaf-50 text-green-700 border border-green-200 text-xs font-medium px-2.5 py-1 rounded-full">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-leaf flex-shrink-0"></span> Dans les d&eacute;lais
+                                        <span class="w-1.5 h-1.5 rounded-full bg-leaf flex-shrink-0"></span> Dans les délais
                                     </span>
                                 @endif
                             </td>
@@ -662,14 +661,14 @@
                                     $historyLabels = [
                                         'soumission_usager' => 'Soumission usager',
                                         'soumission' => 'Soumission',
-                                        'categorie_usager' => html_entity_decode('Cat&eacute;gorie choisie', ENT_QUOTES, 'UTF-8'),
+                                        'categorie_usager' => html_entity_decode('Catégorie choisie', ENT_QUOTES, 'UTF-8'),
                                         'affectation_service' => 'Affectation service',
                                         'affectation_agent' => 'Affectation agent',
-                                        'annulation_affectation_agent' => 'Annulation affectation agent',
-                                        'reponse_redigee' => html_entity_decode('R&eacute;ponse r&eacute;dig&eacute;e', ENT_QUOTES, 'UTF-8'),
-                                        'reponse_directe_chef' => 'R&eacute;ponse directe chef',
-                                        'envoi_reponse' => html_entity_decode('Envoi r&eacute;ponse', ENT_QUOTES, 'UTF-8'),
-                                        'echec_envoi_reponse' => html_entity_decode('Echec d&apos;envoi', ENT_QUOTES, 'UTF-8'),
+                                        'annulation_affectation_agent' => "Annulation d'affectation agent",
+                                        'reponse_redigee' => html_entity_decode('Réponse rédigée', ENT_QUOTES, 'UTF-8'),
+                                        'reponse_directe_chef' => 'Réponse directe du chef',
+                                        'envoi_reponse' => html_entity_decode('Envoi de la réponse', ENT_QUOTES, 'UTF-8'),
+                                        'echec_envoi_reponse' => html_entity_decode("Échec d'envoi", ENT_QUOTES, 'UTF-8'),
                                     ];
                                 @endphp
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -701,7 +700,7 @@
                                                 <p class="text-sm text-navy">{{ $demande->usager_pays ?: '-' }}</p>
                                             </div>
                                             <div>
-                                                <p class="text-xs text-neutral-400">&Eacute;tablissement</p>
+                                                <p class="text-xs text-neutral-400">Etablissement</p>
                                                 <p class="text-sm text-navy">{{ $demande->usager_etablissement ?: 'Non renseigne' }}</p>
                                             </div>
                                         </div>
@@ -711,13 +710,10 @@
                                         </div>
                                         @if($pieces->isNotEmpty())
                                         <div>
-                                            <p class="text-xs text-neutral-400 mb-1.5">Pi&egrave;ces jointes</p>
+                                            <p class="text-xs text-neutral-400 mb-1.5">Pièces jointes</p>
                                             <div class="space-y-1.5">
                                                 @foreach($pieces as $piece)
-                                                <a href="/pieces-jointes/{{ $piece->id_piece_jointe }}" target="_blank" rel="noopener"
-                                                    class="flex items-center gap-2 bg-sky-50 border border-sky-100 text-sky text-xs font-medium px-3 py-2 rounded-lg hover:bg-sky-100 transition-colors duration-150">
-                                                    <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8.5 12.5 13 8a3 3 0 1 1 4.2 4.2l-6 6a5 5 0 1 1-7.1-7.1l6.3-6.3 1.4 1.4-6.3 6.3a3 3 0 1 0 4.2 4.2l6-6a1 1 0 1 0-1.4-1.4l-4.5 4.5-1.4-1.4Z" fill="currentColor"/></svg> {{ $piece->nom_fichier }}
-                                                </a>
+                                                @include('workflow.partials.attachment-actions', ['piece' => $piece])
                                                 @endforeach
                                             </div>
                                         </div>
@@ -728,25 +724,27 @@
                                     <div class="space-y-3">
                                         @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'panel'])
 
-                                        {{-- R&eacute;ponse directe chef --}}
+                                        {{-- Réponse directe chef --}}
                                         @if(($demande->delivery_state ?? 'idle') !== 'pending')
                                         <div class="bg-white border border-neutral-200 rounded-xl p-4">
                                             <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2 mb-3">
                                                 <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 7 3 12l7 5v-3h3c3.3 0 5.4 1.1 8 4-1-6-4-9-9-9h-2V7Z" fill="currentColor"/></svg>R&eacute;ponse directe du chef
                                             </h4>
-                                            <p class="text-xs text-neutral-400 mb-3">Le chef peut reprendre la main et cl&ocirc;turer la demande lui-m&ecirc;me.</p>
+                                            <p class="text-xs text-neutral-400 mb-3">Le chef peut reprendre la main et clôturer la demande lui-même.</p>
                                             <form method="post" action="/chef/demandes/{{ $demande->id_demande }}/reponse-directe" enctype="multipart/form-data" class="space-y-2.5">
                                                 @csrf @method('put')
                                                 <textarea name="contenu_reponse" required rows="4"
-                                                    placeholder="Saisir la r&eacute;ponse &agrave; envoyer &agrave; l'usager&hellip;"
+                                                    placeholder="Saisir la réponse et envoyer à l'usager"
                                                     class="field w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy placeholder-neutral-400 resize-y transition-all duration-150"></textarea>
                                                 <label for="chef-assigned-files-{{ $demande->id_demande }}" class="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-neutral-200 hover:border-sky rounded-lg p-3 cursor-pointer transition-colors duration-150 bg-neutral-50 hover:bg-sky-50">
                                                     <svg class="icon-svg text-neutral-400 text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 11a4 4 0 0 0 1 7Zm6-6V8h-2v4H8l4 4 4-4h-3Z" fill="currentColor"/></svg>
-                                                    <span class="text-xs text-neutral-400">Pi&egrave;ces jointes (optionnel)</span>
-                                                    <span class="file-selection-feedback text-[11px] text-neutral-400 text-center">Aucun fichier s&eacute;lectionn&eacute;</span>
+                                                    <span class="text-xs text-neutral-400">Pièces jointes (optionnel)</span>
+                                                    <span class="file-selection-feedback text-[11px] text-neutral-400 text-center">Aucun fichier sélectionné</span>
                                                     <input id="chef-assigned-files-{{ $demande->id_demande }}" type="file" name="pieces_jointes[]" multiple class="hidden" data-file-feedback>
                                                 </label>
                                                 <button type="submit"
+                                                    data-submit-loading
+                                                    data-loading-label="Envoi en cours..."
                                                     class="w-full flex items-center justify-center gap-2 bg-sky hover:bg-sky-600 text-white text-sm font-medium py-2.5 rounded-xl transition-colors duration-150">
                                                     <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 6h18v12H3V6Zm2 2v1l7 4 7-4V8l-7 4-7-4Zm11.2 5.8-1.4 1.4-1.3-1.3-1.4 1.4 2.7 2.7 4.8-4.8-1.4-1.4-3.4 3.4Z" fill="currentColor"/></svg> Envoyer la r&eacute;ponse
                                                 </button>
@@ -775,8 +773,8 @@
                                         <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-4 flex items-start gap-3">
                                             <svg class="icon-svg text-neutral-400 text-sm mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2h1a2 2 0 0 1 2 2v8H4v-8a2 2 0 0 1 2-2h1Zm2 0h6V8a3 3 0 0 0-6 0v2Z" fill="currentColor"/></svg>
                                             <div>
-                                                <p class="text-xs font-medium text-neutral-600 mb-0.5">Assignation verrouill&eacute;e</p>
-                                                <p class="text-xs text-neutral-400 leading-relaxed">Une r&eacute;ponse existe d&eacute;j&agrave; pour cette demande. L'annulation d'affectation n'est plus disponible.</p>
+                                                <p class="text-xs font-medium text-neutral-600 mb-0.5">Assignation verrouillée</p>
+                                                <p class="text-xs text-neutral-400 leading-relaxed">Une réponse existe déjà pour cette demande. L'annulation d'affectation n'est plus disponible.</p>
                                             </div>
                                         </div>
                                         @endif
@@ -823,7 +821,7 @@
                                             @endif
                                         </div>
                                         @empty
-                                        <p class="text-sm text-neutral-400">Aucune action enregistr&eacute;e pour cette demande.</p>
+                                        <p class="text-sm text-neutral-400">Aucune action enregistrée pour cette demande.</p>
                                         @endforelse
                                     </div>
                                 </div>
@@ -839,7 +837,7 @@
                                             <path d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Zm-5 8v-1c0-2.8 2.8-5 5-5s5 2.2 5 5v1H7Zm4-8 1 2 1-2h-2Zm1 3-1.5 5h3L12 15Z" fill="currentColor"/>
                                         </svg>
                                     </div>
-                                    <p class="text-sm">Aucune demande affect&eacute;e.</p>
+                                    <p class="text-sm">Aucune demande affectée.</p>
                                 </div>
                             </td>
                         </tr>
@@ -862,19 +860,19 @@
                         <path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
                     </svg>
-                    <h2 class="text-sm font-semibold text-navy">Historique des actions chef</h2>
+                    <h2 class="text-sm font-semibold text-navy">Historique des actions du chef de service</h2>
                 </div>
-                <p class="text-xs text-neutral-400 hidden sm:block">Affectations, annulations et r&eacute;ponses du service</p>
+                <p class="text-xs text-neutral-400 hidden sm:block">Affectations, annulations et réponses du service</p>
             </div>
             <div class="px-5 py-4 space-y-3">
                 @php
                     $actionLabels = [
                         'affectation_agent' => 'Affectation agent',
                         'annulation_affectation_agent' => 'Annulation affectation agent',
-                        'reponse_directe_chef' => 'R&eacute;ponse directe chef',
-                        'reponse_redigee' => html_entity_decode('R&eacute;ponse r&eacute;dig&eacute;e', ENT_QUOTES, 'UTF-8'),
-                        'envoi_reponse' => html_entity_decode('Envoi r&eacute;ponse', ENT_QUOTES, 'UTF-8'),
-                        'echec_envoi_reponse' => html_entity_decode('Echec d&apos;envoi', ENT_QUOTES, 'UTF-8'),
+                        'reponse_directe_chef' => 'Réponse directe du chef',
+                        'reponse_redigee' => html_entity_decode('Réponse rédigée', ENT_QUOTES, 'UTF-8'),
+                        'envoi_reponse' => html_entity_decode('Envoi de la réponse', ENT_QUOTES, 'UTF-8'),
+                        'echec_envoi_reponse' => html_entity_decode("Échec d'envoi", ENT_QUOTES, 'UTF-8'),
                     ];
                 @endphp
                 @forelse($recentChefActions as $entry)
@@ -1138,19 +1136,42 @@
         initFileFeedback(root);
         initFormRefreshLocks(root);
         initViewToggles(root);
+        window.initAnbgSubmitLoading?.(root);
     };
 
     const hasFocusedControl = () => {
         const active = document.activeElement;
         if (!active || !liveContent || !liveContent.contains(active)) return false;
 
-        return ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(active.tagName) || active.isContentEditable;
+        return ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName) || active.isContentEditable;
     };
 
-    const hasOpenDetail = () => {
-        if (!liveContent) return false;
+    const openDetailIds = () => {
+        if (!liveContent) return [];
 
-        return Array.from(liveContent.querySelectorAll('.detail-row')).some((row) => row.style.display !== 'none');
+        return Array.from(liveContent.querySelectorAll('.detail-row'))
+            .filter((row) => row.style.display !== 'none')
+            .map((row) => row.id);
+    };
+
+    const restoreOpenDetails = (ids) => {
+        ids.forEach((id) => {
+            const row = document.getElementById(id);
+            if (!row) return;
+
+            row.style.display = '';
+
+            const btn = Array.from(document.querySelectorAll('.view-toggle'))
+                .find((candidate) => candidate.dataset.target === id);
+            if (!btn) return;
+
+            btn.setAttribute('aria-expanded', 'true');
+            const icon = btn.querySelector('.toggle-icon');
+            const spans = btn.querySelectorAll('span');
+            const label = spans.length > 1 ? spans[1] : null;
+            if (icon) icon.innerHTML = eyeOffSvg;
+            if (label) label.textContent = 'Masquer';
+        });
     };
 
     const hasDirtyForm = () => {
@@ -1164,7 +1185,7 @@
             return true;
         }
 
-        return hasFocusedControl() || hasOpenDetail() || hasDirtyForm();
+        return hasFocusedControl() || hasDirtyForm();
     };
 
     const initChefAutoRefresh = () => {
@@ -1206,18 +1227,20 @@
                 if (!nextContent) return;
 
                 const transitions = summarizeDeliveryTransitions(liveContent, nextContent);
+                const openedDetails = openDetailIds();
 
                 liveContent.innerHTML = nextContent.innerHTML;
                 initChefInteractions(liveContent);
+                restoreOpenDetails(openedDetails);
 
                 if (transitions.delivered.length > 0) {
                     const firstLabel = transitions.delivered[0];
                     showDeliveryNotification(
                         'success',
-                        transitions.delivered.length > 1 ? 'Reponses envoyees' : 'Reponse envoyee',
+                        transitions.delivered.length > 1 ? 'Réponses envoyées' : 'Réponse envoyée',
                         transitions.delivered.length > 1
-                            ? `${transitions.delivered.length} reponses ont ete confirmees par le systeme.`
-                            : `La demande ${firstLabel} a bien ete envoyee a l'usager.`
+                            ? `${transitions.delivered.length} réponses ont été confirmées par le système.`
+                            : `La demande ${firstLabel} a bien été envoyée à l'usager.`
                     );
                 }
 
@@ -1225,14 +1248,14 @@
                     const firstLabel = transitions.failed[0];
                     showDeliveryNotification(
                         'error',
-                        'Echec d envoi',
+                        "Échec d'envoi",
                         transitions.failed.length > 1
-                            ? `${transitions.failed.length} envois ont echoue. Une relance est possible.`
-                            : `L'envoi pour la demande ${firstLabel} a echoue. Vous pouvez relancer la reponse.`
+                            ? `${transitions.failed.length} envois ont échoué. Une relance est possible.`
+                            : `L'envoi pour la demande ${firstLabel} a échoué. Vous pouvez relancer la réponse.`
                     );
                 }
             } catch (error) {
-                console.warn('Rafraichissement chef de service interrompu.', error);
+                console.warn('Rafraîchissement du chef de service interrompu.', error);
             } finally {
                 isRefreshing = false;
             }

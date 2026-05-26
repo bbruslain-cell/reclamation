@@ -138,7 +138,7 @@
         };
         $filtersActifs = collect([
             $search !== '' ? 'Recherche active' : null,
-            request('statut_code') ? 'Statut filtre' : null,
+            request('statut_code') ? 'Statut filtré' : null,
         ])->filter()->values();
     @endphp
     <header class="bg-navy sticky top-0 z-50 shadow-md">
@@ -186,7 +186,7 @@
                             <path d="M13 8l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             <path d="M9 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                         </svg>
-                        <span class="hidden sm:inline">Deconnexion</span>
+                        <span class="hidden sm:inline">Déconnexion</span>
                     </button>
                 </form>
             </div>
@@ -199,7 +199,7 @@
                 <div class="space-y-6">
                     <h1 class="text-2xl font-bold leading-tight sm:text-[2rem]">Supervision transverse de votre direction</h1>
                     <p class="max-w-3xl text-sm leading-6 text-white/78 sm:text-[15px]">
-                        Cette vue donne un suivi global des services rattaches a votre direction : volumes, conformite, retards et lecture detaillee des dossiers sans modifier les reponses usager.
+                        Cette vue donne un suivi global des services rattachés à votre direction : volumes, conformité, retards et lecture détaillée des dossiers sans modifier les réponses usager.
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -220,7 +220,7 @@
                         <svg class="icon-svg text-[#3996d3]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5h-2v6l5 3 1-1.7-4-2.3V7Z" fill="currentColor"/>
                         </svg>
-                        {{ $filtersActifs->isNotEmpty() ? $filtersActifs->implode('-') : 'Vue generale sans filtre' }}
+                        {{ $filtersActifs->isNotEmpty() ? $filtersActifs->implode('-') : 'Vue générale sans filtre' }}
                     </span>
                 </div>
             </div>
@@ -258,7 +258,7 @@
                         </svg>
                     </span>
                     <input name="search" value="{{ $search }}"
-                        placeholder="Recherche : numero suivi, objet, usager..."
+                        placeholder="Recherche : numéro suivi, objet, usager..."
                         class="field w-full rounded-2xl border border-neutral-200 bg-white/80 py-3 pl-10 pr-4 text-sm text-navy placeholder-neutral-400 transition-all duration-150">
                 </div>
                 <div>
@@ -301,7 +301,7 @@
                             <path d="M9 3h6l1 2h3v16H5V5h3l1-2Zm-1 7h8V8H8v2Zm0 4h8v-2H8v2Zm0 4h8v-2H8v2Z" fill="currentColor"/>
                         </svg>
                     </span>
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">Service charge</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">Service chargé</p>
                     <p class="text-sm font-bold leading-tight">{{ $serviceSummary['service_plus_charge'] ?? '-' }}</p>
                     <p class="text-xs text-white/68">{{ number_format((int) ($serviceSummary['demandes_plus_charge'] ?? 0), 0, ',', ' ') }} demandes</p>
                 </div>
@@ -327,7 +327,7 @@
                             <path d="M4 19h16v2H2V4h2v15Zm2.7-4.3 3.5-3.5 2.6 2.6 4.5-5.3 1.5 1.3-5.9 7-2.7-2.7-2.1 2.1-1.4-1.5Z" fill="currentColor"/>
                         </svg>
                     </span>
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1c203d]/72">Conformite max</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1c203d]/72">Conformité max</p>
                     <p class="text-sm font-bold leading-tight">{{ $serviceSummary['meilleur_service'] ?? '-' }}</p>
                     <p class="text-xs text-[#1c203d]/72">{{ number_format((float) ($serviceSummary['meilleur_taux'] ?? 0), 1, ',', ' ') }} %</p>
                 </div>
@@ -341,7 +341,7 @@
         <section class="space-y-5">
             <div>
                 <h2 class="text-sm font-medium text-navy">Performance des services</h2>
-                <p class="mt-1 text-xs text-neutral-400">Lecture comparative des services de votre direction sur le volume, la cloture et le respect des delais.</p>
+                <p class="mt-1 text-xs text-neutral-400">Lecture comparative des services de votre direction sur le volume, la clôture et le respect des délais.</p>
             </div>
 
             <section class="surface-card rounded-[26px] overflow-hidden">
@@ -358,14 +358,14 @@
                         <thead class="table-head">
                             <tr>
                                 <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Service</th>
-                                <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Recues</th>
-                                <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Cloturees</th>
+                                <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Reçues</th>
+                                <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Clôturées</th>
                                 <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">En cours</th>
-                                <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Dans les delais</th>
-                                <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">A risque</th>
+                                <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Dans les délais</th>
+                                <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">À risque</th>
                                 <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">En retard</th>
-                                <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Conformite</th>
-                                <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Delai moyen</th>
+                                <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Conformité</th>
+                                <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Délai moyen</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-neutral-100">
@@ -409,7 +409,7 @@
                         {{ $demandes->total() }}
                     </span>
                 </div>
-                <p class="text-xs text-neutral-400 hidden sm:block">Suivi transversal des demandes de votre perimetre</p>
+                <p class="text-xs text-neutral-400 hidden sm:block">Suivi transversal des demandes de votre périmètre</p>
             </div>
 
             <div class="overflow-x-auto">
@@ -448,11 +448,11 @@
                                 </span>
                                 @elseif($demande->delai_alerte === 'a_risque')
                                 <span class="inline-flex items-center gap-1.5 bg-gold-50 text-amber-700 border border-amber-200 text-xs font-medium px-2.5 py-1 rounded-full">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0"></span> A risque
+                                    <span class="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0"></span> À risque
                                 </span>
                                 @else
                                 <span class="inline-flex items-center gap-1.5 bg-leaf-50 text-green-700 border border-green-200 text-xs font-medium px-2.5 py-1 rounded-full">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-leaf flex-shrink-0"></span> Dans les delais
+                                    <span class="w-1.5 h-1.5 rounded-full bg-leaf flex-shrink-0"></span> Dans les délais
                                 </span>
                                 @endif
                             </td>
@@ -472,7 +472,7 @@
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                     <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
                                         <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2">
-                                            <span class="inline-flex items-center gap-1.5"><svg class="icon-svg text-sky" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 2h8l4 4v16H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V7h3.5L13 3.5ZM8 11h8v2H8v-2Zm0 4h8v2H8v-2Z" fill="currentColor"/></svg><span>Detail de la demande</span></span>
+                                            <span class="inline-flex items-center gap-1.5"><svg class="icon-svg text-sky" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 2h8l4 4v16H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V7h3.5L13 3.5ZM8 11h8v2H8v-2Zm0 4h8v2H8v-2Z" fill="currentColor"/></svg><span>Détail de la demande</span></span>
                                         </h4>
 
                                         <div>
@@ -496,15 +496,15 @@
                                             </div>
                                             <div>
                                                 <p class="text-xs text-neutral-400">Email</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_email ?? 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â' }}</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_email ?? '-' }}</p>
                                             </div>
                                             <div>
                                                 <p class="text-xs text-neutral-400">Statut usager</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_statut ?? 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â' }}</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_statut ?? '-' }}</p>
                                             </div>
                                             <div>
                                                 <p class="text-xs text-neutral-400">Pays</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_pays ?? 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â' }}</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_pays ?? '-' }}</p>
                                             </div>
                                             <div>
                                                 <p class="text-xs text-neutral-400">Etablissement</p>
@@ -514,19 +514,15 @@
 
                                         @if($pieces->isNotEmpty())
                                         <div>
-                                            <p class="text-xs text-neutral-400 mb-1.5">Pieces jointes usager</p>
+                                            <p class="text-xs text-neutral-400 mb-1.5">Pièces jointes usager</p>
                                             <div class="space-y-1.5">
                                                 @foreach($pieces as $piece)
-                                                <a href="/pieces-jointes/{{ $piece->id_piece_jointe }}" target="_blank" rel="noopener"
-                                                    class="flex items-center gap-2 bg-sky-50 border border-sky-100 text-sky text-xs font-medium px-3 py-2 rounded-lg hover:bg-sky-100 transition-colors duration-150">
-                                                    <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8.5 12.5 13 8a3 3 0 1 1 4.2 4.2l-6 6a5 5 0 1 1-7.1-7.1l6.3-6.3 1.4 1.4-6.3 6.3a3 3 0 1 0 4.2 4.2l6-6a1 1 0 1 0-1.4-1.4l-4.5 4.5-1.4-1.4Z" fill="currentColor"/></svg>
-                                                    <span>{{ $piece->nom_fichier }}</span>
-                                                </a>
+                                                @include('workflow.partials.attachment-actions', ['piece' => $piece])
                                                 @endforeach
                                             </div>
                                         </div>
                                         @else
-                                        <p class="text-xs text-neutral-400 italic">Aucune piece jointe usager.</p>
+                                        <p class="text-xs text-neutral-400 italic">Aucune pièce jointe usager.</p>
                                         @endif
                                     </div>
 
@@ -553,7 +549,7 @@
                                                 <p class="mt-1 text-sm text-navy">{{ $demande->date_envoi_usager ?? '-' }}</p>
                                             </div>
                                             <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3">
-                                                <p class="text-[11px] text-neutral-400 uppercase tracking-wide">ClÃƒÂ´ture</p>
+                                                <p class="text-[11px] text-neutral-400 uppercase tracking-wide">Clôture</p>
                                                 <p class="mt-1 text-sm text-navy">{{ $demande->date_cloture ?? '-' }}</p>
                                             </div>
                                             <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3">
@@ -565,7 +561,7 @@
                                         <div class="flex items-start gap-2 bg-sky-50 border border-sky-100 rounded-lg px-3 py-2.5">
                                             <svg class="icon-svg text-sky text-xs mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 10v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7.8" r="1" fill="currentColor"/></svg>
                                             <p class="text-xs text-sky-700 leading-relaxed">
-                                                Consultation uniquement : le chef de direction supervise les services de son perimetre et les indicateurs de delai, sans modifier la reponse usager.
+                                                Consultation uniquement : le chef de direction supervise les services de son périmètre et les indicateurs de délai, sans modifier la réponse usager.
                                             </p>
                                         </div>
                                     </div>
@@ -574,7 +570,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-sm text-neutral-400">Aucune demande sur votre perimetre.</td>
+                            <td colspan="6" class="px-4 py-8 text-center text-sm text-neutral-400">Aucune demande sur votre périmètre.</td>
                         </tr>
                     @endforelse
                     </tbody>
@@ -647,18 +643,35 @@
             initViewToggles(root);
         };
 
-        const hasOpenDetail = () => {
-            if (!liveContent) return false;
+        const openDetailIds = () => {
+            if (!liveContent) return [];
 
-            return Array.from(liveContent.querySelectorAll('.detail-row')).some((row) => row.style.display !== 'none');
+            return Array.from(liveContent.querySelectorAll('.detail-row'))
+                .filter((row) => row.style.display !== 'none')
+                .map((row) => row.id);
+        };
+
+        const restoreOpenDetails = (ids) => {
+            ids.forEach((id) => {
+                const row = document.getElementById(id);
+                if (!row) return;
+
+                row.style.display = '';
+
+                const btn = Array.from(document.querySelectorAll('.view-toggle'))
+                    .find((candidate) => candidate.dataset.target === id);
+                if (!btn) return;
+
+                btn.setAttribute('aria-expanded', 'true');
+                const icon = btn.querySelector('.icon-slot');
+                const label = btn.querySelector('.label-slot');
+                if (icon) icon.innerHTML = eyeSlashSvg;
+                if (label) label.textContent = 'Masquer';
+            });
         };
 
         const shouldSkipRefresh = (isRefreshing) => {
-            if (!liveContent || isRefreshing || document.hidden) {
-                return true;
-            }
-
-            return hasOpenDetail();
+            return !liveContent || isRefreshing || document.hidden;
         };
 
         const initDirectionAutoRefresh = () => {
@@ -698,10 +711,13 @@
 
                     if (!nextContent) return;
 
+                    const openedDetails = openDetailIds();
+
                     liveContent.innerHTML = nextContent.innerHTML;
                     initDirectionInteractions(liveContent);
+                    restoreOpenDetails(openedDetails);
                 } catch (error) {
-                    console.warn('Rafraichissement direction interrompu.', error);
+                    console.warn('Rafraîchissement direction interrompu.', error);
                 } finally {
                     isRefreshing = false;
                 }

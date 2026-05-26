@@ -1,10 +1,8 @@
-<!doctype html>
-<html lang="fr">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <title>Changer le mot de passe - ANBG</title>
+@extends('layouts.app')
+
+@section('title', 'Changer le mot de passe - ANBG')
+
+@push('styles')
     <style>
         body { margin:0; font-family: "Segoe UI", sans-serif; background:#eef4f9; color:#102230; }
         .wrap { min-height:100vh; display:grid; place-items:center; padding:20px; }
@@ -19,8 +17,9 @@
         .msg-err { background:#fdecec; color:#9b1c1c; border:1px solid #edb1b1; }
         a { color:#0d628e; }
     </style>
-</head>
-<body>
+@endpush
+
+@section('content')
 <div class="wrap">
     <div class="card">
         <h1>Nouveau mot de passe requis</h1>
@@ -51,5 +50,4 @@
         </form>
     </div>
 </div>
-</body>
-</html>
+@endsection

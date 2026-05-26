@@ -286,6 +286,36 @@ class OverviewController extends Controller
                 'total' => (int) $row->total,
             ]);
 
+        $demandsByCountry = (clone $baseDemands)
+            ->whereNotNull('u.pays')
+            ->whereRaw("TRIM(u.pays) <> ''")
+            ->selectRaw('TRIM(u.pays) as pays, COUNT(*) as total_demandes')
+            ->groupByRaw('TRIM(u.pays)')
+            ->orderByDesc('total_demandes')
+            ->limit(12)
+            ->get()
+            ->values()
+            ->map(fn ($row, int $index) => [
+                'rang' => $index + 1,
+                'pays' => (string) $row->pays,
+                'total_demandes' => (int) $row->total_demandes,
+            ]);
+
+        $demandsByEstablishment = (clone $baseDemands)
+            ->whereNotNull('u.etablissement')
+            ->whereRaw("TRIM(u.etablissement) <> ''")
+            ->selectRaw('TRIM(u.etablissement) as etablissement, COUNT(*) as total_demandes')
+            ->groupByRaw('TRIM(u.etablissement)')
+            ->orderByDesc('total_demandes')
+            ->limit(12)
+            ->get()
+            ->values()
+            ->map(fn ($row, int $index) => [
+                'rang' => $index + 1,
+                'etablissement' => (string) $row->etablissement,
+                'total_demandes' => (int) $row->total_demandes,
+            ]);
+
         $typePerformance = (clone $baseDemands)
             ->select(
                 'td.code',
@@ -511,7 +541,7 @@ class OverviewController extends Controller
                 'message' => (string) ($row->message ?? ''),
                 'type_demande' => $row->type_demande,
                 'statut_demande' => $row->statut_demande,
-                'statut_application' => $row->statut_code === 'cloturee' ? 'Appliquee' : 'Non appliquee',
+                'statut_application' => $row->statut_code === 'cloturee' ? 'Appliquée' : 'Non appliquée',
                 'direction' => $row->direction ?: '-',
                 'service' => $row->service ?: '-',
             ]);
@@ -842,11 +872,11 @@ class OverviewController extends Controller
                     $serviceLabel = trim((string) ($serviceMeta->code ?? 'UCAS'));
                 }
 
-                $qcs = $isDirectAccueil
+                $responsableReponseFallback = $isDirectAccueil
                     ? (string) ($annexeDirectAccueilByDemand->get($row->id_demande, '') ?: '')
                     : (string) ($annexeChefByDemand->get($row->id_demande, '') ?: '');
-                if ($qcs === '' && $serviceId !== null) {
-                    $qcs = (string) $serviceChefByServiceId->get($serviceId, '');
+                if ($responsableReponseFallback === '' && $serviceId !== null) {
+                    $responsableReponseFallback = (string) $serviceChefByServiceId->get($serviceId, '');
                 }
 
                 $expediteur = trim(((string) ($row->usager_prenom ?? '')).' '.((string) ($row->usager_nom ?? '')));
@@ -855,6 +885,17 @@ class OverviewController extends Controller
                 $affectationAccueil = $traitementActions->where('type_action', 'affectation_service')->last();
                 $affectationAgent = $traitementActions->where('type_action', 'affectation_agent')->last();
                 $reponseDetail = $annexeResponseDetailByDemand->get($row->id_demande, null);
+                $reponseRedacteur = is_array($reponseDetail)
+                    ? trim((string) ($reponseDetail['redacteur'] ?? ''))
+                    : '';
+                $reponseEnvoyeur = is_array($reponseDetail)
+                    ? trim((string) ($reponseDetail['envoyeur'] ?? ''))
+                    : '';
+                $qcs = $reponseRedacteur !== '' && $reponseRedacteur !== '-'
+                    ? $reponseRedacteur
+                    : ($reponseEnvoyeur !== '' && $reponseEnvoyeur !== '-'
+                        ? $reponseEnvoyeur
+                        : $responsableReponseFallback);
 
                 $agentAccueil = trim(((string) ($row->accueil_prenom ?? '')).' '.((string) ($row->accueil_nom ?? '')));
                 $agentTraitant = trim(((string) ($row->agent_traitant_prenom ?? '')).' '.((string) ($row->agent_traitant_nom ?? '')));
@@ -888,7 +929,11 @@ class OverviewController extends Controller
                     'delai_transmission_oh' => $row->date_affectation_accueil ? ($transmissionOk ? 'OUI' : 'NON') : '-',
                     'service_direction' => $serviceLabel !== '' ? $serviceLabel : '-',
                     'realisation' => $realisationDate,
-                    'statut_traitement' => $row->statut_code === 'cloturee' ? 'APPLIQUEE' : strtoupper((string) $row->statut_traitement),
+                    'statut_code' => (string) ($row->statut_code ?? ''),
+                    'statut_traitement' => $this->humanDemandStatusLabel(
+                        (string) ($row->statut_code ?? ''),
+                        (string) ($row->statut_traitement ?? '')
+                    ),
                     'respect_delais' => $respectDelais,
                     'jours_attente' => $this->formatBusinessDuration(
                         $row->date_soumission,
@@ -922,7 +967,7 @@ class OverviewController extends Controller
                             'commentaire' => is_array($affectationAccueil ?? null) ? ($affectationAccueil['commentaire'] ?? null) : null,
                         ],
                         'affectation_agent' => [
-                            'chef' => $chefAffectation !== '' ? $chefAffectation : ($qcs !== '-' ? $qcs : '-'),
+                            'chef' => $chefAffectation !== '' ? $chefAffectation : ($responsableReponseFallback !== '' ? $responsableReponseFallback : '-'),
                             'agent' => $agentAffecte !== '' ? $agentAffecte : ($agentTraitant !== '' ? $agentTraitant : '-'),
                             'date' => $affectationAgentDate,
                             'commentaire' => is_array($affectationAgent ?? null) ? ($affectationAgent['commentaire'] ?? null) : null,
@@ -997,7 +1042,7 @@ class OverviewController extends Controller
                     'date_reponse' => $row->date_envoi_usager ?: ($row->date_reponse_direction ?: $row->date_cloture),
                     'acteur_reponse' => $acteurReponse !== '' ? $acteurReponse : '-',
                     'statut_traitement' => $row->statut_traitement,
-                    'statut_application' => $row->statut_code === 'cloturee' ? 'Appliquee' : 'Non appliquee',
+                    'statut_application' => $row->statut_code === 'cloturee' ? 'Appliquée' : 'Non appliquée',
                     'delai_global' => $this->humanAlertLabel((string) ($row->delai_alerte ?? '')),
                     'delai_moyen_heures' => $row->heures_ouvrees_cloture !== null
                         ? round((float) $row->heures_ouvrees_cloture, 2)
@@ -1328,6 +1373,8 @@ class OverviewController extends Controller
             'kpi_services' => $serviceKpis,
             'kpi_agents' => $agentKpis,
             'par_type' => $byType,
+            'demandes_par_pays' => $demandsByCountry,
+            'demandes_par_etablissement' => $demandsByEstablishment,
             'performance_types' => $typePerformance,
             'evolution_par_type' => $evolutionByType,
             'evolution_temporelle' => $evolutionTemporelle,
@@ -1366,24 +1413,11 @@ class OverviewController extends Controller
                 'statuts' => $catalogStatus,
                 'types' => $catalogTypes,
                 'application_states' => [
-                    ['code' => 'appliquee', 'libelle' => 'Appliquee'],
-                    ['code' => 'non_appliquee', 'libelle' => 'Non appliquee'],
+                    ['code' => 'appliquee', 'libelle' => 'Appliquée'],
+                    ['code' => 'non_appliquee', 'libelle' => 'Non appliquée'],
                 ],
             ],
-            'phase4_gantt' => [
-                'intitule' => 'Phase 4 - Developpement',
-                'duree' => '05 semaines',
-                'pilote' => 'CS_SIRS',
-                'blocs' => [
-                    'Interfaces utilisateur',
-                    'Gestion des utilisateurs et des droits',
-                    'Gestion des reclamations',
-                    'Suivi de l exécution et statuts',
-                    'Delai 24h + alertes',
-                    'Tracabilite',
-                    'Tableau de bord + exports',
-                ],
-            ],
+
         ]);
     }
 
@@ -1394,7 +1428,7 @@ class OverviewController extends Controller
             $userId = (int) $actor->id_utilisateur;
 
             if (Gate::forUser($actor)->denies('dashboard.view')) {
-                throw new AuthorizationException('Acces tableau de bord refuse.');
+                throw new AuthorizationException('Accès aux tableaux de bord refusé.');
             }
 
             $access->assertDemandAccess($userId, $id);
@@ -1763,15 +1797,15 @@ class OverviewController extends Controller
     private function humanActionLabel(string $action): string
     {
         return match ($action) {
-            'soumission_usager' => 'Soumission usager',
+            'soumission_usager' => "Soumission à l'usager",
             'soumission' => 'Soumission',
-            'affectation_service' => 'Affectation service',
-            'affectation_agent' => 'Affectation agent',
-            'annulation_affectation_agent' => 'Annulation affectation agent',
+            'affectation_service' => 'Affectation au service',
+            'affectation_agent' => 'Affectation à un agent',
+            'annulation_affectation_agent' => "Annulation d'affectation à l'agent",
             'reponse_redigee' => 'Réponse rédigée',
             'envoi_reponse' => 'Réponse finale envoyée',
-            'reponse_directe_accueil' => 'Reponse directe accueil',
-            'reponse_directe_chef' => 'Reponse directe chef',
+            'reponse_directe_accueil' => 'Réponse directe de l\'accueil',
+            'reponse_directe_chef' => 'Réponse directe du chef',
             default => ucfirst(str_replace('_', ' ', $action)),
         };
     }
@@ -1781,10 +1815,10 @@ class OverviewController extends Controller
         $normalized = trim((string) $comment);
 
         return match ($action) {
-            'reponse_redigee' => $normalized === '' || $normalized === 'Reponse unique'
+            'reponse_redigee' => $normalized === '' || $normalized === 'Réponse unique'
                 ? 'Réponse rédigée'
                 : $normalized,
-            'envoi_reponse' => $normalized === '' || $normalized === 'Envoi final a l usager'
+            'envoi_reponse' => $normalized === '' || $normalized === 'Envoi final à l\'usager'
                 ? "Envoi final à l'usager"
                 : $normalized,
             default => $comment,
@@ -1795,7 +1829,7 @@ class OverviewController extends Controller
     {
         $functionDefinitions = [
             'DS' => 'Direction de la Scolarité',
-            'DSIC' => 'Direction des Systèmes d’Informations et de la Communication',
+            'DSIC' => 'Direction des Systèmes d\'Informations et de la Communication',
             'DAF' => 'Direction Administrative et Financière',
             'UCAS' => 'Unité Courrier, Accueil et Sécurité',
         ];
@@ -2054,6 +2088,18 @@ class OverviewController extends Controller
         $formatted = rtrim(rtrim($formatted, '0'), ',');
 
         return $formatted.' h';
+    }
+
+    private function humanDemandStatusLabel(string $statusCode, string $fallback = ''): string
+    {
+        return match ($statusCode) {
+            'nouvelle' => 'Reçu',
+            'affectee_service' => 'Affectée au service',
+            'affectee_agent' => 'Affectée à un agent',
+            'reponse_prete' => 'Réponse rédigée',
+            'cloturee' => 'Clôturée',
+            default => trim($fallback) !== '' ? trim($fallback) : '-',
+        };
     }
 
     private function humanAlertLabel(string $alertCode): string

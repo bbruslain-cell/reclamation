@@ -189,25 +189,25 @@
         <h1>ANBG - Pilotage CIQ</h1>
         <p>Tableaux de bord et reporting multi-acteurs (accueil, chefs de direction, chefs de service, CIQ)</p>
         <p><a href="/admin" style="color:#fff;">Administration</a> | <a href="/espace" style="color:#fff;">Mon espace</a></p>
-        <form method="post" action="/logout" style="margin-top:8px;">@csrf <button style="width:auto;background:#fff;color:#0b5f87;border:0;border-radius:8px;padding:6px 10px;">Deconnexion</button></form>
+        <form method="post" action="/logout" style="margin-top:8px;">@csrf <button style="width:auto;background:#fff;color:#0b5f87;border:0;border-radius:8px;padding:6px 10px;">Déconnexion</button></form>
 
         <form method="get" class="filters">
             <select id="periode" name="periode">
-                <option value="all">Toute periode</option>
-                <option value="today">Aujourd hui</option>
+                <option value="all">Toute période</option>
+                <option value="today">Aujourd'hui</option>
                 <option value="week">Cette semaine</option>
                 <option value="month">Ce mois</option>
                 <option value="quarter">Ce trimestre</option>
-                <option value="year">Cette annee</option>
-                <option value="custom">Personnalisee</option>
+                <option value="year">Cette année</option>
+                <option value="custom">Personnalisée</option>
             </select>
-            <input type="date" id="date_from" name="date_from" title="Date debut">
+            <input type="date" id="date_from" name="date_from" title="Date début">
             <input type="date" id="date_to" name="date_to" title="Date fin">
             <select id="direction_id" name="direction_id"><option value="">Toutes directions</option></select>
             <select id="statut_code" name="statut_code"><option value="">Tous statuts</option></select>
             <select id="type_code" name="type_code"><option value="">Tous types</option></select>
             <button type="submit">Appliquer</button>
-            <a class="link-reset" id="resetFilters" href="/pilotage">Reinitialiser</a>
+            <a class="link-reset" id="resetFilters" href="/pilotage">Réinitialiser</a>
         </form>
 
         <p class="muted" id="generatedAt">Chargement...</p>
@@ -217,10 +217,10 @@
             <button type="button" class="export-btn" data-export="service-kpi-section">Exporter retards services (PDF)</button>
             <button type="button" class="export-btn" data-export="agent-kpi-section">Exporter indicateurs agents (PDF)</button>
             <button type="button" class="export-btn" data-export="annexe-section">Exporter tableau annexe (PDF)</button>
-            <button type="button" class="export-btn" data-export="annexe2-section">Exporter annexe repartition (PDF)</button>
-            <button type="button" class="export-btn" data-export="trace-global-section">Exporter tracabilite globale (PDF)</button>
+            <button type="button" class="export-btn" data-export="annexe2-section">Exporter annexe répartition (PDF)</button>
+            <button type="button" class="export-btn" data-export="trace-global-section">Exporter traçabilité globale (PDF)</button>
             <button type="button" class="export-btn" data-export="usager-history-section">Exporter historique usagers (PDF)</button>
-            <button type="button" class="export-btn" data-export="actions-section">Exporter actions recentes (PDF)</button>
+            <button type="button" class="export-btn" data-export="actions-section">Exporter actions récentes (PDF)</button>
         </div>
     </div>
 
@@ -238,8 +238,8 @@
                     <th>Rang</th>
                     <th>Direction</th>
                     <th>Total demandes</th>
-                    <th>Taux reponse dans delais (%)</th>
-                    <th>Delai moyen (h)</th>
+                    <th>Taux réponse dans délais (%)</th>
+                    <th>Délai moyen (h)</th>
                     <th>Retards chef</th>
                     <th>Retards agent</th>
                     <th>Total retards</th>
@@ -302,10 +302,10 @@
 
     <div class="cols">
         <section class="section">
-            <h2>Repartition par statut</h2>
+            <h2>Répartition par statut</h2>
             <div class="chart-card">
                 <div class="muted" style="margin-bottom:6px;">Histogramme par statut</div>
-                <div class="bar-wrap"><canvas id="statusBarChart" aria-label="Histogramme repartition par statut"></canvas></div>
+                <div class="bar-wrap"><canvas id="statusBarChart" aria-label="Histogramme répartition par statut"></canvas></div>
                 <div id="statusBarEmpty" class="muted">Chargement...</div>
             </div>
             <div class="table-wrap">
@@ -316,10 +316,10 @@
             </div>
         </section>
         <section class="section">
-            <h2>Repartition par type</h2>
+            <h2>Répartition par type</h2>
             <div class="chart-card">
-                <div class="muted" style="margin-bottom:6px;">Vue graphique (mise a jour automatique dans le temps)</div>
-                <div class="pie-wrap"><canvas id="typePieChart" aria-label="Camembert repartition par type"></canvas></div>
+                <div class="muted" style="margin-bottom:6px;">Vue graphique (mise à jour automatique dans le temps)</div>
+                <div class="pie-wrap"><canvas id="typePieChart" aria-label="Camembert répartition par type"></canvas></div>
                 <div id="typePieEmpty" class="muted">Chargement...</div>
             </div>
             <div class="table-wrap">
@@ -333,7 +333,7 @@
 
     <section class="section" id="annexe-section">
         <div class="section-head">
-            <h2> tableau actuel du suivi des reclamations</h2>
+            <h2> tableau actuel du suivi des réclamations</h2>
             <button type="button" class="export-btn" data-export="annexe-section">PDF</button>
         </div>
         <div class="table-wrap">
@@ -341,15 +341,15 @@
                 <thead>
                 <tr>
                     <th>No</th>
-                    <th>Date de reception</th>
-                    <th>Expediteur</th>
+                    <th>Date de réception</th>
+                    <th>Expéditeur</th>
                     <th>Objet</th>
                     <th>Date de dispatching</th>
-                    <th>Delais transmission (O/H)</th>
+                    <th>Délais transmission (O/H)</th>
                     <th>Service/Direction</th>
-                    <th>Realisation</th>
+                    <th>Réalisation</th>
                     <th>Statut traitement</th>
-                    <th>Respect delais</th>
+                    <th>Respect délais</th>
                     <th>Nombre de jours d attente</th>
                     <th>Q/C/S</th>
                 </tr>
@@ -361,14 +361,14 @@
 
     <section class="section" id="annexe2-section">
         <div class="section-head">
-            <h2> repartition des demandes les plus recurrentes</h2>
+            <h2>Répartition des demandes les plus récurrentes</h2>
             <button type="button" class="export-btn" data-export="annexe2-section">PDF</button>
         </div>
         <div class="table-wrap">
             <table>
                 <thead class="annexe2-info-head">
                 <tr>
-                    <th>Demande d informations (eBourse, bourses et accessoires)</th>
+                    <th>Demande d'informations (eBourse, bourses et accessoires)</th>
                     <th>Nombre de mails</th>
                     <th>%</th>
                 </tr>
@@ -376,7 +376,7 @@
                 <tbody id="annexe2InfoBody"><tr><td colspan="3" class="muted">Chargement...</td></tr></tbody>
                 <tfoot>
                 <tr class="annexe2-total-info">
-                    <td>TOTAL DEMANDE D INFORMATIONS</td>
+                    <td>TOTAL DEMANDE D'INFORMATIONS</td>
                     <td id="annexe2InfoTotal">0</td>
                     <td>100%</td>
                 </tr>
@@ -387,7 +387,7 @@
             <table>
                 <thead class="annexe2-rec-head">
                 <tr>
-                    <th>RECLAMATIONS</th>
+                    <th>RÉCLAMATIONS</th>
                     <th>Nombre de mails</th>
                     <th>%</th>
                 </tr>
@@ -395,7 +395,7 @@
                 <tbody id="annexe2RecBody"><tr><td colspan="3" class="muted">Chargement...</td></tr></tbody>
                 <tfoot>
                 <tr class="annexe2-total-rec">
-                    <td>TOTAL RECLAMATIONS</td>
+                    <td>TOTAL RÉCLAMATIONS</td>
                     <td id="annexe2RecTotal">0</td>
                     <td>100%</td>
                 </tr>
@@ -414,8 +414,8 @@
                         <th>Usager</th>
                         <th>Email</th>
                         <th>Total</th>
-                        <th>Reclamations</th>
-                        <th>Taux reclamation (%)</th>
+                        <th>Réclamations</th>
+                        <th>Taux réclamation (%)</th>
                     </tr>
                     </thead>
                     <tbody id="usagerTopBody"><tr><td colspan="5" class="muted">Chargement...</td></tr></tbody>
@@ -448,7 +448,7 @@
 
     <section class="section" id="trace-global-section">
         <div class="section-head">
-            <h2>CIQ - tracabilite globale (soumission a reponse finale)</h2>
+            <h2>CIQ - tracabilité globale (soumission à réponse finale)</h2>
             <button type="button" class="export-btn" data-export="trace-global-section">PDF</button>
         </div>
         <div class="table-wrap">
@@ -494,7 +494,7 @@
 
     <section class="section" id="actions-section">
         <div class="section-head">
-            <h2>Tracabilite - actions recentes</h2>
+            <h2>Traçabilité - actions récentes</h2>
             <button type="button" class="export-btn" data-export="actions-section">PDF</button>
         </div>
         <div class="table-wrap">
@@ -544,8 +544,8 @@
 
     const alertBadge = (value) => {
         if (value === 'rouge' || value === 'en_retard') return '<span class="badge b-late">En retard</span>';
-        if (value === 'orange' || value === 'a_risque') return '<span class="badge b-warn">A risque</span>';
-        return '<span class="badge b-ok">Dans les delais</span>';
+        if (value === 'orange' || value === 'a_risque') return '<span class="badge b-warn">À risque</span>';
+        return '<span class="badge b-ok">Dans les délais</span>';
     };
 
     const chartPalette = ['#0a6d90', '#1f7a5a', '#d97706', '#b91c1c', '#6b21a8', '#0f766e', '#1d4ed8', '#9a3412'];
@@ -555,7 +555,7 @@
     const renderRows = (targetId, rows, emptyCols, renderFn) => {
         const target = document.getElementById(targetId);
         if (!rows || rows.length === 0) {
-            target.innerHTML = `<tr><td colspan="${emptyCols}" class="muted">Aucune donnee.</td></tr>`;
+            target.innerHTML = `<tr><td colspan="${emptyCols}" class="muted">Aucune donnée.</td></tr>`;
             return;
         }
         target.innerHTML = rows.map(renderFn).join('');
@@ -588,7 +588,7 @@
         if (!statuts || statuts.length === 0) {
             canvas.style.display = 'none';
             empty.style.display = 'block';
-            empty.textContent = 'Aucune donnee.';
+            empty.textContent = 'Aucune donnée.';
             return;
         }
 
@@ -606,7 +606,7 @@
         if (total <= 0) {
             canvas.style.display = 'none';
             empty.style.display = 'block';
-            empty.textContent = 'Aucune donnee.';
+            empty.textContent = 'Aucune donnée.';
             return;
         }
 
@@ -670,7 +670,7 @@
         if (!types || types.length === 0) {
             canvas.style.display = 'none';
             empty.style.display = 'block';
-            empty.textContent = 'Aucune donnee.';
+            empty.textContent = 'Aucune donnée.';
             return;
         }
 
@@ -688,7 +688,7 @@
         if (total <= 0) {
             canvas.style.display = 'none';
             empty.style.display = 'block';
-            empty.textContent = 'Aucune donnee.';
+            empty.textContent = 'Aucune donnée.';
             return;
         }
         canvas.style.display = 'block';
@@ -787,7 +787,7 @@
 
         const printWindow = window.open('', '_blank', 'width=1200,height=900');
         if (!printWindow) {
-            alert('Popup bloquee. Autorisez les popups pour exporter en PDF.');
+            alert('Popup bloquée. Autorisez les popups pour exporter en PDF.');
             return;
         }
 
@@ -843,12 +843,12 @@
 
     fetch('/pilotage/data' + (query ? `?${query}` : ''))
         .then((r) => {
-            if (!r.ok) throw new Error('Acces refuse ou erreur API');
+            if (!r.ok) throw new Error('Accès refusé ou erreur API');
             return r.json();
         })
         .then((data) => {
             document.getElementById('generatedAt').textContent =
-                `Genere le ${new Date(data.generated_at).toLocaleString('fr-FR')} | Periode: ${data.filters_appliques.periode}`;
+                `Généré le ${new Date(data.generated_at).toLocaleString('fr-FR')} | Période: ${data.filters_appliques.periode}`;
 
             fillSelect(
                 'direction_id',
@@ -873,16 +873,16 @@
             );
 
             const kpis = [
-                ['Total demandes recues', data.kpis.total_demandes],
+                ['Total demandes reçues', data.kpis.total_demandes],
                 ['Demandes traitees', data.kpis.total_traitees],
                 ['Demandes en cours', data.kpis.total_ouvertes],
                 ['Demandes en retard (global)', data.kpis.total_en_retard],
-                ['Accueil - dans delais', data.kpis.accueil_verts],
-                ['Accueil - a risque', data.kpis.accueil_oranges],
+                ['Accueil - dans délais', data.kpis.accueil_verts],
+                ['Accueil - à risque', data.kpis.accueil_oranges],
                 ['Accueil - en retard', data.kpis.accueil_rouges],
                 ['Retards chef', data.kpis.chef_rouges],
                 ['Retards agent', data.kpis.agent_rouges],
-                ['Taux traitement dans delais (%)', data.kpis.taux_traitement_dans_delais],
+                ['Taux traitement dans délais (%)', data.kpis.taux_traitement_dans_delais],
                 ['Délai actif', data.sla_active ? `${data.sla_active.delai_max_heures}h` : 'N/A'],
             ];
 

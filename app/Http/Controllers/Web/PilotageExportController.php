@@ -114,6 +114,58 @@ class PilotageExportController extends Controller
             return $response;
         }
 
+        if ($section === 'country-demand-ranking') {
+            abort_unless($format === 'pdf', 404);
+
+            $downloadName = 'pays-plus-demandeurs.pdf';
+            $rows = $this->buildDemandRankingRows($overviewData, 'demandes_par_pays', 'pays');
+
+            $pdf = Pdf::loadView('exports.pilotage.chart', [
+                'title' => 'Pays les plus demandeurs',
+                'chartImage' => $this->buildDemandRankingBarImage($rows),
+                'legendHeaders' => ['Pays', 'Demandes'],
+                'legendRows' => collect($rows)->map(fn (array $row) => [
+                    'color' => $row['color'],
+                    'cells' => [
+                        $row['label'],
+                        number_format((int) $row['total_demandes'], 0, ',', ' '),
+                    ],
+                ])->all(),
+            ])->setPaper('a4', 'landscape');
+
+            $response = $pdf->download($downloadName);
+
+            $this->traceExport($actor, $format, $downloadName, $section, $request);
+
+            return $response;
+        }
+
+        if ($section === 'establishment-demand-ranking') {
+            abort_unless($format === 'pdf', 404);
+
+            $downloadName = 'etablissements-plus-demandeurs.pdf';
+            $rows = $this->buildDemandRankingRows($overviewData, 'demandes_par_etablissement', 'etablissement');
+
+            $pdf = Pdf::loadView('exports.pilotage.chart', [
+                'title' => 'Établissements les plus demandeurs',
+                'chartImage' => $this->buildDemandRankingBarImage($rows),
+                'legendHeaders' => ['Établissement', 'Demandes'],
+                'legendRows' => collect($rows)->map(fn (array $row) => [
+                    'color' => $row['color'],
+                    'cells' => [
+                        $row['label'],
+                        number_format((int) $row['total_demandes'], 0, ',', ' '),
+                    ],
+                ])->all(),
+            ])->setPaper('a4', 'landscape');
+
+            $response = $pdf->download($downloadName);
+
+            $this->traceExport($actor, $format, $downloadName, $section, $request);
+
+            return $response;
+        }
+
         if ($section === 'reclamation-evolution') {
             abort_unless($format === 'pdf', 404);
 
@@ -320,6 +372,23 @@ class PilotageExportController extends Controller
         ];
     }
 
+    private function buildDemandRankingRows(array $overviewData, string $datasetKey, string $labelKey): array
+    {
+        $palette = ['#3996d3', '#8fc043', '#f59e0b', '#a78bfa', '#fb7185', '#2dd4bf', '#818cf8', '#f472b6', '#34d399', '#38bdf8', '#fbbf24', '#60a5fa'];
+
+        return collect($overviewData[$datasetKey] ?? [])
+            ->map(function (array $row, int $index) use ($palette, $labelKey): array {
+                return [
+                    'label' => trim((string) ($row[$labelKey] ?? '-')) ?: '-',
+                    'total_demandes' => (int) ($row['total_demandes'] ?? 0),
+                    'color' => $palette[$index % count($palette)],
+                ];
+            })
+            ->filter(fn (array $row): bool => $row['label'] !== '-' && $row['total_demandes'] > 0)
+            ->values()
+            ->all();
+    }
+
     private function buildDirectionSlaBarImage(array $rows): ?string
     {
         return $this->buildSlaBarImage($rows, 'direction');
@@ -377,6 +446,63 @@ class PilotageExportController extends Controller
             }
 
             $this->drawGdText($image, number_format((float) $row['taux'], 1, ',', ' ').' %', 12, $left + $chartWidth + 18, $barY + 17, $navy, true);
+        }
+
+        return $this->pngDataUri($image);
+    }
+
+    private function buildDemandRankingBarImage(array $rows): ?string
+    {
+        if (empty($rows) || !extension_loaded('gd')) {
+            return null;
+        }
+
+        $width = 1120;
+        $rowHeight = 58;
+        $height = max(460, 150 + (count($rows) * $rowHeight));
+        $left = 430;
+        $right = 100;
+        $top = 72;
+        $chartWidth = $width - $left - $right;
+        $image = imagecreatetruecolor($width, $height);
+
+        if (function_exists('imageantialias')) {
+            imageantialias($image, true);
+        }
+
+        $white = imagecolorallocate($image, 255, 255, 255);
+        $navy = $this->gdColor($image, '#1c203d');
+        $muted = $this->gdColor($image, '#667085');
+        $grid = $this->gdColor($image, '#e5edf5');
+        $barBackground = $this->gdColor($image, '#eef4fb');
+        imagefill($image, 0, 0, $white);
+
+        $maxValue = max(1, (int) collect($rows)->max('total_demandes'));
+        $maxAxis = max(1, (int) ceil($maxValue / 5) * 5);
+
+        for ($step = 0; $step <= 5; $step++) {
+            $value = (int) round(($maxAxis / 5) * $step);
+            $x = $left + (int) round(($value / $maxAxis) * $chartWidth);
+            imageline($image, $x, $top - 24, $x, $height - 70, $grid);
+            $this->drawGdText($image, number_format($value, 0, ',', ' '), 11, $x - 16, $height - 42, $muted);
+        }
+
+        foreach ($rows as $index => $row) {
+            $y = $top + ($index * $rowHeight);
+            $barY = $y + 12;
+            $barHeight = 22;
+            $total = max(0, (int) ($row['total_demandes'] ?? 0));
+            $filledWidth = (int) round($chartWidth * min($maxAxis, $total) / $maxAxis);
+            $color = $this->gdColor($image, (string) ($row['color'] ?? '#3996d3'));
+
+            $this->drawGdText($image, $this->truncateChartText((string) ($row['label'] ?? '-'), 48), 13, 34, $barY + 17, $navy);
+            imagefilledrectangle($image, $left, $barY, $left + $chartWidth, $barY + $barHeight, $barBackground);
+
+            if ($filledWidth > 0) {
+                imagefilledrectangle($image, $left, $barY, $left + $filledWidth, $barY + $barHeight, $color);
+            }
+
+            $this->drawGdText($image, number_format($total, 0, ',', ' '), 12, $left + $chartWidth + 18, $barY + 17, $navy, true);
         }
 
         return $this->pngDataUri($image);

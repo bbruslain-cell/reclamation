@@ -16,7 +16,7 @@
     $dashboardLabel = 'Dashboard';
     $scopeChipLabel = 'Lecture de supervision';
     $reportingChipLabel = 'Reporting global';
-    $sectionPresentation = 'Presentation alignee sur le modele bureautique de pilotage : reception, affectation, traitement et respect des delais.';
+    $sectionPresentation = 'Présentation alignée sur le modèle bureautique de pilotage : réception, affectation, traitement et respect des délais.';
     $canViewScopedCiqTables = in_array('ciq', $roleCodes, true)
         || in_array('chef_direction', $roleCodes, true)
         || in_array('chef_service', $roleCodes, true)
@@ -97,37 +97,37 @@
         : null;
 
     if (in_array('ciq', $roleCodes, true)) {
-        $pageEyebrow = 'Controle interne et qualite';
+        $pageEyebrow = 'Contrôle interne et qualité';
         $reportingChipLabel = 'Reporting CIQ';
-        $sectionPresentation = 'Presentation alignee sur le modele CIQ : reception, affectation, service, realisation et respect des delais.';
+        $sectionPresentation = 'Présentation alignée sur le modèle CIQ : réception, affectation, service, réalisation et respect des délais.';
     } elseif (in_array('chef_direction', $roleCodes, true)) {
         $pageEyebrow = 'Direction';
         $dashboardLabel = 'Dashboard direction';
-        $scopeChipLabel = 'Perimetre direction';
+        $scopeChipLabel = 'Périmètre direction';
         $pageSubtitle = $currentDirectionLabel
-            ? 'Tableaux de supervision limites a la direction '.$currentDirectionLabel.'.'
-            : 'Tableaux de supervision limites aux services de votre direction.';
+            ? 'Tableaux de supervision limités à la direction '.$currentDirectionLabel.'.'
+            : 'Tableaux de supervision limités aux services de votre direction.';
         $reportingChipLabel = $currentDirectionLabel ? 'Direction '.$currentDirectionLabel : 'Reporting direction';
         $sectionPresentation = $currentDirectionLabel
-            ? 'Presentation dediee a la direction '.$currentDirectionLabel.', limitee aux services de votre perimetre.'
-            : 'Presentation dediee a votre direction, limitee aux services de votre perimetre.';
+            ? 'Présentation dédiée à la direction '.$currentDirectionLabel.', limitée aux services de votre périmètre.'
+            : 'Présentation dédiée à votre direction, limitée aux services de votre périmètre.';
     } elseif (in_array('chef_service', $roleCodes, true)) {
         $pageEyebrow = 'Service';
         $dashboardLabel = 'Dashboard service';
-        $scopeChipLabel = 'Perimetre service';
+        $scopeChipLabel = 'Périmètre service';
         $pageSubtitle = $currentServiceLabel
-            ? 'Tableaux de supervision limites au service '.$currentServiceLabel.'.'
-            : 'Tableaux de supervision limites a votre service.';
+            ? 'Tableaux de supervision limités au service '.$currentServiceLabel.'.'
+            : 'Tableaux de supervision limités à votre service.';
         $reportingChipLabel = $currentServiceLabel ? 'Service '.$currentServiceLabel : 'Reporting service';
         $sectionPresentation = $currentServiceLabel
-            ? 'Presentation dediee au service '.$currentServiceLabel.', limitee aux reclamations de votre perimetre.'
-            : 'Presentation dediee a votre service, limitee aux reclamations de votre perimetre.';
+            ? 'Présentation dédiée au service '.$currentServiceLabel.', limitée aux réclamations de votre périmètre.'
+            : 'Présentation dediée à votre service, limitée aux réclamations de votre périmètre.';
     } elseif (in_array('dg', $roleCodes, true)) {
-        $pageEyebrow = 'Direction generale';
-        $reportingChipLabel = 'Reporting direction generale';
+        $pageEyebrow = 'Direction générale';
+        $reportingChipLabel = 'Reporting direction générale';
     } elseif (in_array('lecture_seule', $roleCodes, true)) {
         $pageEyebrow = 'Lecture seule';
-        $reportingChipLabel = 'Consultation securisee';
+        $reportingChipLabel = 'Consultation sécurisée';
     }
 
     $totalReclamations = (int) ($typeTotals['reclamation']['total'] ?? 0);
@@ -174,6 +174,49 @@
         } catch (\Throwable $e) {
             return (string) $value;
         }
+    };
+
+    $trackingStatusCode = function (array $row): string {
+        $code = trim((string) ($row['statut_code'] ?? ''));
+        if ($code !== '') {
+            return $code;
+        }
+
+        $label = \Illuminate\Support\Str::of((string) ($row['statut_traitement'] ?? ''))
+            ->lower()
+            ->ascii()
+            ->value();
+
+        return match (true) {
+            str_contains($label, 'affectee a un agent') => 'affectee_agent',
+            str_contains($label, 'affectee au service') => 'affectee_service',
+            str_contains($label, 'reponse') => 'reponse_prete',
+            str_contains($label, 'cloturee') => 'cloturee',
+            str_contains($label, 'recu') => 'nouvelle',
+            default => '',
+        };
+    };
+
+    $trackingStatusLabel = function (array $row) use ($trackingStatusCode): string {
+        return match ($trackingStatusCode($row)) {
+            'nouvelle' => 'Reçu',
+            'affectee_service' => 'Affectée au service',
+            'affectee_agent' => 'Affectée à un agent',
+            'reponse_prete' => 'Réponse rédigée',
+            'cloturee' => 'Clôturée',
+            default => trim((string) ($row['statut_traitement'] ?? '')) ?: '-',
+        };
+    };
+
+    $trackingStatusClass = function (array $row) use ($trackingStatusCode): string {
+        return match ($trackingStatusCode($row)) {
+            'nouvelle' => 'border-sky-200 bg-sky-50 text-sky-700',
+            'affectee_service' => 'border-amber-200 bg-amber-50 text-amber-700',
+            'affectee_agent' => 'border-indigo-200 bg-indigo-50 text-indigo-700',
+            'reponse_prete' => 'border-leaf/30 bg-leaf/10 text-green-700',
+            'cloturee' => 'border-neutral-200 bg-neutral-100 text-neutral-700',
+            default => 'border-neutral-200 bg-white text-neutral-600',
+        };
     };
 @endphp
 <head>
@@ -476,7 +519,7 @@
                         <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2H5V5h5V3Zm9.7 9-4.2-4.2-1.4 1.4 1.8 1.8H9v2h6.9l-1.8 1.8 1.4 1.4 4.2-4.2Z" fill="currentColor"/>
                         </svg>
-                        <span class="hidden sm:inline">Deconnexion</span>
+                        <span class="hidden sm:inline">Déconnexion</span>
                     </button>
                 </form>
             </div>
@@ -530,10 +573,10 @@
                     </select>
                 </div>
                 <div>
-                    <label for="date_from" class="block text-xs text-neutral-500 mb-1">Date debut</label>
+                    <label for="date_from" class="block text-xs text-neutral-500 mb-1">Date début</label>
                     <div class="relative">
                         <input id="date_from" type="date" name="date_from" value="{{ $dateFromValue }}" class="field w-full px-3 py-2.5 pr-11 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy">
-                        <button type="button" class="date-picker-trigger absolute inset-y-0 right-0 px-3 text-neutral-400 hover:text-navy transition-colors" data-target="date_from" aria-label="Choisir la date de debut">
+                        <button type="button" class="date-picker-trigger absolute inset-y-0 right-0 px-3 text-neutral-400 hover:text-navy transition-colors" data-target="date_from" aria-label="Choisir la date de début">
                             <svg class="icon-svg text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                 <path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2Zm13 8H4v10h16V10ZM4 8h16V6H4v2Zm2 4h4v4H6v-4Z" fill="currentColor"/>
                             </svg>
@@ -589,7 +632,7 @@
                         <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path d="M12 5a7 7 0 1 1-6.6 9.3l1.9-.6A5 5 0 1 0 12 7h-1.6l2.3 2.3-1.4 1.4L6.6 6l4.7-4.7 1.4 1.4L10.4 5H12Z" fill="currentColor"/>
                         </svg>
-                        <span>Reinitialiser</span>
+                        <span>Réinitialiser</span>
                     </a>
                 </div>
                 <div class="md:col-span-2 xl:col-span-4">
@@ -600,8 +643,8 @@
         @if ($canViewScopedCiqTables)
         <section class="space-y-5">
             <div>
-                <h2 class="ciq-section-title text-sm font-medium text-navy">Volume & activite</h2>
-                <p class="text-xs text-neutral-400 mt-1">Vue d ensemble du volume reçu, du traitement et de l état global sur la période sélectionnée.</p>
+                <h2 class="ciq-section-title text-sm font-medium text-navy">Volume & activité</h2>
+                <p class="text-xs text-neutral-400 mt-1">Vue d'ensemble du volume reçu, du traitement et de l'état global sur la période sélectionnée.</p>
             </div>
 
             <div class="flex gap-4 overflow-x-auto pb-2">
@@ -803,19 +846,6 @@
                                     <p id="ciq-modal-reponse-contenu" class="mt-3 rounded-xl bg-neutral-50 px-4 py-3 text-sm leading-6 text-neutral-700 whitespace-pre-line">Aucune réponse finale enregistrée.</p>
                                 </div>
 
-                                <div class="mt-5 rounded-2xl border border-neutral-200 bg-white p-4 shadow-soft">
-                                    <div class="flex items-center justify-between gap-3">
-                                        <div>
-                                            <p class="text-xs uppercase tracking-wide text-neutral-400">Historique des actions</p>
-                                            <p class="mt-1 text-xs text-neutral-500">Lecture chronologique du traitement de la demande.</p>
-                                        </div>
-                                    </div>
-                                    <div id="ciq-modal-treatment-timeline" class="mt-4 space-y-3">
-                                        <div class="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-400">
-                                            Aucune action tracée.
-                                        </div>
-                                    </div>
-                                </div>
                             </section>
                         </div>
                     </div>
@@ -855,7 +885,7 @@
                 </div>
 
                 <div id="ciq-tracking-export-area" class="overflow-x-auto bg-white">
-                    <table id="ciq-tracking-table" class="w-full min-w-[1220px] table-fixed">
+                    <table id="ciq-tracking-table" class="w-full min-w-[1280px] table-fixed">
                         <colgroup>
                             <col class="w-[52px]">
                             <col class="w-[112px]">
@@ -865,7 +895,7 @@
                             <col class="w-[108px]">
                             <col class="w-[86px]">
                             <col class="w-[112px]">
-                            <col class="w-[100px]">
+                            <col class="w-[150px]">
                             <col class="w-[96px]">
                             <col class="w-[126px]">
                             <col class="w-[148px]">
@@ -873,13 +903,13 @@
                         <thead>
                             <tr class="bg-[#2f5f93] border-b border-[#274f79]">
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">N°</th>
-                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Date de reception</th>
+                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Date de réception</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Expéditeur</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Objet</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Date de dispatch</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Délais de transmission</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Service</th>
-                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Realisation</th>
+                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Réalisation</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Statut</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Respect délais</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Nombre de jours d attente</th>
@@ -899,7 +929,11 @@
                                 </td>
                                 <td class="px-3 py-3 text-sm text-neutral-700 whitespace-nowrap">{{ $row['service_direction'] ?? '-' }}</td>
                                 <td class="px-3 py-3 text-sm text-neutral-700 whitespace-nowrap">{{ $formatShortDate($row['realisation'] ?? null) }}</td>
-                                <td class="px-3 py-3 text-sm font-medium text-neutral-700">{{ $row['statut_traitement'] ?? '-' }}</td>
+                                <td class="px-3 py-3 text-sm">
+                                    <span class="inline-flex max-w-full items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-tight whitespace-nowrap {{ $trackingStatusClass($row) }}">
+                                        {{ $trackingStatusLabel($row) }}
+                                    </span>
+                                </td>
                                 <td class="px-3 py-3 text-sm font-medium {{ ($row['respect_delais'] ?? 'NON') === 'OUI' ? 'text-green-700' : 'text-red-700' }}">
                                     {{ $row['respect_delais'] ?? '-' }}
                                 </td>
@@ -1132,7 +1166,7 @@
             <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                 <div>
                     <h2 class="ciq-section-title text-sm font-medium text-navy">Consultation des dossiers usagers</h2>
-                    <p class="text-xs text-neutral-400 mt-1">Registre de consultation des demandes, avec ouverture detaillee via le bouton Consulter.</p>
+                    <p class="text-xs text-neutral-400 mt-1">Registre de consultation des demandes, avec ouverture détaillée via le bouton Consulter.</p>
                 </div>
                 <p class="text-xs text-neutral-400">
                     {{ number_format($ciqTrackingFrom, 0, ',', ' ') }}-{{ number_format($ciqTrackingTo, 0, ',', ' ') }}
@@ -1173,8 +1207,8 @@
                                 <td class="px-4 py-3 text-sm text-neutral-600 whitespace-nowrap align-top">{{ $formatShortDate($row['date_reception'] ?? null) }}</td>
                                 <td class="px-4 py-3 text-sm text-neutral-600 whitespace-nowrap align-top">{{ $row['service_direction'] ?? '-' }}</td>
                                 <td class="px-4 py-3 align-top">
-                                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium {{ ($row['respect_delais'] ?? 'NON') === 'OUI' ? 'bg-leaf/10 text-green-700' : 'bg-red-50 text-red-700' }}">
-                                        {{ $row['statut_traitement'] ?? '-' }}
+                                    <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-tight whitespace-nowrap {{ $trackingStatusClass($row) }}">
+                                        {{ $trackingStatusLabel($row) }}
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 text-right align-top">
@@ -1336,11 +1370,8 @@
                 }
 
                 attachments.forEach((piece) => {
-                    const link = document.createElement('a');
-                    link.href = `/pieces-jointes/${piece.id_piece_jointe}`;
-                    link.target = '_blank';
-                    link.rel = 'noopener';
-                    link.className = 'inline-flex items-center gap-2 rounded-full border border-sky/20 bg-sky/5 px-3 py-1.5 text-xs font-medium text-sky hover:bg-sky/10 transition-colors';
+                    const item = document.createElement('span');
+                    item.className = 'inline-flex flex-wrap items-center gap-2 rounded-full border border-sky/20 bg-sky/5 px-3 py-1.5 text-xs font-medium text-sky';
 
                     const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                     icon.setAttribute('viewBox', '0 0 24 24');
@@ -1357,9 +1388,23 @@
                     const label = document.createElement('span');
                     label.textContent = piece.nom_fichier ?? 'Pièce jointe';
 
-                    link.appendChild(icon);
-                    link.appendChild(label);
-                    container.appendChild(link);
+                    const previewLink = document.createElement('a');
+                    previewLink.href = `/pieces-jointes/${piece.id_piece_jointe}?preview=1`;
+                    previewLink.dataset.attachmentPreview = '1';
+                    previewLink.dataset.attachmentName = piece.nom_fichier ?? 'Pièce jointe';
+                    previewLink.className = 'rounded-full bg-white px-2 py-1 text-sky hover:bg-sky/10 transition-colors';
+                    previewLink.textContent = 'Aperçu';
+
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = `/pieces-jointes/${piece.id_piece_jointe}`;
+                    downloadLink.className = 'rounded-full bg-white px-2 py-1 text-neutral-600 hover:bg-neutral-100 transition-colors';
+                    downloadLink.textContent = 'Télécharger';
+
+                    item.appendChild(icon);
+                    item.appendChild(label);
+                    item.appendChild(previewLink);
+                    item.appendChild(downloadLink);
+                    container.appendChild(item);
                 });
             }
 
@@ -1382,79 +1427,6 @@
             function formatShortDetailDate(value) {
                 const formatted = formatDetailDate(value);
                 return formatted === '-' ? '-' : formatted.replace(',', ' à');
-            }
-
-            function renderTreatmentTimeline(actions) {
-                const container = document.getElementById('ciq-modal-treatment-timeline');
-                if (!container) {
-                    return;
-                }
-
-                container.innerHTML = '';
-
-                if (!Array.isArray(actions) || actions.length === 0) {
-                    const empty = document.createElement('div');
-                    empty.className = 'rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-400';
-                    empty.textContent = 'Aucune action tracée.';
-                    container.appendChild(empty);
-                    return;
-                }
-
-                actions.forEach((action, index) => {
-                    const item = document.createElement('article');
-                    item.className = 'relative rounded-2xl border border-neutral-200 bg-neutral-50/70 px-4 py-3';
-
-                    const header = document.createElement('div');
-                    header.className = 'flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between';
-
-                    const left = document.createElement('div');
-                    left.className = 'flex items-start gap-3';
-
-                    const badge = document.createElement('div');
-                    badge.className = 'mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-sky/10 text-xs font-semibold text-sky';
-                    badge.textContent = `${index + 1}`;
-
-                    const titleWrap = document.createElement('div');
-                    const title = document.createElement('p');
-                    title.className = 'text-sm font-semibold text-navy';
-                    title.textContent = detailValue(action.libelle, 'Action');
-                    const actor = document.createElement('p');
-                    actor.className = 'mt-0.5 text-xs text-neutral-500';
-                    actor.textContent = `Acteur : ${detailValue(action.acteur, 'Non renseigné')}`;
-                    titleWrap.appendChild(title);
-                    titleWrap.appendChild(actor);
-
-                    left.appendChild(badge);
-                    left.appendChild(titleWrap);
-
-                    const date = document.createElement('span');
-                    date.className = 'inline-flex w-fit rounded-full bg-white px-3 py-1 text-xs font-medium text-neutral-500 shadow-soft';
-                    date.textContent = formatShortDetailDate(action.date_action ?? null);
-
-                    header.appendChild(left);
-                    header.appendChild(date);
-                    item.appendChild(header);
-
-                    const details = [];
-                    if (detailValue(action.service, '') !== '') {
-                        details.push(`Service : ${detailValue(action.service)}${detailValue(action.service_libelle, '') !== '' ? ` - ${action.service_libelle}` : ''}`);
-                    }
-                    if (detailValue(action.agent, '') !== '') {
-                        details.push(`Agent assigné : ${action.agent}`);
-                    }
-                    if (detailValue(action.commentaire, '') !== '') {
-                        details.push(`Commentaire : ${action.commentaire}`);
-                    }
-
-                    if (details.length > 0) {
-                        const detail = document.createElement('p');
-                        detail.className = 'mt-3 rounded-xl bg-white px-3 py-2 text-xs leading-5 text-neutral-600';
-                        detail.textContent = details.join(' | ');
-                        item.appendChild(detail);
-                    }
-
-                    container.appendChild(item);
-                });
             }
 
             function renderTreatmentTrace(row) {
@@ -1492,7 +1464,6 @@
                     `${responseType} | Rédigée par ${responseAuthor} le ${formatShortDetailDate(redactionDate)}${responseSender !== '' ? ` | Envoyée par ${responseSender}` : ''}`
                 );
                 setModalText('ciq-modal-reponse-contenu', detailValue(reponse.contenu, 'Aucune réponse finale enregistrée.'));
-                renderTreatmentTimeline(traitement.historique ?? []);
             }
 
             function buildTrackingDetailUrl(demandId) {
@@ -1547,7 +1518,6 @@
                 setOptionalBlock('ciq-modal-accueil-commentaire', '');
                 setOptionalBlock('ciq-modal-agent-commentaire', '');
                 renderTrackingAttachments([]);
-                renderTreatmentTimeline([]);
             }
 
             async function loadTrackingDetail(demandId) {
@@ -1620,7 +1590,6 @@
                 } catch (error) {
                     setModalText('ciq-modal-subtitle', error.message || 'Erreur de chargement');
                     setModalText('ciq-modal-reponse-contenu', error.message || 'Impossible de charger le dossier.');
-                    renderTreatmentTimeline([]);
                 }
             }
 

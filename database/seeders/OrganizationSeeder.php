@@ -63,17 +63,17 @@ class OrganizationSeeder extends Seeder
         }
 
         $services = [
-            ['direction' => 'DG', 'code' => 'UCAS', 'libelle' => 'Unite Courrier, Accueil et Securite'],
-            ['direction' => 'DG', 'code' => 'SCIQ', 'libelle' => 'Service Controle Interne et Qualite'],
+            ['direction' => 'DG', 'code' => 'UCAS', 'libelle' => 'Unité Courrier, Accueil et Securité'],
+            ['direction' => 'DG', 'code' => 'SCIQ', 'libelle' => 'Service Contrôle Interne et Qualité'],
             ['direction' => 'DG', 'code' => 'CABINET_DG', 'libelle' => 'Cabinet - DG'],
 
-            ['direction' => 'DSIC', 'code' => 'CS_SIRS', 'libelle' => 'Systemes d Informations, Reseaux et Securite'],
-            ['direction' => 'DSIC', 'code' => 'CS_JSP', 'libelle' => 'Communication et Relation Publique'],
+            ['direction' => 'DSIC', 'code' => 'CS_SIRS', 'libelle' => "Systèmes d'Informations, Réseaux et Sécurité"],
+            ['direction' => 'DSIC', 'code' => 'CS_JSP', 'libelle' => 'Communication et Rélation Publique'],
             ['direction' => 'DSIC', 'code' => 'CS_GDS', 'libelle' => 'Gestion Documentaire et Statistiques'],
 
             ['direction' => 'DAF', 'code' => 'CS_AJARH', 'libelle' => 'Affaires Juridiques et RH'],
             ['direction' => 'DAF', 'code' => 'CS_FC', 'libelle' => 'Financier et Comptable'],
-            ['direction' => 'DAF', 'code' => 'CS_AMG', 'libelle' => 'Approvisionnement et Moyens Generaux'],
+            ['direction' => 'DAF', 'code' => 'CS_AMG', 'libelle' => 'Approvisionnement et Moyens Généraux'],
 
             ['direction' => 'DS', 'code' => 'CS_SNB', 'libelle' => 'Etudiants non Boursiers'],
             ['direction' => 'DS', 'code' => 'CS_SENB', 'libelle' => 'Etudiants Boursiers'],

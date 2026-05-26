@@ -306,11 +306,7 @@
                                             <p class="text-xs text-neutral-400 mb-1.5">Pièces jointes usager</p>
                                             <div class="space-y-1.5">
                                                 @foreach($pieces as $piece)
-                                                <a href="/pieces-jointes/{{ $piece->id_piece_jointe }}" target="_blank" rel="noopener"
-                                                    class="flex items-center gap-2 bg-sky-50 border border-sky-100 text-sky text-xs font-medium px-3 py-2 rounded-lg hover:bg-sky-100 transition-colors duration-150">
-                                                    <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8.5 12.5 13 8a3 3 0 1 1 4.2 4.2l-6 6a5 5 0 1 1-7.1-7.1l6.3-6.3 1.4 1.4-6.3 6.3a3 3 0 1 0 4.2 4.2l6-6a1 1 0 1 0-1.4-1.4l-4.5 4.5-1.4-1.4Z"/></svg>
-                                                    {{ $piece->nom_fichier }}
-                                                </a>
+                                                @include('workflow.partials.attachment-actions', ['piece' => $piece])
                                                 @endforeach
                                             </div>
                                         </div>
@@ -352,6 +348,8 @@
                                             </div>
 
                                             <button type="submit"
+                                                data-submit-loading
+                                                data-loading-label="{{ ($demande->delivery_state ?? 'idle') === 'failed' ? 'Relance en cours...' : 'Envoi en cours...' }}"
                                                 class="w-full flex items-center justify-center gap-2 bg-navy hover:bg-navy-600 text-white text-sm font-medium py-3 rounded-xl transition-colors duration-150">
                                                 <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 6h18v12H3V6Zm2 2v1l7 4 7-4V8l-7 4-7-4Zm11.2 5.8-1.4 1.4-1.3-1.3-1.4 1.4 2.7 2.7 4.8-4.8-1.4-1.4-3.4 3.4Z"/></svg>
                                                 @if(($demande->delivery_state ?? 'idle') === 'failed')
@@ -561,19 +559,42 @@
         initViewToggles(root);
         initFileFeedback(root);
         initFormRefreshLocks(root);
+        window.initAnbgSubmitLoading?.(root);
     };
 
     const hasFocusedControl = () => {
         const active = document.activeElement;
         if (!active || !liveContent || !liveContent.contains(active)) return false;
 
-        return ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(active.tagName) || active.isContentEditable;
+        return ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName) || active.isContentEditable;
     };
 
-    const hasOpenDetail = () => {
-        if (!liveContent) return false;
+    const openDetailIds = () => {
+        if (!liveContent) return [];
 
-        return Array.from(liveContent.querySelectorAll('tr[id^="detail-"]')).some((row) => row.style.display !== 'none');
+        return Array.from(liveContent.querySelectorAll('tr[id^="detail-"]'))
+            .filter((row) => row.style.display !== 'none')
+            .map((row) => row.id);
+    };
+
+    const restoreOpenDetails = (ids) => {
+        ids.forEach((id) => {
+            const row = document.getElementById(id);
+            if (!row) return;
+
+            row.style.display = '';
+
+            const btn = Array.from(document.querySelectorAll('.view-toggle'))
+                .find((candidate) => candidate.dataset.target === id);
+            if (!btn) return;
+
+            btn.setAttribute('aria-expanded', 'true');
+            const icon = btn.querySelector('.toggle-icon');
+            const spans = btn.querySelectorAll('span');
+            const label = spans.length > 1 ? spans[1] : null;
+            if (icon) icon.innerHTML = eyeOffSvg;
+            if (label) label.textContent = 'Masquer';
+        });
     };
 
     const hasDirtyForm = () => {
@@ -587,7 +608,7 @@
             return true;
         }
 
-        return hasFocusedControl() || hasOpenDetail() || hasDirtyForm();
+        return hasFocusedControl() || hasDirtyForm();
     };
 
     const initAgentAutoRefresh = () => {
@@ -621,18 +642,20 @@
                 if (!nextContent) return;
 
                 const transitions = summarizeDeliveryTransitions(liveContent, nextContent);
+                const openedDetails = openDetailIds();
 
                 liveContent.innerHTML = nextContent.innerHTML;
                 initAgentInteractions(liveContent);
+                restoreOpenDetails(openedDetails);
 
                 if (transitions.delivered.length > 0) {
                     const firstLabel = transitions.delivered[0];
                     showDeliveryNotification(
                         'success',
-                        transitions.delivered.length > 1 ? 'Reponses envoyees' : 'Reponse envoyee',
+                        transitions.delivered.length > 1 ? 'Réponses envoyées' : 'Réponse envoyée',
                         transitions.delivered.length > 1
-                            ? `${transitions.delivered.length} reponses ont ete confirmees par le systeme.`
-                            : `La demande ${firstLabel} a bien ete envoyee a l'usager.`
+                            ? `${transitions.delivered.length} réponses ont été confirmées par le système.`
+                            : `La demande ${firstLabel} a bien été envoyée à l'usager.`
                     );
                 }
 
@@ -640,14 +663,14 @@
                     const firstLabel = transitions.failed[0];
                     showDeliveryNotification(
                         'error',
-                        'Echec d envoi',
+                        "Échec d'envoi",
                         transitions.failed.length > 1
-                            ? `${transitions.failed.length} envois ont echoue. Une relance est possible.`
-                            : `L'envoi pour la demande ${firstLabel} a echoue. Vous pouvez relancer la reponse.`
+                            ? `${transitions.failed.length} envois ont échoués. Une relance est possible.`
+                            : `L'envoi pour la demande ${firstLabel} a échoué. Vous pouvez relancer la réponse.`
                     );
                 }
             } catch (error) {
-                console.warn('Rafraichissement agent interrompu.', error);
+                console.warn('Rafraîchissement agent interrompu.', error);
             } finally {
                 isRefreshing = false;
             }
