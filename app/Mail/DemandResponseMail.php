@@ -30,14 +30,14 @@ class DemandResponseMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Réponse à votre demande '.$this->trackingNumber
+            subject: 'ANBG - Reponse a votre reclamation '.$this->trackingNumber
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.demand-response',
+            text: 'emails.demand-response-text',
             with: [
                 'trackingNumber' => $this->trackingNumber,
                 'subjectLabel' => $this->subjectLabel,

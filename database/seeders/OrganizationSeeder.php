@@ -99,21 +99,36 @@ class OrganizationSeeder extends Seeder
             );
         }
 
-        DB::table('utilisateurs')->updateOrInsert(
-            ['email' => 'admin@anbg.ga'],
-            [
+        $adminEmail = (string) env('INITIAL_ADMIN_EMAIL', 'admin@anbg.ga');
+        $adminUserId = DB::table('utilisateurs')->where('email', $adminEmail)->value('id_utilisateur');
+        $initialAdminPassword = trim((string) env('INITIAL_ADMIN_PASSWORD', ''));
+
+        if (!$adminUserId && $initialAdminPassword !== '') {
+            if ($initialAdminPassword === 'Admin@123456' || strlen($initialAdminPassword) < 12) {
+                throw new \RuntimeException('INITIAL_ADMIN_PASSWORD must be unique and at least 12 characters long.');
+            }
+
+            $adminUserId = DB::table('utilisateurs')->insertGetId([
+                'email' => $adminEmail,
                 'nom' => 'Super',
                 'prenom' => 'Admin',
-                'password_hash' => Hash::make('Admin@123456'),
+                'password_hash' => Hash::make($initialAdminPassword),
                 'actif' => true,
                 'changement_mdp_requis' => true,
                 'updated_at' => now(),
                 'created_at' => now(),
-            ]
-        );
+            ], 'id_utilisateur');
+        } elseif ($adminUserId) {
+            DB::table('utilisateurs')->where('id_utilisateur', $adminUserId)->update([
+                'nom' => 'Super',
+                'prenom' => 'Admin',
+                'actif' => true,
+                'changement_mdp_requis' => true,
+                'updated_at' => now(),
+            ]);
+        }
 
         $adminRoleId = DB::table('roles')->where('code', 'admin')->value('id_role');
-        $adminUserId = DB::table('utilisateurs')->where('email', 'admin@anbg.ga')->value('id_utilisateur');
         if ($adminRoleId && $adminUserId) {
             $this->syncUserRoles((int) $adminUserId, [(int) $adminRoleId]);
         }

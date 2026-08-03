@@ -235,8 +235,8 @@
         </div>
     </header>
 
-    <main class="px-4 py-6 sm:px-6 lg:px-8">
-        <div class="mx-auto max-w-[1480px] space-y-5">
+    <main class="py-6">
+        <div class="app-page-frame space-y-5">
             @if(session('success'))
             <div class="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 shadow-soft">
                 {{ session('success') }}

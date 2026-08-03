@@ -474,7 +474,7 @@
 </head>
 <body class="font-sans text-navy min-h-screen">
     <header class="bg-navy sticky top-0 z-50 shadow-md">
-        <div class="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        <div class="app-page-frame h-14 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
                 <div class="bg-white rounded-lg px-2.5 py-1.5 flex-shrink-0">
                     <img src="/Logo_anbg.png" alt="ANBG" class="h-9 w-auto object-contain block">
@@ -527,7 +527,7 @@
     </header>
 
     <section class="hero-shell border-b border-white/10 pb-8 pt-6">
-        <div class="max-w-screen-xl mx-auto px-4 sm:px-6">
+        <div class="app-page-frame">
             <div class="relative z-10 flex items-start gap-4">
                 <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 mt-1 shadow-lg" style="background: linear-gradient(135deg, rgba(143,192,67,0.9) 0%, rgba(248,233,50,0.95) 100%);">
                     <svg class="icon-svg text-navy text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -557,7 +557,7 @@
         </div>
     </section>
 
-    <main class="max-w-screen-xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <main class="app-page-frame py-6 space-y-6">
         <section class="ciq-surface rounded-2xl overflow-hidden">
             <div class="px-5 py-4 border-b border-sky/10">
                 <h2 class="ciq-section-title text-sm font-medium text-navy">Filtres de supervision</h2>
@@ -844,6 +844,12 @@
                                         <span id="ciq-modal-realisation" class="inline-flex w-fit items-center rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-500">-</span>
                                     </div>
                                     <p id="ciq-modal-reponse-contenu" class="mt-3 rounded-xl bg-neutral-50 px-4 py-3 text-sm leading-6 text-neutral-700 whitespace-pre-line">Aucune réponse finale enregistrée.</p>
+                                    <div class="mt-4 rounded-xl bg-neutral-50 px-4 py-3">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Pieces jointes transmises avec la reponse</p>
+                                        <div id="ciq-modal-reponse-pieces" class="mt-3 flex flex-wrap gap-2">
+                                            <span class="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs text-neutral-500">Aucune piece jointe de reponse</span>
+                                        </div>
+                                    </div>
                                 </div>
 
                             </section>
@@ -1353,8 +1359,8 @@
                 element.textContent = value && `${value}`.trim() !== '' ? value : '-';
             }
 
-            function renderTrackingAttachments(attachments) {
-                const container = document.getElementById('ciq-modal-pieces');
+            function renderTrackingAttachments(attachments, containerId = 'ciq-modal-pieces', emptyText = 'Aucune piece jointe') {
+                const container = document.getElementById(containerId);
                 if (!container) {
                     return;
                 }
@@ -1364,7 +1370,9 @@
                 if (!Array.isArray(attachments) || attachments.length === 0) {
                     const empty = document.createElement('span');
                     empty.className = 'inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-500';
+                    empty.textContent = emptyText;
                     empty.textContent = 'Aucune pièce jointe';
+                    empty.textContent = emptyText;
                     container.appendChild(empty);
                     return;
                 }
@@ -1464,6 +1472,11 @@
                     `${responseType} | Rédigée par ${responseAuthor} le ${formatShortDetailDate(redactionDate)}${responseSender !== '' ? ` | Envoyée par ${responseSender}` : ''}`
                 );
                 setModalText('ciq-modal-reponse-contenu', detailValue(reponse.contenu, 'Aucune réponse finale enregistrée.'));
+                renderTrackingAttachments(
+                    reponse.pieces_jointes ?? [],
+                    'ciq-modal-reponse-pieces',
+                    'Aucune piece jointe de reponse'
+                );
             }
 
             function buildTrackingDetailUrl(demandId) {
@@ -1518,6 +1531,7 @@
                 setOptionalBlock('ciq-modal-accueil-commentaire', '');
                 setOptionalBlock('ciq-modal-agent-commentaire', '');
                 renderTrackingAttachments([]);
+                renderTrackingAttachments([], 'ciq-modal-reponse-pieces', 'Aucune piece jointe de reponse');
             }
 
             async function loadTrackingDetail(demandId) {

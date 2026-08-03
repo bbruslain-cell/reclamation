@@ -9,6 +9,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
 
@@ -50,7 +51,6 @@ class DemandWorkflowService
                     'id_service_courant' => $serviceId,
                     'id_statut' => $statusAffectee,
                     'id_agent_accueil' => $actorId,
-                    'date_affectation' => $now,
                     'date_affectation_accueil' => $now,
                     'updated_at' => $now,
                 ]);
@@ -174,7 +174,6 @@ class DemandWorkflowService
                     'id_agent_accueil' => null,
                     'id_agent_direction' => null,
                     'id_agent_traitant' => null,
-                    'date_affectation' => null,
                     'date_affectation_accueil' => null,
                     'date_affectation_agent' => null,
                     'date_reponse_direction' => null,
@@ -444,7 +443,6 @@ class DemandWorkflowService
                         'updated_at' => $failedAt,
                     ]);
 
-                $errorMessage = trim((string) $exception->getMessage());
                 $this->logAction(
                     demandId: $demandId,
                     userId: $actorId,
@@ -452,9 +450,7 @@ class DemandWorkflowService
                     oldStatusId: $demand->id_statut,
                     newStatusId: $demand->id_statut,
                     serviceId: $demand->id_service_courant,
-                    comment: $errorMessage !== ''
-                        ? 'Echec envoi usager : '.$errorMessage
-                        : 'Echec envoi usager'
+                    comment: "Echec d'envoi a l'usager. Verifiez le serveur mail puis relancez l'envoi."
                 );
             }
         });
@@ -569,16 +565,20 @@ class DemandWorkflowService
 
     private function sanitizeOriginalFilename(UploadedFile $file): string
     {
-        $name = basename((string) $file->getClientOriginalName());
-        $name = trim((string) preg_replace('/[\x00-\x1F\x7F]+/u', '', $name));
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+        $baseName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $baseName = Str::of($baseName)
+            ->ascii()
+            ->replaceMatches('/[^A-Za-z0-9._-]+/', '_')
+            ->trim('._-')
+            ->limit(80, '')
+            ->value();
 
-        if ($name === '' || $name === '.' || $name === '..') {
-            $extension = strtolower((string) $file->getClientOriginalExtension());
-
-            return $extension !== '' ? "piece-jointe.{$extension}" : 'piece-jointe';
+        if ($baseName === '') {
+            $baseName = 'piece_jointe';
         }
 
-        return substr($name, 0, 180);
+        return $extension !== '' ? "{$baseName}.{$extension}" : $baseName;
     }
 
     private function isResponseDeliveryPending(object $demand): bool

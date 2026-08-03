@@ -36,6 +36,21 @@
             <div>
                 <p class="text-sm font-semibold text-navy">Échec d'envoi</p>
                 <p class="mt-1 text-xs leading-5 text-neutral-500">Le dernier essai a échoué{{ $failedAt ? ' le '.$failedAt : '' }}. La demande reste ouverte et l'envoi peut être relancé.</p>
+                <form method="post" action="/demandes/{{ $demande->id_demande }}/relancer-envoi" class="mt-3">
+                    @csrf
+                    @method('put')
+                    <button type="submit"
+                        data-submit-loading
+                        data-loading-label="Relance en cours..."
+                        class="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition-colors duration-150 hover:bg-red-100">
+                        <svg class="icon-svg text-[11px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v7A2.5 2.5 0 0 1 17.5 17h-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            <path d="m6 8 6 4 6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M6 17h5M8.5 14.5 6 17l2.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Réessayer l'envoi
+                    </button>
+                </form>
             </div>
         </div>
     @elseif($deliveryState === 'sent')

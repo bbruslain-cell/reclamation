@@ -50,7 +50,7 @@
 @section('content')
     <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(57,150,211,0.18),_transparent_32%),linear-gradient(180deg,_#f8f9fa_0%,_#eef3f7_100%)]">
         <header class="bg-navy text-white shadow-sm">
-            <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+            <div class="app-page-frame h-16 flex items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
                     <div class="bg-white rounded-lg px-2.5 py-1.5">
                         <img src="/Logo_anbg.png" alt="ANBG" class="h-9 w-auto object-contain block">
@@ -70,7 +70,7 @@
             </div>
         </header>
 
-        <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        <main class="app-page-frame py-8">
             <section class="rounded-3xl bg-navy text-white shadow-card overflow-hidden">
                 <div class="px-6 py-8 sm:px-8">
                     <h1 class="mt-2 text-2xl sm:text-3xl font-medium">Espaces disponibles pour votre compte.</h1>

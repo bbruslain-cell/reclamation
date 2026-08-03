@@ -12,6 +12,7 @@ use App\Http\Controllers\Web\AgentPortalController;
 use App\Http\Controllers\Web\AttachmentController;
 use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\ChefInboxController;
+use App\Http\Controllers\Web\DemandDeliveryController;
 use App\Http\Controllers\Web\DirectionInboxController;
 use App\Http\Controllers\Web\PasswordController;
 use App\Http\Controllers\Web\PilotageExportController;
@@ -45,6 +46,7 @@ Route::middleware('agent.auth')->group(function () {
 
     // Pièces jointes
     Route::get('/pieces-jointes/{id}', [AttachmentController::class, 'show']);
+    Route::put('/demandes/{id}/relancer-envoi', [DemandDeliveryController::class, 'retry']);
 
     // Changement de mot de passe (première connexion)
     Route::get('/mot-de-passe/nouveau', [PasswordController::class, 'showChange']);

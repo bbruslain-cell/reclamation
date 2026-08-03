@@ -344,7 +344,7 @@ class OverviewController extends Controller
             });
 
         $receivedEvolutionRows = (clone $baseDemands)
-            ->select('d.date_soumission', 'td.code', 'td.libelle')
+            ->select('d.date_soumission', 'td.code', 'td.libelle', 'st.code as statut_code')
             ->orderBy('d.date_soumission')
             ->get();
 
@@ -381,11 +381,13 @@ class OverviewController extends Controller
         $typeLabels = [];
         $receivedByType = [];
         $receivedReclamations = [];
+        $receivedOpenReclamations = [];
         $cloturees = [];
 
         foreach ($bucketMetadata as $bucketKey => $label) {
             $receivedByType[$bucketKey] = [];
             $receivedReclamations[$bucketKey] = 0;
+            $receivedOpenReclamations[$bucketKey] = 0;
             $cloturees[$bucketKey] = 0;
         }
 
@@ -402,6 +404,7 @@ class OverviewController extends Controller
                 $bucketMetadata[$bucketKey] = $this->evolutionBucketLabel(Carbon::parse($row->date_soumission), $evolutionGranularity);
                 $receivedByType[$bucketKey] = [];
                 $receivedReclamations[$bucketKey] = 0;
+                $receivedOpenReclamations[$bucketKey] = 0;
                 $cloturees[$bucketKey] = 0;
             }
 
@@ -409,6 +412,9 @@ class OverviewController extends Controller
 
             if ($typeCodeKey === 'reclamation') {
                 $receivedReclamations[$bucketKey]++;
+                if ((string) $row->statut_code !== 'cloturee') {
+                    $receivedOpenReclamations[$bucketKey]++;
+                }
             }
 
         }
@@ -424,6 +430,7 @@ class OverviewController extends Controller
                 $bucketMetadata[$bucketKey] = $this->evolutionBucketLabel(Carbon::parse($row->date_envoi_usager), $evolutionGranularity);
                 $receivedByType[$bucketKey] = [];
                 $receivedReclamations[$bucketKey] = 0;
+                $receivedOpenReclamations[$bucketKey] = 0;
                 $cloturees[$bucketKey] = 0;
             }
 
@@ -433,6 +440,7 @@ class OverviewController extends Controller
         ksort($bucketMetadata);
         ksort($receivedByType);
         ksort($receivedReclamations);
+        ksort($receivedOpenReclamations);
         ksort($cloturees);
 
         ksort($typeLabels);
@@ -452,12 +460,18 @@ class OverviewController extends Controller
             ];
         })->values();
 
+        $evolutionBucketKeys = array_keys($bucketMetadata);
+        $reclamationsNonCloturees = collect($evolutionBucketKeys)
+            ->map(fn (string $key) => (int) ($receivedOpenReclamations[$key] ?? 0))
+            ->values();
+
         $evolutionTemporelle = [
             'granularite' => $evolutionGranularity,
             'labels' => array_values($bucketMetadata),
             'series' => [
-                'reclamations_recues' => collect(array_keys($bucketMetadata))->map(fn (string $key) => (int) ($receivedReclamations[$key] ?? 0))->values(),
-                'demandes_cloturees' => collect(array_keys($bucketMetadata))->map(fn (string $key) => (int) ($cloturees[$key] ?? 0))->values(),
+                'reclamations_recues' => collect($evolutionBucketKeys)->map(fn (string $key) => (int) ($receivedReclamations[$key] ?? 0))->values(),
+                'demandes_cloturees' => collect($evolutionBucketKeys)->map(fn (string $key) => (int) ($cloturees[$key] ?? 0))->values(),
+                'reclamations_non_cloturees' => $reclamationsNonCloturees,
             ],
         ];
 
@@ -626,6 +640,7 @@ class OverviewController extends Controller
         $annexeResponseServiceByDemand = collect();
         $annexeTreatmentActionsByDemand = collect();
         $annexeResponseDetailByDemand = collect();
+        $annexeResponsePiecesByDemand = collect();
         $annexePiecesByDemand = collect();
         $annexeDemandIds = $annexeBaseRows->pluck('id_demande')->filter()->values()->all();
         if (!empty($annexeDemandIds)) {
@@ -746,6 +761,7 @@ class OverviewController extends Controller
                 ->orderByDesc('r.date_envoi_usager')
                 ->orderByDesc('r.date_redaction')
                 ->get([
+                    'r.id_reponse',
                     'r.id_demande',
                     'r.numero_version',
                     'r.contenu_reponse',
@@ -764,6 +780,7 @@ class OverviewController extends Controller
                     $envoyeur = trim(((string) ($response->envoyeur_prenom ?? '')).' '.((string) ($response->envoyeur_nom ?? '')));
 
                     return [
+                        'id_reponse' => (int) ($response->id_reponse ?? 0),
                         'numero_version' => (int) ($response->numero_version ?? 1),
                         'type_reponse' => (string) ($response->type_reponse ?? ''),
                         'contenu' => (string) ($response->contenu_reponse ?? ''),
@@ -773,6 +790,30 @@ class OverviewController extends Controller
                         'envoyeur' => $envoyeur !== '' ? $envoyeur : null,
                     ];
                 });
+
+            $annexeResponsePiecesByDemand = DB::table('reponse_piece_jointe as rpj')
+                ->join('reponses as r', 'r.id_reponse', '=', 'rpj.id_reponse')
+                ->join('pieces_jointes as pj', 'pj.id_piece_jointe', '=', 'rpj.id_piece_jointe')
+                ->whereIn('r.id_demande', $annexeDemandIds)
+                ->orderByDesc('r.numero_version')
+                ->orderByDesc('r.date_envoi_usager')
+                ->orderByDesc('r.date_redaction')
+                ->orderByDesc('pj.id_piece_jointe')
+                ->get([
+                    'r.id_demande',
+                    'r.id_reponse',
+                    'pj.id_piece_jointe',
+                    'pj.nom_fichier',
+                ])
+                ->groupBy('id_demande')
+                ->map(fn ($rows) => $rows
+                    ->map(fn ($piece) => [
+                        'id_reponse' => (int) $piece->id_reponse,
+                        'id_piece_jointe' => (int) $piece->id_piece_jointe,
+                        'nom_fichier' => (string) $piece->nom_fichier,
+                    ])
+                    ->values()
+                    ->all());
 
             $annexePiecesByDemand = DB::table('demande_piece_jointe as dpj')
                 ->join('pieces_jointes as pj', 'pj.id_piece_jointe', '=', 'dpj.id_piece_jointe')
@@ -821,7 +862,7 @@ class OverviewController extends Controller
 
         $annexeRows = $annexeBaseRows
             ->values()
-            ->map(function ($row, int $index) use ($annexeChefByDemand, $annexeDirectAccueilByDemand, $annexeResponseServiceByDemand, $annexeTreatmentActionsByDemand, $annexeResponseDetailByDemand, $annexePiecesByDemand, $serviceChefByServiceId, $serviceMetaById, $accueilThresholds, $serviceThresholds) {
+            ->map(function ($row, int $index) use ($annexeChefByDemand, $annexeDirectAccueilByDemand, $annexeResponseServiceByDemand, $annexeTreatmentActionsByDemand, $annexeResponseDetailByDemand, $annexeResponsePiecesByDemand, $annexePiecesByDemand, $serviceChefByServiceId, $serviceMetaById, $accueilThresholds, $serviceThresholds) {
                 $dispatching = $row->date_affectation_accueil ? Carbon::parse($row->date_affectation_accueil) : null;
                 $reception = $row->date_soumission ? Carbon::parse($row->date_soumission) : null;
 
@@ -885,6 +926,18 @@ class OverviewController extends Controller
                 $affectationAccueil = $traitementActions->where('type_action', 'affectation_service')->last();
                 $affectationAgent = $traitementActions->where('type_action', 'affectation_agent')->last();
                 $reponseDetail = $annexeResponseDetailByDemand->get($row->id_demande, null);
+                $reponsePiecesJointes = $annexeResponsePiecesByDemand->get($row->id_demande, []);
+                if (is_array($reponseDetail)) {
+                    $reponseId = (int) ($reponseDetail['id_reponse'] ?? 0);
+                    $reponseDetail['pieces_jointes'] = collect($reponsePiecesJointes)
+                        ->filter(fn (array $piece): bool => $reponseId <= 0 || (int) ($piece['id_reponse'] ?? 0) === $reponseId)
+                        ->map(fn (array $piece): array => [
+                            'id_piece_jointe' => (int) ($piece['id_piece_jointe'] ?? 0),
+                            'nom_fichier' => (string) ($piece['nom_fichier'] ?? ''),
+                        ])
+                        ->values()
+                        ->all();
+                }
                 $reponseRedacteur = is_array($reponseDetail)
                     ? trim((string) ($reponseDetail['redacteur'] ?? ''))
                     : '';
@@ -980,6 +1033,7 @@ class OverviewController extends Controller
                             'date_envoi_usager' => $realisationDate,
                             'redacteur' => $agentDirection !== '' ? $agentDirection : '-',
                             'envoyeur' => null,
+                            'pieces_jointes' => [],
                         ],
                         'historique' => $traitementActions->values()->all(),
                     ],
@@ -1821,6 +1875,7 @@ class OverviewController extends Controller
             'envoi_reponse' => $normalized === '' || $normalized === 'Envoi final à l\'usager'
                 ? "Envoi final à l'usager"
                 : $normalized,
+            'echec_envoi_reponse' => "Echec d'envoi a l'usager. Verifiez le serveur mail puis relancez l'envoi.",
             default => $comment,
         };
     }

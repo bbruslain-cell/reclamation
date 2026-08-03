@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\InteractsWithDeliveryStatus;
+use App\Http\Requests\AssignServiceRequest;
+use App\Http\Requests\CancelAssignmentRequest;
+use App\Http\Requests\ListAccueilInboxRequest;
+use App\Http\Requests\SendWorkflowResponseRequest;
 use App\Models\Demande;
 use App\Services\AccessControlService;
 use App\Services\DemandWorkflowService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -28,29 +31,19 @@ class AccueilInboxController extends Controller
     ) {
     }
 
-    public function index(Request $request): View
+    public function index(ListAccueilInboxRequest $request): View
     {
         $actor = $this->access->requireActor($request);
         Gate::forUser($actor)->authorize('demande.assign');
         $this->alerts->refreshOpenDemandAlerts();
 
-        $filters = $request->validate([
-            'search' => ['nullable', 'string', 'max:255'],
-            'sort_by' => ['nullable', 'string', 'max:50'],
-            'sort_dir' => ['nullable', 'in:asc,desc'],
-            'type_code' => ['nullable', 'string', 'max:80'],
-            'direction_id' => ['nullable', 'integer', 'exists:directions,id_direction'],
-            'date_from' => ['nullable', 'date'],
-            'date_to' => ['nullable', 'date'],
-        ]);
-
-        $search = trim((string) ($filters['search'] ?? ''));
-        $sortBy = (string) ($filters['sort_by'] ?? 'date_soumission');
-        $sortDir = (string) ($filters['sort_dir'] ?? 'desc');
-        $typeCode = (string) ($filters['type_code'] ?? '');
-        $directionId = isset($filters['direction_id']) ? (int) $filters['direction_id'] : 0;
-        $dateFrom = isset($filters['date_from']) ? (string) $filters['date_from'] : '';
-        $dateTo = isset($filters['date_to']) ? (string) $filters['date_to'] : '';
+        $search = $request->searchTerm();
+        $sortBy = $request->sortBy();
+        $sortDir = $request->sortDirection();
+        $typeCode = $request->typeCode();
+        $directionId = $request->directionId();
+        $dateFrom = $request->dateFrom();
+        $dateTo = $request->dateTo();
 
         $baseQuery = DB::table('demandes as d')
             ->join('parametres as st', 'st.id_parametre', '=', 'd.id_statut')
@@ -82,6 +75,10 @@ class AccueilInboxController extends Controller
         }
 
         $listQuery = (clone $baseQuery)
+            ->leftJoinSub($this->latestActionIdsFor('affectation_service'), 'last_service_assignment', function ($join): void {
+                $join->on('last_service_assignment.id_demande', '=', 'd.id_demande');
+            })
+            ->leftJoin('historique_actions as service_assignment_action', 'service_assignment_action.id_action', '=', 'last_service_assignment.id_action')
             ->select(
                 'd.id_demande',
                 'd.numero_suivi',
@@ -107,7 +104,9 @@ class AccueilInboxController extends Controller
                 DB::raw("'' as usager_telephone"),
                 'u.statut_usager as usager_statut',
                 'u.pays as usager_pays',
-                'u.etablissement as usager_etablissement'
+                'u.etablissement as usager_etablissement',
+                'service_assignment_action.commentaire as commentaire_affectation_service',
+                'service_assignment_action.date_action as date_commentaire_affectation_service'
             );
 
         $summaryStats = (clone $baseQuery)
@@ -254,7 +253,7 @@ class AccueilInboxController extends Controller
         ]);
     }
 
-    public function affecter(Request $request, int $id): RedirectResponse
+    public function affecter(AssignServiceRequest $request, int $id): RedirectResponse
     {
         try {
             $actor = $this->access->requireActor($request);
@@ -265,29 +264,23 @@ class AccueilInboxController extends Controller
 
             Gate::forUser($actor)->authorize('assignService', $demand);
 
-            $payload = $request->validate([
-                'id_direction' => ['required', 'integer', 'exists:directions,id_direction'],
-                'id_service' => ['required', 'integer', 'exists:services,id_service'],
-                'commentaire' => ['nullable', 'string', 'max:2000'],
-            ]);
-
             $serviceDirectionId = DB::table('services')
-                ->where('id_service', (int) $payload['id_service'])
+                ->where('id_service', $request->serviceId())
                 ->where('actif', true)
                 ->value('id_direction');
 
             if (!$serviceDirectionId) {
                 throw new RuntimeException('Service invalide ou inactif.');
             }
-            if ((int) $serviceDirectionId !== (int) $payload['id_direction']) {
+            if ((int) $serviceDirectionId !== $request->directionId()) {
                 throw new RuntimeException("Le service sélectionné n'appartient pas à la direction choisie.");
             }
 
             $this->workflow->assignDemand(
                 actorId: (int) $actor->id_utilisateur,
                 demandId: $id,
-                serviceId: (int) $payload['id_service'],
-                comment: $payload['commentaire'] ?? null
+                serviceId: $request->serviceId(),
+                comment: $request->comment()
             );
 
             return redirect()->back()->with('success', 'Demande affectée.');
@@ -296,11 +289,11 @@ class AccueilInboxController extends Controller
         } catch (ValidationException $e) {
             throw $e;
         } catch (RuntimeException $e) {
-            return redirect()->back()->with('erreur', $e->getMessage());
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 
-    public function reponseDirecteAccueil(Request $request, int $id): RedirectResponse
+    public function reponseDirecteAccueil(SendWorkflowResponseRequest $request, int $id): RedirectResponse
     {
         try {
             $actor = $this->access->requireActor($request);
@@ -310,12 +303,6 @@ class AccueilInboxController extends Controller
             }
 
             Gate::forUser($actor)->authorize('reply', $demand);
-
-            $payload = $request->validate([
-                'contenu_reponse' => ['required', 'string', 'min:5'],
-                'pieces_jointes' => ['nullable', 'array', 'max:5'],
-                'pieces_jointes.*' => ['nullable', 'file', 'max:4096', 'mimes:pdf,jpg,jpeg,png'],
-            ]);
 
             $demandMeta = DB::table('demandes as d')
                 ->join('parametres as st', 'st.id_parametre', '=', 'd.id_statut')
@@ -340,7 +327,6 @@ class AccueilInboxController extends Controller
                     ->update([
                         'id_agent_accueil' => (int) $actor->id_utilisateur,
                         'id_service_courant' => $actor->id_service ? (int) $actor->id_service : null,
-                        'date_affectation' => now(),
                         'date_affectation_accueil' => now(),
                         'updated_at' => now(),
                     ]);
@@ -356,7 +342,7 @@ class AccueilInboxController extends Controller
             $draft = $this->workflow->draftResponse(
                 actorId: (int) $actor->id_utilisateur,
                 demandId: $id,
-                content: trim($payload['contenu_reponse']),
+                content: $request->responseContent(),
                 typeCode: 'directe'
             );
 
@@ -422,7 +408,6 @@ class AccueilInboxController extends Controller
                     ->update([
                         'id_agent_accueil' => (int) $actor->id_utilisateur,
                         'id_service_courant' => $actor->id_service ? (int) $actor->id_service : null,
-                        'date_affectation' => now(),
                         'date_affectation_accueil' => now(),
                         'updated_at' => now(),
                     ]);
@@ -478,7 +463,7 @@ class AccueilInboxController extends Controller
     }
 
     */
-    public function annulerAffectation(Request $request, int $id): RedirectResponse
+    public function annulerAffectation(CancelAssignmentRequest $request, int $id): RedirectResponse
     {
         try {
             $actor = $this->access->requireActor($request);
@@ -489,14 +474,10 @@ class AccueilInboxController extends Controller
 
             Gate::forUser($actor)->authorize('cancelServiceAssignment', $demand);
 
-            $payload = $request->validate([
-                'commentaire' => ['nullable', 'string', 'max:2000'],
-            ]);
-
             $this->workflow->cancelServiceAssignment(
                 actorId: (int) $actor->id_utilisateur,
                 demandId: $id,
-                comment: $payload['commentaire'] ?? null
+                comment: $request->comment()
             );
 
             return redirect()->back()->with('success', "Affectation annulée et demande retournée à l'accueil.");
@@ -546,5 +527,13 @@ class AccueilInboxController extends Controller
         $query->orderByDesc('d.id_demande');
 
         return $query;
+    }
+
+    private function latestActionIdsFor(string $typeAction): Builder
+    {
+        return DB::table('historique_actions')
+            ->select('id_demande', DB::raw('MAX(id_action) as id_action'))
+            ->where('type_action', $typeAction)
+            ->groupBy('id_demande');
     }
 }

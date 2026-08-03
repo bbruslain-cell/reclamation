@@ -3,28 +3,46 @@
 use App\Models\Utilisateur;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        DB::table('utilisateurs')->updateOrInsert(
-            ['email' => 'admin@anbg.ga'],
-            [
+        $adminEmail = (string) env('INITIAL_ADMIN_EMAIL', 'admin@anbg.ga');
+        $adminUserId = DB::table('utilisateurs')->where('email', $adminEmail)->value('id_utilisateur');
+
+        if (!$adminUserId) {
+            $initialPassword = trim((string) env('INITIAL_ADMIN_PASSWORD', ''));
+
+            if ($initialPassword !== '') {
+                if ($initialPassword === 'Admin@123456' || strlen($initialPassword) < 12) {
+                    throw new RuntimeException('INITIAL_ADMIN_PASSWORD must be unique and at least 12 characters long.');
+                }
+
+                $adminUserId = DB::table('utilisateurs')->insertGetId([
+                    'email' => $adminEmail,
+                    'nom' => 'Super',
+                    'prenom' => 'Admin',
+                    'password_hash' => \Illuminate\Support\Facades\Hash::make($initialPassword),
+                    'id_service' => null,
+                    'actif' => true,
+                    'changement_mdp_requis' => true,
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ], 'id_utilisateur');
+            }
+        } else {
+            DB::table('utilisateurs')->where('id_utilisateur', $adminUserId)->update([
                 'nom' => 'Super',
                 'prenom' => 'Admin',
-                'password_hash' => Hash::make('Admin@123456'),
                 'id_service' => null,
                 'actif' => true,
                 'changement_mdp_requis' => true,
                 'updated_at' => now(),
-                'created_at' => now(),
-            ]
-        );
+            ]);
+        }
 
         $adminRoleId = DB::table('roles')->where('code', 'admin')->value('id_role');
-        $adminUserId = DB::table('utilisateurs')->where('email', 'admin@anbg.ga')->value('id_utilisateur');
         if ($adminRoleId && $adminUserId) {
             DB::table('utilisateur_role')->updateOrInsert(
                 ['id_utilisateur' => $adminUserId, 'id_role' => $adminRoleId],

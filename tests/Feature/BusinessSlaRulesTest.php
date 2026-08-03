@@ -70,7 +70,6 @@ class BusinessSlaRulesTest extends TestCase
             'numero_suivi' => 'TEST-SLA-GLOBAL-002',
             'id_service_courant' => $serviceId,
             'date_soumission' => Carbon::create(2026, 3, 23, 7, 30, 0, 'Africa/Libreville'),
-            'date_affectation' => Carbon::create(2026, 3, 23, 9, 30, 0, 'Africa/Libreville'),
             'date_affectation_accueil' => Carbon::create(2026, 3, 23, 9, 30, 0, 'Africa/Libreville'),
         ]);
 
@@ -94,7 +93,6 @@ class BusinessSlaRulesTest extends TestCase
             'numero_suivi' => 'TEST-SLA-GLOBAL-003',
             'id_service_courant' => $serviceId,
             'date_soumission' => Carbon::create(2026, 3, 23, 7, 30, 0, 'Africa/Libreville'),
-            'date_affectation' => Carbon::create(2026, 3, 23, 9, 30, 0, 'Africa/Libreville'),
             'date_affectation_accueil' => Carbon::create(2026, 3, 23, 9, 30, 0, 'Africa/Libreville'),
         ]);
 
@@ -117,7 +115,6 @@ class BusinessSlaRulesTest extends TestCase
             'numero_suivi' => 'TEST-SLA-AGENT-004',
             'id_service_courant' => $serviceId,
             'date_soumission' => Carbon::create(2026, 3, 23, 7, 30, 0, 'Africa/Libreville'),
-            'date_affectation' => Carbon::create(2026, 3, 23, 8, 0, 0, 'Africa/Libreville'),
             'date_affectation_accueil' => Carbon::create(2026, 3, 23, 8, 0, 0, 'Africa/Libreville'),
             'date_affectation_agent' => Carbon::create(2026, 3, 25, 8, 0, 0, 'Africa/Libreville'),
         ]);

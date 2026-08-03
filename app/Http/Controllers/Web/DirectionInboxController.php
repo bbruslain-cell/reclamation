@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ListDirectionInboxRequest;
 use App\Models\Demande;
 use App\Services\AccessControlService;
 use App\Services\StepAlertService;
@@ -21,7 +22,7 @@ class DirectionInboxController extends Controller
     ) {
     }
 
-    public function index(Request $request): View
+    public function index(ListDirectionInboxRequest $request): View
     {
         $actor = $this->access->requireActor($request);
         $this->assertChefDirectionAccess((int) $actor->id_utilisateur);
@@ -37,14 +38,14 @@ class DirectionInboxController extends Controller
             ->leftJoin('usagers as u', 'u.id_usager', '=', 'd.id_usager')
             ->whereIn('d.id_service_courant', !empty($allowedServiceIds) ? $allowedServiceIds : [-1]);
 
-        if ($request->filled('statut_code')) {
-            $requestedStatus = (string) $request->string('statut_code');
-            if (in_array($requestedStatus, $allowedStatusCodes, true)) {
-                $baseQuery->where('st.code', $requestedStatus);
-            }
+        $requestedStatus = $request->statusCode();
+        if ($requestedStatus !== '' && in_array($requestedStatus, $allowedStatusCodes, true)) {
+            $baseQuery->where('st.code', $requestedStatus);
         }
-        if ($request->filled('search')) {
-            $search = '%'.$request->string('search').'%';
+
+        $searchTerm = $request->searchTerm();
+        if ($searchTerm !== '') {
+            $search = '%'.$searchTerm.'%';
             $baseQuery->where(function ($q) use ($search) {
                 $q->where('d.numero_suivi', 'like', $search)
                     ->orWhere('d.objet', 'like', $search)
@@ -152,7 +153,7 @@ class DirectionInboxController extends Controller
         return view('workflow.direction-inbox', [
             'actor' => $actor,
             'demandes' => $demandes,
-            'search' => (string) $request->string('search', ''),
+            'search' => $searchTerm,
             'piecesByDemand' => $piecesByDemand,
             'servicePerformance' => $servicePerformance,
             'serviceSummary' => [
@@ -220,5 +221,4 @@ class DirectionInboxController extends Controller
         throw new AuthorizationException("Accès reserve au chef de direction.");
     }
 }
-
 

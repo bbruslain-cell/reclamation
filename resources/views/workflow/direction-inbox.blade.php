@@ -142,7 +142,7 @@
         ])->filter()->values();
     @endphp
     <header class="bg-navy sticky top-0 z-50 shadow-md">
-        <div class="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        <div class="app-page-frame h-14 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
                 <div class="bg-white rounded-lg px-2.5 py-1.5 flex-shrink-0">
                     <img src="/Logo_anbg.png" alt="ANBG" class="h-7 w-auto object-contain block">
@@ -193,7 +193,7 @@
         </div>
     </header>
 
-    <section class="hero-shell rounded-[28px] mx-auto max-w-screen-xl px-6 py-6 sm:px-8 sm:py-7 text-white shadow-card mt-6">
+    <section class="hero-shell rounded-[28px] app-page-frame py-6 sm:py-7 text-white shadow-card mt-6">
         <div class="relative z-10 grid gap-6 lg:grid-cols-[1.45fr_0.85fr] lg:items-end">
             <div class="space-y-4">
                 <div class="space-y-6">
@@ -228,7 +228,7 @@
         </div>
     </section>
 
-    <main class="max-w-screen-xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <main class="app-page-frame py-6 space-y-6">
         @if(session('success'))
         <div class="flex items-start gap-3 bg-leaf-50 border border-leaf/30 text-green-800 px-4 py-3 rounded-xl text-sm shadow-card">
             <svg class="icon-svg text-leaf mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">

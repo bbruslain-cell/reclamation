@@ -87,8 +87,8 @@ class AuthAndPublicFlowTest extends TestCase
             'prenom' => 'Jane',
             'email' => 'jane@example.com',
             'statut_usager' => 'Étudiant',
-            'pays' => 'Gabon',
-            'etablissement' => 'Université Omar Bongo',
+            'pays' => 'GABON',
+            'etablissement' => 'UNIVERSITE DES SCIENCES ET TECHNIQUES DE MASUKU (USTM)',
             'qualite' => 'Etudiante',
             'objet' => 'Objet test',
             'message' => 'Message de test suffisamment long.',
@@ -99,6 +99,10 @@ class AuthAndPublicFlowTest extends TestCase
         $response->assertRedirect('/reclamations/nouvelle');
         $this->assertDatabaseCount('demandes', 6);
         $this->assertDatabaseCount('pieces_jointes', 1);
+        $this->assertDatabaseHas('usagers', [
+            'email' => 'jane@example.com',
+            'pays' => 'GABON',
+        ]);
         Storage::disk('local')->assertExists((string) DB::table('pieces_jointes')->value('chemin_fichier'));
         Storage::disk('public')->assertMissing((string) DB::table('pieces_jointes')->value('chemin_fichier'));
     }
@@ -144,6 +148,52 @@ class AuthAndPublicFlowTest extends TestCase
 
         $this->assertDatabaseMissing('usagers', [
             'email' => 'zap@example.com',
+        ]);
+    }
+
+    public function test_public_submission_rejects_country_outside_allowed_list(): void
+    {
+        $this->seed();
+
+        $this->from('/reclamations/nouvelle')->post('/reclamations', [
+            'nom' => 'Zap',
+            'prenom' => 'Country',
+            'email' => 'country@example.com',
+            'statut_usager' => 'Etudiant',
+            'pays' => 'Atlantide',
+            'etablissement' => 'UNIVERSITE DES SCIENCES ET TECHNIQUES DE MASUKU (USTM)',
+            'objet' => 'Objet test',
+            'message' => 'Message de test suffisamment long.',
+            'consentement' => 'on',
+        ])
+            ->assertRedirect('/reclamations/nouvelle')
+            ->assertSessionHasErrors('pays');
+
+        $this->assertDatabaseMissing('usagers', [
+            'email' => 'country@example.com',
+        ]);
+    }
+
+    public function test_public_submission_rejects_secondary_school_establishment(): void
+    {
+        $this->seed();
+
+        $this->from('/reclamations/nouvelle')->post('/reclamations', [
+            'nom' => 'Zap',
+            'prenom' => 'Lycee',
+            'email' => 'lycee@example.com',
+            'statut_usager' => 'Etudiant',
+            'pays' => 'GABON',
+            'etablissement' => 'LYCEE VICTOR HUGO',
+            'objet' => 'Objet test',
+            'message' => 'Message de test suffisamment long.',
+            'consentement' => 'on',
+        ])
+            ->assertRedirect('/reclamations/nouvelle')
+            ->assertSessionHasErrors('etablissement');
+
+        $this->assertDatabaseMissing('usagers', [
+            'email' => 'lycee@example.com',
         ]);
     }
 
@@ -257,7 +307,7 @@ class AuthAndPublicFlowTest extends TestCase
             'email' => $existingEmail,
             'statut_usager' => 'Étudiant',
             'pays' => 'Gabon',
-            'etablissement' => 'Université Omar Bongo',
+            'etablissement' => 'UNIVERSITE DES SCIENCES ET TECHNIQUES DE MASUKU (USTM)',
             'qualite' => 'Etudiant',
             'objet' => 'Nouvelle demande',
             'message' => 'Message de test suffisamment long pour creer une demande.',
@@ -277,7 +327,7 @@ class AuthAndPublicFlowTest extends TestCase
             'nom' => 'Deuxieme',
             'prenom' => 'Profil',
             'statut_usager' => 'Étudiant',
-            'pays' => 'Gabon',
+            'pays' => 'GABON',
         ]);
     }
 
@@ -293,7 +343,7 @@ class AuthAndPublicFlowTest extends TestCase
             'email' => 'jane@example.com',
             'statut_usager' => 'Étudiant',
             'pays' => 'Gabon',
-            'etablissement' => 'Université Omar Bongo',
+            'etablissement' => 'UNIVERSITE DES SCIENCES ET TECHNIQUES DE MASUKU (USTM)',
             'qualite' => 'Etudiante',
             'objet' => 'Objet test',
             'message' => 'Message de test suffisamment long.',
@@ -349,7 +399,7 @@ class AuthAndPublicFlowTest extends TestCase
             'email' => 'jane@example.com',
             'statut_usager' => 'Etudiant',
             'pays' => 'Gabon',
-            'etablissement' => 'Universite Omar Bongo',
+            'etablissement' => 'UNIVERSITE DES SCIENCES ET TECHNIQUES DE MASUKU (USTM)',
             'objet' => 'Objet test',
             'message' => 'Message de test suffisamment long.',
             'consentement' => 'on',
@@ -669,6 +719,20 @@ class AuthAndPublicFlowTest extends TestCase
         $this->assertDatabaseHas('reponse_piece_jointe', [
             'id_reponse' => $responseId,
         ]);
+
+        $ciqId = (int) DB::table('utilisateurs')
+            ->where('email', 'ciq@anbg.ga')
+            ->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->where('id_utilisateur', $ciqId)
+            ->update(['changement_mdp_requis' => false]);
+
+        $detailResponse = $this->withHeader('X-User-Id', (string) $ciqId)
+            ->getJson("/pilotage/demandes/{$demandId}/detail?periode=all");
+
+        $detailResponse
+            ->assertOk()
+            ->assertJsonPath('data.traitement.reponse.pieces_jointes.0.nom_fichier', 'avis-direction.pdf');
     }
 
     public function test_accueil_can_send_direct_response_for_reclamation_and_close_it(): void
@@ -759,7 +823,7 @@ class AuthAndPublicFlowTest extends TestCase
             'email' => 'jane.agent-piece@example.com',
             'statut_usager' => 'Étudiant',
             'pays' => 'Gabon',
-            'etablissement' => 'Université Omar Bongo',
+            'etablissement' => 'UNIVERSITE DES SCIENCES ET TECHNIQUES DE MASUKU (USTM)',
             'qualite' => 'Etudiante',
             'objet' => 'Verification piece jointe agent',
             'message' => 'Demande avec piece jointe qui doit rester visible apres affectation a un agent.',
@@ -777,6 +841,8 @@ class AuthAndPublicFlowTest extends TestCase
         $directionId = (int) DB::table('services')
             ->where('id_service', $serviceId)
             ->value('id_direction');
+        $serviceComment = 'Urgent: bourse bloquee depuis deux semaines.';
+        $agentComment = 'Traiter en priorite avant vendredi.';
 
         $this->post('/login', [
             'email' => 'accueil@anbg.ga',
@@ -793,7 +859,12 @@ class AuthAndPublicFlowTest extends TestCase
             '_method' => 'PUT',
             'id_direction' => $directionId,
             'id_service' => $serviceId,
+            'commentaire' => $serviceComment,
         ])->assertRedirect();
+
+        $this->get('/accueil/inbox')
+            ->assertOk()
+            ->assertSee($serviceComment);
 
         Auth::guard('web')->logout();
 
@@ -812,9 +883,15 @@ class AuthAndPublicFlowTest extends TestCase
             'password_confirmation' => 'ChangeMe@124',
         ])->assertRedirect('/espace');
 
+        $this->get('/chef/inbox')
+            ->assertOk()
+            ->assertSee('Verification piece jointe agent')
+            ->assertSee($serviceComment);
+
         $this->post("/chef/demandes/{$demandId}/affecter-agent", [
             '_method' => 'PUT',
             'id_agent' => $agentId,
+            'commentaire' => $agentComment,
         ])->assertRedirect();
 
         Auth::guard('web')->logout();
@@ -833,6 +910,7 @@ class AuthAndPublicFlowTest extends TestCase
         $this->get('/agent/inbox')
             ->assertOk()
             ->assertSee('Verification piece jointe agent')
+            ->assertSee($agentComment)
             ->assertSee('piece-usager.pdf');
     }
 

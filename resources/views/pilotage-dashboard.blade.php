@@ -197,12 +197,22 @@
     $reclamationEvolutionClosed = collect(data_get($evolutionTemporelle, 'series.demandes_cloturees', []))
         ->map(fn ($value) => (int) $value)
         ->values();
+    $reclamationEvolutionOpen = collect(data_get($evolutionTemporelle, 'series.reclamations_non_cloturees', []))
+        ->map(fn ($value) => (int) $value)
+        ->values();
+    if ($reclamationEvolutionOpen->isEmpty() && $reclamationEvolutionReceived->isNotEmpty()) {
+        $reclamationEvolutionOpen = $reclamationEvolutionReceived
+            ->map(fn (int $value, int $index) => max(0, $value - (int) ($reclamationEvolutionClosed[$index] ?? 0)))
+            ->values();
+    }
     $reclamationEvolutionTotal = (int) $reclamationEvolutionReceived->sum();
     $reclamationEvolutionClosedTotal = (int) $reclamationEvolutionClosed->sum();
+    $reclamationEvolutionOpenTotal = (int) $reclamationEvolutionOpen->sum();
     $reclamationEvolutionData = [
         'labels' => $reclamationEvolutionLabels->all(),
         'recues' => $reclamationEvolutionReceived->all(),
         'cloturees' => $reclamationEvolutionClosed->all(),
+        'nonCloturees' => $reclamationEvolutionOpen->all(),
     ];
 @endphp
 <head>
@@ -313,7 +323,7 @@
     data-dashboard-refresh-interval="20000"
 >
     <header class="bg-navy sticky top-0 z-50 shadow-md">
-        <div class="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        <div class="app-page-frame h-14 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
                 <div class="bg-white rounded-lg px-2.5 py-1.5 flex-shrink-0">
                     <img src="/Logo_anbg.png" alt="ANBG" class="h-9 w-auto object-contain block">
@@ -356,7 +366,7 @@
     </header>
 
     <section class="dashboard-hero border-b border-white/10 py-8">
-        <div class="max-w-screen-xl mx-auto px-4 sm:px-6">
+        <div class="app-page-frame">
             <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-100">{{ $dashboardPageEyebrow }}</p>
@@ -385,7 +395,7 @@
         </div>
     </section>
 
-    <main class="max-w-screen-xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <main class="app-page-frame py-6 space-y-6">
         <section class="chart-card rounded-3xl p-5">
             <form method="get" class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6 xl:items-end">
                 <div>
@@ -496,7 +506,7 @@
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-400">Évolution</p>
-                        <h2 class="mt-2 text-base font-semibold text-navy">Réclamations reçues et clôturées</h2>
+                        <h2 class="mt-2 text-base font-semibold text-navy">Réclamations reçues, clôturées et non clôturées</h2>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
                         @if ($canExportPilotage)
@@ -505,7 +515,7 @@
                                 <span>PDF</span>
                             </a>
                         @endif
-                        <div class="grid grid-cols-2 gap-2">
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
                             <div class="rounded-2xl bg-white/90 px-4 py-2 text-center shadow-soft">
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-400">Reçues</p>
                                 <p class="mt-1 text-xl font-bold text-sky" data-dashboard-value="reclamation-evolution-total">{{ number_format($reclamationEvolutionTotal, 0, ',', ' ') }}</p>
@@ -513,6 +523,10 @@
                             <div class="rounded-2xl bg-white/90 px-4 py-2 text-center shadow-soft">
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-400">Clôturées</p>
                                 <p class="mt-1 text-xl font-bold text-leaf" data-dashboard-value="reclamation-evolution-closed-total">{{ number_format($reclamationEvolutionClosedTotal, 0, ',', ' ') }}</p>
+                            </div>
+                            <div class="rounded-2xl bg-white/90 px-4 py-2 text-center shadow-soft">
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-400">Non clôturées</p>
+                                <p class="mt-1 text-xl font-bold text-amber-500" data-dashboard-value="reclamation-evolution-open-total">{{ number_format($reclamationEvolutionOpenTotal, 0, ',', ' ') }}</p>
                             </div>
                         </div>
                     </div>
@@ -532,6 +546,10 @@
                     <span class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 shadow-soft">
                         <span class="legend-dot" style="background-color: #8fc043"></span>
                         Réclamations clôturées
+                    </span>
+                    <span class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 shadow-soft">
+                        <span class="legend-dot" style="background-color: #f59e0b"></span>
+                        Réclamations non clôturées
                     </span>
                 </div>
             </article>
@@ -856,6 +874,9 @@
                 const labels = Array.isArray(reclamationEvolutionData.labels) ? reclamationEvolutionData.labels : [];
                 const recues = Array.isArray(reclamationEvolutionData.recues) ? reclamationEvolutionData.recues : [];
                 const cloturees = Array.isArray(reclamationEvolutionData.cloturees) ? reclamationEvolutionData.cloturees : [];
+                const nonCloturees = Array.isArray(reclamationEvolutionData.nonCloturees)
+                    ? reclamationEvolutionData.nonCloturees
+                    : recues.map((value, index) => Math.max(0, Number(value || 0) - Number(cloturees[index] || 0)));
 
                 if (!canvas || !labels.length || typeof Chart === 'undefined') {
                     return;
@@ -897,6 +918,20 @@
                                 pointHoverRadius: 6,
                                 pointBackgroundColor: '#ffffff',
                                 pointBorderColor: '#8fc043',
+                                pointBorderWidth: 2,
+                            },
+                            {
+                                label: 'Réclamations non clôturées',
+                                data: nonCloturees.map((value) => Number(value || 0)),
+                                borderColor: '#f59e0b',
+                                backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                                fill: false,
+                                tension: 0.42,
+                                borderWidth: 3,
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                pointBackgroundColor: '#ffffff',
+                                pointBorderColor: '#f59e0b',
                                 pointBorderWidth: 2,
                             },
                         ],
@@ -1119,6 +1154,9 @@
                         : [],
                     cloturees: Array.isArray(series.demandes_cloturees)
                         ? series.demandes_cloturees.map((value) => Math.max(0, Math.round(dashboardNumber(value))))
+                        : [],
+                    nonCloturees: Array.isArray(series.reclamations_non_cloturees)
+                        ? series.reclamations_non_cloturees.map((value) => Math.max(0, Math.round(dashboardNumber(value))))
                         : [],
                 };
             }
@@ -1406,6 +1444,23 @@
                                 pointBorderColor: '#8fc043',
                                 pointBorderWidth: 2,
                             },
+                            {
+                                label: 'Réclamations non clôturées',
+                                data: (data.nonCloturees.length
+                                    ? data.nonCloturees
+                                    : data.recues.map((value, index) => Math.max(0, dashboardNumber(value) - dashboardNumber(data.cloturees[index] || 0)))
+                                ).map((value) => dashboardNumber(value)),
+                                borderColor: '#f59e0b',
+                                backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                                fill: false,
+                                tension: 0.42,
+                                borderWidth: 3,
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                pointBackgroundColor: '#ffffff',
+                                pointBorderColor: '#f59e0b',
+                                pointBorderWidth: 2,
+                            },
                         ],
                     },
                     options: {
@@ -1464,6 +1519,10 @@
                 setDashboardValue('service-sla-average', `${dashboardPercentFormatter.format(dashboardAverage(serviceSla, 'taux'))} %`);
                 setDashboardValue('reclamation-evolution-total', dashboardNumberFormatter.format(evolution.recues.reduce((sum, value) => sum + dashboardNumber(value), 0)));
                 setDashboardValue('reclamation-evolution-closed-total', dashboardNumberFormatter.format(evolution.cloturees.reduce((sum, value) => sum + dashboardNumber(value), 0)));
+                setDashboardValue('reclamation-evolution-open-total', dashboardNumberFormatter.format((evolution.nonCloturees.length
+                    ? evolution.nonCloturees
+                    : evolution.recues.map((value, index) => Math.max(0, dashboardNumber(value) - dashboardNumber(evolution.cloturees[index] || 0)))
+                ).reduce((sum, value) => sum + dashboardNumber(value), 0)));
                 setDashboardValue('country-demand-total', dashboardNumberFormatter.format(countryDemand.reduce((sum, row) => sum + dashboardNumber(row.total_demandes), 0)));
                 setDashboardValue('establishment-demand-total', dashboardNumberFormatter.format(establishmentDemand.reduce((sum, row) => sum + dashboardNumber(row.total_demandes), 0)));
 

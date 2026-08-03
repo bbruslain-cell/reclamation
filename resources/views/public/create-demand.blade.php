@@ -7,6 +7,7 @@
 @php
     $publicDemandState = [
         'categoriesByType' => $categoriesByType,
+        'establishments' => $establishments ?? [],
         'old' => [
             'nom' => old('nom', ''),
             'prenom' => old('prenom', ''),
@@ -118,6 +119,15 @@
         }
         .animate-spin { animation: spin 0.8s linear infinite; }
 
+        .public-page-frame {
+            width: 100%;
+            max-width: none;
+            margin-left: 0;
+            margin-right: 0;
+            padding-left: clamp(1rem, 3vw, 4rem);
+            padding-right: clamp(1rem, 3vw, 4rem);
+        }
+
     </style>
 @endpush
 
@@ -125,7 +135,7 @@
 <div id="app">
     <!-- NAVBAR -->
     <header class="bg-navy-500 sticky top-0 z-50 shadow-md">
-        <div class="max-w-screen-xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 2xl:px-10 h-16 flex items-center justify-between">
+        <div class="public-page-frame h-16 flex items-center justify-between">
             <!-- Logo + Nom -->
             <div class="flex items-center gap-3">
                 <!-- Cartouche blanc logo  -->
@@ -164,7 +174,7 @@
 
     <!-- HERO BANNER -->
     <section class="bg-navy-500 border-b border-navy-600 pb-10 pt-8">
-        <div class="max-w-screen-xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 2xl:px-10">
+        <div class="public-page-frame">
             <div class="flex items-start gap-4">
                 <div class="mt-1 w-10 h-10 rounded-full bg-sky-400/20 flex items-center justify-center flex-shrink-0 opacity-0 animate-[fade-in-up_0.6s_ease-out_forwards]">
                     <svg class="icon-svg text-sky-300 text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -186,7 +196,7 @@
     </section>
 
     <!-- MAIN CONTENT -->
-    <main class="max-w-screen-xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 2xl:px-10 py-8">
+    <main class="public-page-frame py-8">
 
         <!-- Success Message -->
         @if(session('success'))
@@ -298,7 +308,7 @@
                                     pattern="[A-Za-z0-9._%+\-']+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+(?:{{ $acceptedEmailTldPattern }})"
                                     title="Saisissez une adresse email complète, par exemple nom@example.com"
                                     placeholder="prenom.nom@email.com"
-                                    class="w-full pl-9 pr-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
+                                    class="w-full pl-9 pr-10 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
                                            focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150"
                                 >
                             </div>
@@ -348,13 +358,22 @@
                                         <path d="M4 12h16M12 4a12 12 0 0 1 0 16M12 4a12 12 0 0 0 0 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
                                     </svg>
                                 </span>
-                                <input
-                                    id="pays" name="pays" type="text"
-                                    v-model="form.pays" @input="clearError('pays')" required autocomplete="country-name"
-                                    placeholder="Ex. : Gabon"
-                                    class="w-full pl-9 pr-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
-                                           focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150"
+                                <select
+                                    id="pays" name="pays"
+                                    v-model="form.pays" @change="clearError('pays')" required autocomplete="country-name"
+                                    class="w-full pl-9 pr-9 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 appearance-none
+                                           focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150 cursor-pointer"
                                 >
+                                    <option value="">- Sélectionner -</option>
+                                    @foreach($countries as $country)
+                                        <option value="{{ $country }}">{{ $country }}</option>
+                                    @endforeach
+                                </select>
+                                <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none text-xs">
+                                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="m7 10 5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </span>
                             </div>
                             <p v-if="errors.pays" class="mt-1.5 text-xs text-red-500 flex items-center gap-1">
                                 <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.pays }}
@@ -381,13 +400,46 @@
                                     </svg>
                                 </span>
                                 <input
-                                    id="etablissement" name="etablissement" type="text"
-                                    v-model="form.etablissement" @input="clearError('etablissement')"
+                                    id="etablissement_search" type="text"
+                                    v-model="establishmentQuery"
+                                    @focus="openEstablishmentList"
+                                    @input="handleEstablishmentSearch"
+                                    @blur="closeEstablishmentList"
+                                    @keydown.escape="showEstablishmentOptions = false"
                                     :required="requiresEtablissement" autocomplete="organization"
                                     placeholder="Nom de votre établissement"
-                                    class="w-full pl-9 pr-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
+                                    class="w-full pl-9 pr-10 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
                                            focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150"
                                 >
+                                <input id="etablissement" name="etablissement" type="hidden" :value="form.etablissement">
+                                <button
+                                    v-if="form.etablissement"
+                                    type="button"
+                                    @click="clearEstablishment"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-red-500 transition-colors"
+                                    aria-label="Effacer l'etablissement"
+                                >
+                                    <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                </button>
+                                <div
+                                    v-if="showEstablishmentOptions"
+                                    class="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-xl"
+                                >
+                                    <button
+                                        v-for="establishment in filteredEstablishments"
+                                        :key="establishment"
+                                        type="button"
+                                        @mousedown.prevent="selectEstablishment(establishment)"
+                                        class="block w-full px-3.5 py-2.5 text-left text-sm text-navy-500 hover:bg-sky-50 focus:bg-sky-50 focus:outline-none"
+                                    >
+                                        @{{ establishment }}
+                                    </button>
+                                    <div v-if="filteredEstablishments.length === 0" class="px-3.5 py-3 text-sm text-neutral-400">
+                                        Continuez la recherche ou choisissez Autre
+                                    </div>
+                                </div>
                             </div>
                             <p v-if="errors.etablissement" class="mt-1.5 text-xs text-red-500 flex items-center gap-1">
                                 <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.etablissement }}
@@ -577,7 +629,7 @@
 
     <!-- FOOTER -->
     <footer class="mt-8 border-t border-neutral-100 bg-white">
-        <div class="max-w-screen-xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 2xl:px-10 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-neutral-400">
+        <div class="public-page-frame py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-neutral-400">
             <span>© {{ date('Y') }} Agence Nationale des Bourses du Gabon.</span>
             <span>Constructeur d'avenir</span>
         </div>

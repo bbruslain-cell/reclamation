@@ -173,7 +173,7 @@ class PilotageExportController extends Controller
             $chartData = $this->buildReclamationEvolutionData($overviewData);
 
             $pdf = Pdf::loadView('exports.pilotage.chart', [
-                'title' => 'Réclamations reçues et clôturées',
+                'title' => 'Réclamations reçues, clôturées et non clôturées',
                 'chartImage' => $this->buildReclamationEvolutionImage($chartData),
                 'legendHeaders' => ['Série', 'Total'],
                 'legendRows' => [
@@ -184,6 +184,10 @@ class PilotageExportController extends Controller
                     [
                         'color' => '#8fc043',
                         'cells' => ['Réclamations clôturées', number_format((int) array_sum($chartData['cloturees']), 0, ',', ' ')],
+                    ],
+                    [
+                        'color' => '#f59e0b',
+                        'cells' => ['Réclamations non clôturées', number_format((int) array_sum($chartData['non_cloturees']), 0, ',', ' ')],
                     ],
                 ],
             ])->setPaper('a4', 'landscape');
@@ -365,10 +369,21 @@ class PilotageExportController extends Controller
     {
         $evolution = $overviewData['evolution_temporelle'] ?? [];
 
+        $recues = collect($evolution['series']['reclamations_recues'] ?? [])->map(fn ($value) => (int) $value)->values();
+        $cloturees = collect($evolution['series']['demandes_cloturees'] ?? [])->map(fn ($value) => (int) $value)->values();
+        $nonCloturees = collect($evolution['series']['reclamations_non_cloturees'] ?? [])->map(fn ($value) => (int) $value)->values();
+
+        if ($nonCloturees->isEmpty() && $recues->isNotEmpty()) {
+            $nonCloturees = $recues
+                ->map(fn (int $value, int $index) => max(0, $value - (int) ($cloturees[$index] ?? 0)))
+                ->values();
+        }
+
         return [
             'labels' => collect($evolution['labels'] ?? [])->map(fn ($value) => (string) $value)->values()->all(),
-            'recues' => collect($evolution['series']['reclamations_recues'] ?? [])->map(fn ($value) => (int) $value)->values()->all(),
-            'cloturees' => collect($evolution['series']['demandes_cloturees'] ?? [])->map(fn ($value) => (int) $value)->values()->all(),
+            'recues' => $recues->all(),
+            'cloturees' => $cloturees->all(),
+            'non_cloturees' => $nonCloturees->all(),
         ];
     }
 
@@ -513,6 +528,7 @@ class PilotageExportController extends Controller
         $labels = $data['labels'] ?? [];
         $recues = $data['recues'] ?? [];
         $cloturees = $data['cloturees'] ?? [];
+        $nonCloturees = $data['non_cloturees'] ?? [];
 
         if (empty($labels) || !extension_loaded('gd')) {
             return null;
@@ -538,9 +554,10 @@ class PilotageExportController extends Controller
         $grid = $this->gdColor($image, '#e5edf5');
         $sky = $this->gdColor($image, '#3996d3');
         $leaf = $this->gdColor($image, '#8fc043');
+        $amber = $this->gdColor($image, '#f59e0b');
         imagefill($image, 0, 0, $white);
 
-        $maxValue = max(1, (int) max(array_merge($recues, $cloturees, [1])));
+        $maxValue = max(1, (int) max(array_merge($recues, $cloturees, $nonCloturees, [1])));
         $maxAxis = (int) (ceil($maxValue / 5) * 5);
         $pointCount = count($labels);
         $xStep = $pointCount > 1 ? $chartWidth / ($pointCount - 1) : 0;
@@ -564,6 +581,7 @@ class PilotageExportController extends Controller
 
         $this->drawLineSeries($image, $recues, $pointCount, $left, $top, $chartWidth, $chartHeight, $maxAxis, $sky);
         $this->drawLineSeries($image, $cloturees, $pointCount, $left, $top, $chartWidth, $chartHeight, $maxAxis, $leaf);
+        $this->drawLineSeries($image, $nonCloturees, $pointCount, $left, $top, $chartWidth, $chartHeight, $maxAxis, $amber);
 
         imagesetthickness($image, 1);
         imageline($image, $left, $top, $left, $top + $chartHeight, $grid);

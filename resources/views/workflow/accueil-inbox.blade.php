@@ -91,7 +91,7 @@
 
 <!-- ═══════════════════ TOPBAR ═══════════════════ -->
 <header class="bg-navy sticky top-0 z-50 shadow-md">
-    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+    <div class="app-page-frame h-14 flex items-center justify-between gap-4">
 
         <!-- Logo -->
         <div class="flex items-center gap-3">
@@ -131,7 +131,7 @@
 </header>
 
 <!-- ═══════════════════ MAIN ═══════════════════ -->
-<main class="max-w-screen-xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-5">
+<main class="app-page-frame py-4 sm:py-6 space-y-5">
 
     <!-- Toasts -->
     @if(session('success'))
@@ -540,7 +540,7 @@
                                                     <option value="{{ $service->id_service }}" data-direction-id="{{ $service->id_direction }}">{{ $service->code }} — {{ $service->libelle }}</option>
                                                 @endforeach
                                             </select>
-                                            <input name="commentaire" placeholder="Commentaire optionnel…"
+                                            <input name="commentaire" placeholder="Consigne ou urgence optionnelle…"
                                                 class="field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy placeholder-neutral-400 transition-all duration-150">
                                             <button type="submit"
                                                 class="w-full flex items-center justify-center gap-2 bg-navy hover:bg-navy-600 text-white text-sm font-medium py-2.5 rounded-lg transition-colors duration-150">
@@ -711,6 +711,9 @@
                         </td>
                         <td class="px-4 py-3 text-sm text-neutral-600">
                             {{ trim(($demande->direction ?? '').($demande->service ? ' — '.$demande->service : '')) ?: '—' }}
+                            @if(!empty($demande->commentaire_affectation_service))
+                                <span class="mt-1 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Consigne</span>
+                            @endif
                         </td>
                         <td class="px-4 py-3">
                             @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'badge'])
@@ -769,6 +772,11 @@
                                         <p class="text-xs text-neutral-400 mb-1">Message</p>
                                         <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">{{ $demande->message }}</div>
                                     </div>
+
+                                    @include('workflow.partials.assignment-comment', [
+                                        'label' => 'Consigne transmise au service',
+                                        'comment' => $demande->commentaire_affectation_service ?? '',
+                                    ])
 
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
@@ -902,6 +910,11 @@
                     ];
                 @endphp
                 @forelse($recentAccueilActions as $entry)
+                    @php
+                        $displayComment = (string) ($entry->type_action ?? '') === 'echec_envoi_reponse'
+                            ? "Echec d'envoi a l'usager. Verifiez le serveur mail puis relancez l'envoi."
+                            : trim((string) ($entry->commentaire ?? ''));
+                    @endphp
                     <tr class="demand-row transition-colors duration-100">
                         <td class="px-4 py-3 text-xs text-neutral-500 whitespace-nowrap">
                             {{ \Illuminate\Support\Carbon::parse($entry->date_action)->format('d/m/Y H:i') }}
@@ -925,7 +938,7 @@
                             {{ trim(($entry->acteur_prenom ?? '').' '.($entry->acteur_nom ?? '')) ?: 'Système' }}
                         </td>
                         <td class="px-4 py-3 text-sm text-neutral-600">
-                            {{ $entry->commentaire ?: '—' }}
+                            {{ $displayComment !== '' ? $displayComment : '—' }}
                         </td>
                     </tr>
                 @empty
@@ -992,7 +1005,7 @@
 
 <!-- ═══════════════════ FOOTER ═══════════════════ -->
 <footer class="border-t border-neutral-200 bg-white mt-8">
-    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 py-4 flex flex-col items-center justify-between gap-1 text-center text-xs text-neutral-400 sm:flex-row sm:text-left">
+    <div class="app-page-frame py-4 flex flex-col items-center justify-between gap-1 text-center text-xs text-neutral-400 sm:flex-row sm:text-left">
         <span>© {{ date('Y') }} Agence Nationale des Bourses du Gabon</span>
         <span class="text-neutral-400 font-medium">Constructeur d'avenir</span>
     </div>

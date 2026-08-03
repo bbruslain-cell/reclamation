@@ -16,6 +16,7 @@ if (appRoot && stateNode) {
     const old = state.old || {};
     const serverErrors = state.errors || {};
     const categoriesByType = state.categoriesByType || { reclamation: [], autre: ['Autre'] };
+    const establishments = Array.isArray(state.establishments) ? state.establishments : [];
 
     const asString = (value) => (typeof value === 'string' ? value : '');
     const normalizeStatus = (value) => asString(value)
@@ -23,6 +24,7 @@ if (appRoot && stateNode) {
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
         .trim();
+    const normalizeSearch = (value) => normalizeStatus(value).replace(/[^a-z0-9]+/g, ' ').trim();
 
     createApp({
         data() {
@@ -54,6 +56,8 @@ if (appRoot && stateNode) {
                     consentement: serverErrors.consentement || null,
                 },
                 categories: [],
+                establishmentQuery: asString(old.etablissement),
+                showEstablishmentOptions: false,
                 submitting: false,
             };
         },
@@ -64,6 +68,25 @@ if (appRoot && stateNode) {
         computed: {
             requiresEtablissement() {
                 return ['eleve', 'etudiant'].includes(normalizeStatus(this.form.statut_usager));
+            },
+            establishmentOptions() {
+                return [...new Set([...establishments, 'Autre'])];
+            },
+            filteredEstablishments() {
+                const query = normalizeSearch(this.establishmentQuery);
+
+                if (!query) {
+                    return this.establishmentOptions.slice(0, 40);
+                }
+
+                const matches = establishments
+                    .filter((establishment) => normalizeSearch(establishment).includes(query))
+                    .slice(0, 39);
+                const hasExactMatch = matches.some((establishment) => (
+                    normalizeSearch(establishment) === query
+                ));
+
+                return hasExactMatch ? matches : [...matches, 'Autre'];
             },
         },
         methods: {
@@ -79,6 +102,55 @@ if (appRoot && stateNode) {
                     this.clearError('etablissement');
                 }
             },
+            openEstablishmentList() {
+                this.showEstablishmentOptions = true;
+            },
+            closeEstablishmentList() {
+                window.setTimeout(() => {
+                    this.showEstablishmentOptions = false;
+                }, 120);
+            },
+            handleEstablishmentSearch() {
+                this.form.etablissement = '';
+                this.showEstablishmentOptions = true;
+                this.clearError('etablissement');
+            },
+            selectEstablishment(establishment) {
+                this.form.etablissement = establishment;
+                this.establishmentQuery = establishment;
+                this.showEstablishmentOptions = false;
+                this.clearError('etablissement');
+            },
+            clearEstablishment() {
+                this.form.etablissement = '';
+                this.establishmentQuery = '';
+                this.showEstablishmentOptions = true;
+                this.clearError('etablissement');
+            },
+            ensureSelectedEstablishment() {
+                const query = this.establishmentQuery.trim();
+
+                if (!this.requiresEtablissement && query === '') {
+                    return true;
+                }
+
+                if (this.form.etablissement) {
+                    return true;
+                }
+
+                const exactMatch = this.establishmentOptions.find((establishment) => (
+                    normalizeSearch(establishment) === normalizeSearch(query)
+                ));
+
+                if (exactMatch) {
+                    this.selectEstablishment(exactMatch);
+                    return true;
+                }
+
+                this.errors.etablissement = 'Selectionnez un etablissement dans la liste ou Autre.';
+                this.showEstablishmentOptions = true;
+                return false;
+            },
             applyCategory() {
                 this.form.objet = this.form.categorie;
                 if (this.form.objet) {
@@ -92,6 +164,11 @@ if (appRoot && stateNode) {
                 }
             },
             handleSubmit(event) {
+                if (!this.ensureSelectedEstablishment()) {
+                    event.preventDefault();
+                    return;
+                }
+
                 if (this.submitting) {
                     event.preventDefault();
                     return;

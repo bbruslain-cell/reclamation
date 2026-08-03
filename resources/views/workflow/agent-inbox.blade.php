@@ -71,7 +71,7 @@
 
     {{-- ═══════ TOPBAR ═══════ --}}
     <header class="bg-navy sticky top-0 z-50 shadow-md">
-        <div class="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        <div class="app-page-frame h-14 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
                 <div class="bg-white rounded-lg px-2.5 py-1.5 flex-shrink-0">
                     <img src="/Logo_anbg.png" alt="ANBG" class="h-9 w-auto object-contain block">
@@ -106,7 +106,7 @@
 
     {{-- ═══════ HERO ═══════ --}}
     <section class="bg-navy border-b border-white/10 pb-8 pt-6">
-        <div class="max-w-screen-xl mx-auto px-4 sm:px-6">
+        <div class="app-page-frame">
             <div class="flex items-start gap-4">
                 <div class="w-10 h-10 rounded-full bg-sky/20 flex items-center justify-center flex-shrink-0 mt-1">
                     <svg class="icon-svg text-sky-300 text-sm" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3a8 8 0 0 0-8 8v5a3 3 0 0 0 3 3h2v-7H6v-1a6 6 0 1 1 12 0v1h-3v7h2a3 3 0 0 0 3-3v-5a8 8 0 0 0-8-8Z"/></svg>
@@ -131,7 +131,7 @@
     </section>
 
     {{-- ═══════ MAIN ═══════ --}}
-    <main class="max-w-screen-xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+    <main class="app-page-frame py-6 space-y-5">
 
         {{-- Toasts --}}
         @if(session('success'))
@@ -214,6 +214,9 @@
                                 <span class="text-xs bg-neutral-100 text-neutral-600 px-2 py-1 rounded-full">
                                     {{ $demande->service_code }} — {{ $demande->service }}
                                 </span>
+                                @if(!empty($demande->commentaire_affectation_agent))
+                                    <span class="mt-1 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Consigne chef</span>
+                                @endif
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex flex-col items-start">
@@ -282,6 +285,11 @@
                                             <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap max-h-44 overflow-y-auto">{{ $demande->message }}</div>
                                         </div>
 
+                                        @include('workflow.partials.assignment-comment', [
+                                            'label' => 'Consigne du chef de service',
+                                            'comment' => $demande->commentaire_affectation_agent ?? '',
+                                        ])
+
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div>
                                                 <p class="text-xs text-neutral-400">Email</p>
@@ -349,11 +357,11 @@
 
                                             <button type="submit"
                                                 data-submit-loading
-                                                data-loading-label="{{ ($demande->delivery_state ?? 'idle') === 'failed' ? 'Relance en cours...' : 'Envoi en cours...' }}"
+                                                data-loading-label="{{ ($demande->delivery_state ?? 'idle') === 'failed' ? 'Modification en cours...' : 'Envoi en cours...' }}"
                                                 class="w-full flex items-center justify-center gap-2 bg-navy hover:bg-navy-600 text-white text-sm font-medium py-3 rounded-xl transition-colors duration-150">
                                                 <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 6h18v12H3V6Zm2 2v1l7 4 7-4V8l-7 4-7-4Zm11.2 5.8-1.4 1.4-1.3-1.3-1.4 1.4 2.7 2.7 4.8-4.8-1.4-1.4-3.4 3.4Z"/></svg>
                                                 @if(($demande->delivery_state ?? 'idle') === 'failed')
-                                                    Relancer l&apos;envoi
+                                                    Modifier la réponse et renvoyer
                                                 @else
                                                 Envoyer et clôturer
                                                 @endif

@@ -5,14 +5,18 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\InteractsWithDeliveryStatus;
 use App\Http\Controllers\Web\Concerns\InteractsWithServiceWindow;
+use App\Http\Requests\AssignAgentRequest;
+use App\Http\Requests\CancelAssignmentRequest;
+use App\Http\Requests\ListChefInboxRequest;
+use App\Http\Requests\SendWorkflowResponseRequest;
 use App\Models\Demande;
 use App\Services\AccessControlService;
 use App\Services\DemandWorkflowService;
 use App\Services\StepAlertService;
 use App\Services\WorkingHoursSlaService;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -32,16 +36,12 @@ class ChefInboxController extends Controller
     ) {
     }
 
-    public function index(Request $request): View
+    public function index(ListChefInboxRequest $request): View
     {
         $actor = $this->access->requireActor($request);
         Gate::forUser($actor)->authorize('demande.assign.agent');
 
-        $filters = $request->validate([
-            'search' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        $search = trim((string) ($filters['search'] ?? ''));
+        $search = $request->searchTerm();
         $allowedServiceIds = $this->access->scopedServiceIds((int) $actor->id_utilisateur);
         $scopedServiceIds = !empty($allowedServiceIds) ? $allowedServiceIds : [-1];
 
@@ -65,7 +65,16 @@ class ChefInboxController extends Controller
             });
         }
 
-        $baseQuery = (clone $baseScope)->select(
+        $baseQuery = (clone $baseScope)
+            ->leftJoinSub($this->latestActionIdsFor('affectation_service'), 'last_service_assignment', function ($join): void {
+                $join->on('last_service_assignment.id_demande', '=', 'd.id_demande');
+            })
+            ->leftJoin('historique_actions as service_assignment_action', 'service_assignment_action.id_action', '=', 'last_service_assignment.id_action')
+            ->leftJoinSub($this->latestActionIdsFor('affectation_agent'), 'last_agent_assignment', function ($join): void {
+                $join->on('last_agent_assignment.id_demande', '=', 'd.id_demande');
+            })
+            ->leftJoin('historique_actions as agent_assignment_action', 'agent_assignment_action.id_action', '=', 'last_agent_assignment.id_action')
+            ->select(
             'd.id_demande',
             'd.numero_suivi',
             'd.objet',
@@ -92,7 +101,11 @@ class ChefInboxController extends Controller
             'u.pays as usager_pays',
             'u.etablissement as usager_etablissement',
             'ag.nom as agent_nom',
-            'ag.prenom as agent_prenom'
+            'ag.prenom as agent_prenom',
+            'service_assignment_action.commentaire as commentaire_affectation_service',
+            'service_assignment_action.date_action as date_commentaire_affectation_service',
+            'agent_assignment_action.commentaire as commentaire_affectation_agent',
+            'agent_assignment_action.date_action as date_commentaire_affectation_agent'
         );
 
         $scopeServices = DB::table('services')
@@ -272,7 +285,7 @@ class ChefInboxController extends Controller
         ]);
     }
 
-    public function affecterAgent(Request $request, int $id): RedirectResponse
+    public function affecterAgent(AssignAgentRequest $request, int $id): RedirectResponse
     {
         try {
             $actor = $this->access->requireActor($request);
@@ -283,17 +296,12 @@ class ChefInboxController extends Controller
 
             Gate::forUser($actor)->authorize('assignAgent', $demandModel);
 
-            $payload = $request->validate([
-                'id_agent' => ['required', 'integer', 'exists:utilisateurs,id_utilisateur'],
-                'commentaire' => ['nullable', 'string', 'max:2000'],
-            ]);
-
             $demand = DB::table('demandes')->where('id_demande', $id)->first();
 
             $agent = DB::table('utilisateurs as u')
                 ->join('utilisateur_role as ur', 'ur.id_utilisateur', '=', 'u.id_utilisateur')
                 ->join('roles as r', 'r.id_role', '=', 'ur.id_role')
-                ->where('u.id_utilisateur', (int) $payload['id_agent'])
+                ->where('u.id_utilisateur', $request->agentId())
                 ->where('r.code', 'agent')
                 ->select('u.id_service')
                 ->first();
@@ -305,8 +313,8 @@ class ChefInboxController extends Controller
             $this->workflow->assignAgent(
                 actorId: (int) $actor->id_utilisateur,
                 demandId: $id,
-                agentId: (int) $payload['id_agent'],
-                comment: $payload['commentaire'] ?? null
+                agentId: $request->agentId(),
+                comment: $request->comment()
             );
 
             return redirect()->back()->with('success', 'Demande affectée à un agent.');
@@ -319,7 +327,7 @@ class ChefInboxController extends Controller
         }
     }
 
-    public function reponseDirecte(Request $request, int $id): RedirectResponse
+    public function reponseDirecte(SendWorkflowResponseRequest $request, int $id): RedirectResponse
     {
         try {
             $actor = $this->access->requireActor($request);
@@ -329,12 +337,6 @@ class ChefInboxController extends Controller
             }
 
             Gate::forUser($actor)->authorize('reply', $demandModel);
-
-            $payload = $request->validate([
-                'contenu_reponse' => ['required', 'string', 'min:5'],
-                'pieces_jointes' => ['nullable', 'array', 'max:5'],
-                'pieces_jointes.*' => ['nullable', 'file', 'max:4096', 'mimes:pdf,jpg,jpeg,png'],
-            ]);
 
             $demandMeta = DB::table('demandes as d')
                 ->join('parametres as st', 'st.id_parametre', '=', 'd.id_statut')
@@ -357,7 +359,7 @@ class ChefInboxController extends Controller
             $draft = $this->workflow->draftResponse(
                 actorId: (int) $actor->id_utilisateur,
                 demandId: $id,
-                content: trim($payload['contenu_reponse']),
+                content: $request->responseContent(),
                 typeCode: 'finale'
             );
 
@@ -396,7 +398,7 @@ class ChefInboxController extends Controller
         }
     }
 
-    public function annulerAffectationAgent(Request $request, int $id): RedirectResponse
+    public function annulerAffectationAgent(CancelAssignmentRequest $request, int $id): RedirectResponse
     {
         try {
             $actor = $this->access->requireActor($request);
@@ -407,14 +409,10 @@ class ChefInboxController extends Controller
 
             Gate::forUser($actor)->authorize('cancelAgentAssignment', $demandModel);
 
-            $payload = $request->validate([
-                'commentaire' => ['nullable', 'string', 'max:2000'],
-            ]);
-
             $this->workflow->cancelAgentAssignment(
                 actorId: (int) $actor->id_utilisateur,
                 demandId: $id,
-                comment: $payload['commentaire'] ?? null
+                comment: $request->comment()
             );
 
             return redirect()->back()->with('success', 'Affectation agent annulée.');
@@ -425,6 +423,14 @@ class ChefInboxController extends Controller
         } catch (RuntimeException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
+    }
+
+    private function latestActionIdsFor(string $typeAction): Builder
+    {
+        return DB::table('historique_actions')
+            ->select('id_demande', DB::raw('MAX(id_action) as id_action'))
+            ->where('type_action', $typeAction)
+            ->groupBy('id_demande');
     }
 }
 

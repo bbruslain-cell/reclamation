@@ -107,7 +107,7 @@
 
     {{-- TOPBAR --}}
     <header class="bg-navy sticky top-0 z-50 shadow-md">
-        <div class="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        <div class="app-page-frame h-14 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
                 <div class="bg-white rounded-lg px-2.5 py-1.5 flex-shrink-0">
                     <img src="/Logo_anbg.png" alt="ANBG" class="h-9 w-auto object-contain block">
@@ -150,7 +150,7 @@
 
     {{-- HERO --}}
     <section class="bg-navy border-b border-white/10 pb-8 pt-6">
-        <div class="max-w-screen-xl mx-auto px-4 sm:px-6">
+        <div class="app-page-frame">
             <div class="flex items-start gap-4">
                 <div class="w-10 h-10 rounded-full bg-sky/20 flex items-center justify-center flex-shrink-0 mt-1">
                     <svg class="icon-svg text-sky-400 text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -169,7 +169,7 @@
     </section>
 
     {{-- MAIN --}}
-    <main class="max-w-screen-xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <main class="app-page-frame py-6 space-y-6">
 
         {{-- Toasts --}}
         @if(session('success'))
@@ -307,6 +307,9 @@
                                 <span class="text-xs bg-neutral-100 text-neutral-800 px-2 py-1 rounded-full">
                                     {{ $demande->service_code }} &mdash; {{ $demande->service }}
                                 </span>
+                                @if(!empty($demande->commentaire_affectation_service))
+                                    <span class="mt-1 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Consigne accueil</span>
+                                @endif
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex flex-col items-start">
@@ -392,22 +395,33 @@
                                             <p class="text-xs text-neutral-400 mb-1">Message</p>
                                             <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">{{ $demande->message }}</div>
                                         </div>
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            <div>
-                                                <p class="text-xs text-neutral-400">Email</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_email ?: '-' }}</p>
-                                            </div>
-                                            <div>
-                                                <p class="text-xs text-neutral-400">Statut usager</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_statut ?: '-' }}</p>
-                                            </div>
-                                            <div>
-                                                <p class="text-xs text-neutral-400">Pays</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_pays ?: '-' }}</p>
-                                            </div>
-                                            <div>
-                                                <p class="text-xs text-neutral-400">Etablissement</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_etablissement ?: 'Non renseigné' }}</p>
+                                        @include('workflow.partials.assignment-comment', [
+                                            'label' => 'Consigne de l’accueil',
+                                            'comment' => $demande->commentaire_affectation_service ?? '',
+                                        ])
+                                        <div class="rounded-xl border border-neutral-200 bg-neutral-50/80 p-3">
+                                            <p class="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-500">Origine usager</p>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div>
+                                                    <p class="text-xs text-neutral-400">Nom complet</p>
+                                                    <p class="text-sm font-medium text-navy">{{ trim(($demande->usager_prenom ?? '').' '.($demande->usager_nom ?? '')) ?: 'Non renseigné' }}</p>
+                                                </div>
+                                                <div>
+                                                    <p class="text-xs text-neutral-400">Email</p>
+                                                    <p class="text-sm text-navy">{{ $demande->usager_email ?: '-' }}</p>
+                                                </div>
+                                                <div>
+                                                    <p class="text-xs text-neutral-400">Statut usager</p>
+                                                    <p class="text-sm text-navy">{{ $demande->usager_statut ?: '-' }}</p>
+                                                </div>
+                                                <div>
+                                                    <p class="text-xs text-neutral-400">Pays</p>
+                                                    <p class="text-sm text-navy">{{ $demande->usager_pays ?: '-' }}</p>
+                                                </div>
+                                                <div class="sm:col-span-2">
+                                                    <p class="text-xs text-neutral-400">Établissement</p>
+                                                    <p class="text-sm text-navy">{{ $demande->usager_etablissement ?: 'Non renseigné' }}</p>
+                                                </div>
                                             </div>
                                         </div>
                                         @if($pieces->isNotEmpty())
@@ -443,7 +457,7 @@
                                                         <option value="{{ $agent->id_utilisateur }}">{{ $agent->prenom }} {{ $agent->nom }}</option>
                                                     @endforeach
                                                 </select>
-                                                <input name="commentaire" placeholder="Commentaire optionnelle"
+                                                <input name="commentaire" placeholder="Consigne ou urgence pour l'agent"
                                                     class="field w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy placeholder-neutral-400 transition-all duration-150">
                                                 <button type="submit"
                                                     class="w-full flex items-center justify-center gap-2 bg-navy hover:bg-navy-600 text-white text-sm font-medium py-2.5 rounded-xl transition-colors duration-150">
@@ -517,8 +531,13 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            @if(!empty($entry->commentaire))
-                                            <p class="mt-2 text-xs leading-relaxed text-neutral-500">{{ $entry->commentaire }}</p>
+                                            @php
+                                                $displayComment = (string) ($entry->type_action ?? '') === 'echec_envoi_reponse'
+                                                    ? "Echec d'envoi a l'usager. Verifiez le serveur mail puis relancez l'envoi."
+                                                    : trim((string) ($entry->commentaire ?? ''));
+                                            @endphp
+                                            @if($displayComment !== '')
+                                            <p class="mt-2 text-xs leading-relaxed text-neutral-500">{{ $displayComment }}</p>
                                             @endif
                                         </div>
                                         @empty
@@ -601,6 +620,9 @@
                                     </div>
                                     <span class="text-sm text-navy">{{ trim(($demande->agent_prenom ?? '').' '.($demande->agent_nom ?? '')) ?: html_entity_decode('Non d&eacute;fini', ENT_QUOTES, 'UTF-8') }}</span>
                                 </div>
+                                @if(!empty($demande->commentaire_affectation_agent))
+                                    <span class="mt-1 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Consigne agent</span>
+                                @endif
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex flex-col items-start">
@@ -686,22 +708,33 @@
                                             <p class="text-xs text-neutral-400 mb-1">Message</p>
                                             <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">{{ $demande->message }}</div>
                                         </div>
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            <div>
-                                                <p class="text-xs text-neutral-400">Email</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_email ?: '-' }}</p>
-                                            </div>
-                                            <div>
-                                                <p class="text-xs text-neutral-400">Statut usager</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_statut ?: '-' }}</p>
-                                            </div>
-                                            <div>
-                                                <p class="text-xs text-neutral-400">Pays</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_pays ?: '-' }}</p>
-                                            </div>
-                                            <div>
-                                                <p class="text-xs text-neutral-400">Etablissement</p>
-                                                <p class="text-sm text-navy">{{ $demande->usager_etablissement ?: 'Non renseigne' }}</p>
+                                        @include('workflow.partials.assignment-comment', [
+                                            'label' => 'Consigne envoyée à l’agent',
+                                            'comment' => $demande->commentaire_affectation_agent ?? '',
+                                        ])
+                                        <div class="rounded-xl border border-neutral-200 bg-neutral-50/80 p-3">
+                                            <p class="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-500">Origine usager</p>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div>
+                                                    <p class="text-xs text-neutral-400">Nom complet</p>
+                                                    <p class="text-sm font-medium text-navy">{{ trim(($demande->usager_prenom ?? '').' '.($demande->usager_nom ?? '')) ?: 'Non renseigné' }}</p>
+                                                </div>
+                                                <div>
+                                                    <p class="text-xs text-neutral-400">Email</p>
+                                                    <p class="text-sm text-navy">{{ $demande->usager_email ?: '-' }}</p>
+                                                </div>
+                                                <div>
+                                                    <p class="text-xs text-neutral-400">Statut usager</p>
+                                                    <p class="text-sm text-navy">{{ $demande->usager_statut ?: '-' }}</p>
+                                                </div>
+                                                <div>
+                                                    <p class="text-xs text-neutral-400">Pays</p>
+                                                    <p class="text-sm text-navy">{{ $demande->usager_pays ?: '-' }}</p>
+                                                </div>
+                                                <div class="sm:col-span-2">
+                                                    <p class="text-xs text-neutral-400">Établissement</p>
+                                                    <p class="text-sm text-navy">{{ $demande->usager_etablissement ?: 'Non renseigné' }}</p>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-2 bg-sky-50 border border-sky-100 rounded-lg px-3 py-2">
@@ -816,8 +849,13 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            @if(!empty($entry->commentaire))
-                                            <p class="mt-2 text-xs leading-relaxed text-neutral-500">{{ $entry->commentaire }}</p>
+                                            @php
+                                                $displayComment = (string) ($entry->type_action ?? '') === 'echec_envoi_reponse'
+                                                    ? "Echec d'envoi a l'usager. Verifiez le serveur mail puis relancez l'envoi."
+                                                    : trim((string) ($entry->commentaire ?? ''));
+                                            @endphp
+                                            @if($displayComment !== '')
+                                            <p class="mt-2 text-xs leading-relaxed text-neutral-500">{{ $displayComment }}</p>
                                             @endif
                                         </div>
                                         @empty
@@ -894,8 +932,13 @@
                                 <span>Service : {{ $entry->service_code }}</span>
                                 @endif
                             </div>
-                            @if(!empty($entry->commentaire))
-                            <p class="text-xs leading-relaxed text-neutral-500">{{ $entry->commentaire }}</p>
+                            @php
+                                $displayComment = (string) ($entry->type_action ?? '') === 'echec_envoi_reponse'
+                                    ? "Echec d'envoi a l'usager. Verifiez le serveur mail puis relancez l'envoi."
+                                    : trim((string) ($entry->commentaire ?? ''));
+                            @endphp
+                            @if($displayComment !== '')
+                            <p class="text-xs leading-relaxed text-neutral-500">{{ $displayComment }}</p>
                             @endif
                         </div>
                         <div class="text-xs text-neutral-400 whitespace-nowrap">
