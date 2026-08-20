@@ -204,7 +204,7 @@ class DirectionInboxController extends Controller
 
             Gate::forUser($actor)->authorize('view', $demand);
 
-            throw new AuthorizationException("Le chef de direction dispose d'un acces en consultation uniquement.");
+            throw new AuthorizationException("Le chef de direction dispose d'un accès en consultation uniquement.");
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
@@ -218,7 +218,7 @@ class DirectionInboxController extends Controller
             return;
         }
 
-        throw new AuthorizationException("Accès reserve au chef de direction.");
+        throw new AuthorizationException("Accès reservé au chef de direction.");
     }
 }
 

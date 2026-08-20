@@ -30,7 +30,7 @@ class DemandResponseMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'ANBG - Reponse a votre reclamation '.$this->trackingNumber
+            subject: 'ANBG - Réponse à votre réclamation '.$this->trackingNumber
         );
     }
 

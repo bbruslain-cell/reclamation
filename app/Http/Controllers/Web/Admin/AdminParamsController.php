@@ -73,7 +73,7 @@ class AdminParamsController extends BaseAdminController
             $family = trim($payload['famille']);
             if (in_array($family, self::NON_PARAMETRABLE_FAMILIES, true)) {
                 throw ValidationException::withMessages([
-                    'famille' => 'Cette famille n est pas parametrable depuis l espace admin.',
+                    'famille' => "Cette famille n'est pas paramétrable depuis l'espace admin.",
                 ]);
             }
 
@@ -96,12 +96,12 @@ class AdminParamsController extends BaseAdminController
         return $this->executeAdminAction($request, function () use ($request, $id): void {
             $parametre = DB::table('parametres')->where('id_parametre', $id)->first();
             if (!$parametre) {
-                throw ValidationException::withMessages(['libelle' => 'Parametre introuvable.']);
+                throw ValidationException::withMessages(['libelle' => 'Paramètre introuvable.']);
             }
 
             if (in_array($parametre->famille, self::NON_PARAMETRABLE_FAMILIES, true)) {
                 throw ValidationException::withMessages([
-                    'libelle' => 'Cette famille n est pas parametrable depuis l espace admin.',
+                    'libelle' => "Cette famille n'est pas paramétrable depuis l'espace admin.",
                 ]);
             }
 

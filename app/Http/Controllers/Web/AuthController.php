@@ -66,7 +66,7 @@ class AuthController extends Controller
             );
 
             throw ValidationException::withMessages([
-                'email' => "Compte temporairement bloque. Reessayez dans {$seconds} seconde(s).",
+                'email' => "Compte temporairement bloqué. Rééssayez dans {$seconds} seconde(s).",
             ]);
         }
 
@@ -88,11 +88,11 @@ class AuthController extends Controller
                 $this->recordAuthAudit(
                     userId: (int) $actor->id_utilisateur,
                     actionType: 'AUTH_LOGIN_LOCKOUT',
-                    comment: 'Compte verrouille apres trop de tentatives de connexion'
+                    comment: 'Compte verrouillé après trop de tentatives de connexion'
                 );
 
                 throw ValidationException::withMessages([
-                    'email' => 'Trop de tentatives. Compte bloque pendant 15 minutes.',
+                    'email' => 'Trop de tentatives. Compte bloqué pendant 15 minutes.',
                 ]);
             }
 

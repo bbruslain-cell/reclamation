@@ -1806,22 +1806,6 @@ class OverviewController extends Controller
         return $displayStart->translatedFormat('d M').' - '.$displayEnd->translatedFormat('d M');
     }
 
-    private function calculateWaitingDays(?string $startDate, ?string $endDate): int
-    {
-        if (!$startDate) {
-            return 0;
-        }
-
-        $start = Carbon::parse($startDate)->startOfDay();
-        $end = $endDate ? Carbon::parse($endDate)->startOfDay() : now()->startOfDay();
-
-        if ($end->lessThan($start)) {
-            return 0;
-        }
-
-        return $start->diffInDays($end);
-    }
-
     private function formatBusinessDuration(?string $startDate, ?string $endDate, int $configId): string
     {
         if (!$startDate || !$endDate || $configId <= 0) {

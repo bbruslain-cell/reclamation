@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\PublicDemandAcknowledgementMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -105,6 +106,42 @@ class AuthAndPublicFlowTest extends TestCase
         ]);
         Storage::disk('local')->assertExists((string) DB::table('pieces_jointes')->value('chemin_fichier'));
         Storage::disk('public')->assertMissing((string) DB::table('pieces_jointes')->value('chemin_fichier'));
+    }
+
+    public function test_public_submission_sends_acknowledgement_email_with_tracking_number(): void
+    {
+        $this->seed();
+        Mail::fake();
+
+        $response = $this->post('/reclamations', [
+            'nom' => 'Doe',
+            'prenom' => 'Jane',
+            'email' => 'acknowledgement@example.com',
+            'statut_usager' => 'Parent / Tuteur',
+            'pays' => 'GABON',
+            'etablissement' => '',
+            'objet' => 'Objet accuse reception',
+            'message' => 'Message de test suffisamment long.',
+            'consentement' => 'on',
+        ]);
+
+        $response->assertRedirect('/reclamations/nouvelle');
+        $trackingNumber = (string) DB::table('demandes as d')
+            ->join('usagers as u', 'u.id_usager', '=', 'd.id_usager')
+            ->where('u.email', 'acknowledgement@example.com')
+            ->value('d.numero_suivi');
+
+        Mail::assertSent(PublicDemandAcknowledgementMail::class, function (PublicDemandAcknowledgementMail $mail) use ($trackingNumber): bool {
+            return $mail->hasTo('acknowledgement@example.com')
+                && $mail->trackingNumber === $trackingNumber
+                && $mail->subjectLabel === 'Objet accuse reception'
+                && $mail->recipientName === 'Jane Doe'
+                && $mail->maxProcessingHours === 72;
+        });
+        $this->assertDatabaseHas('notifications', [
+            'destinataire_email' => 'acknowledgement@example.com',
+            'sujet' => 'ANBG - Accusé de réception '.$trackingNumber,
+        ]);
     }
 
     public function test_public_form_has_security_headers_and_uses_local_vue_bundle(): void

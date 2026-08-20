@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Jobs\SendDemandAssignmentNotificationJob;
 use App\Jobs\SendDemandResponseJob;
+use App\Mail\DemandAssignmentNotificationMail;
 use App\Mail\DemandResponseMail;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
@@ -17,6 +19,10 @@ class DemandWorkflowService
 {
     private const ALLOWED_ATTACHMENT_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png'];
     private const ALLOWED_ATTACHMENT_MIMES = ['application/pdf', 'image/jpeg', 'image/png'];
+    private const ASSIGNMENT_SERVICE_ASSIGNED = 'service_assigned';
+    private const ASSIGNMENT_SERVICE_CANCELLED = 'service_assignment_cancelled';
+    private const ASSIGNMENT_AGENT_ASSIGNED = 'agent_assigned';
+    private const ASSIGNMENT_AGENT_CANCELLED = 'agent_assignment_cancelled';
 
     public function __construct(
         private readonly WorkingHoursSlaService $slaService,
@@ -65,6 +71,14 @@ class DemandWorkflowService
                 comment: $comment
             );
 
+            $this->queueServiceAssignmentNotificationsAfterCommit(
+                actorId: $actorId,
+                demandId: $demandId,
+                serviceId: $serviceId,
+                eventCode: self::ASSIGNMENT_SERVICE_ASSIGNED,
+                comment: $comment
+            );
+
             return $this->refreshDemandSla($demandId);
         });
     }
@@ -98,6 +112,14 @@ class DemandWorkflowService
                 serviceId: $demand->id_service_courant,
                 comment: $comment,
                 agentId: $agentId
+            );
+
+            $this->queueAgentAssignmentNotificationAfterCommit(
+                actorId: $actorId,
+                demandId: $demandId,
+                agentId: $agentId,
+                eventCode: self::ASSIGNMENT_AGENT_ASSIGNED,
+                comment: $comment
             );
 
             return $this->refreshDemandSla($demandId);
@@ -141,6 +163,14 @@ class DemandWorkflowService
                 serviceId: $demand->id_service_courant,
                 comment: $comment,
                 agentId: (int) $demand->id_agent_traitant
+            );
+
+            $this->queueAgentAssignmentNotificationAfterCommit(
+                actorId: $actorId,
+                demandId: $demandId,
+                agentId: (int) $demand->id_agent_traitant,
+                eventCode: self::ASSIGNMENT_AGENT_CANCELLED,
+                comment: $comment
             );
 
             return $this->refreshDemandSla($demandId);
@@ -187,6 +217,14 @@ class DemandWorkflowService
                 oldStatusId: $demand->id_statut,
                 newStatusId: $statusNouvelle,
                 serviceId: (int) $demand->id_service_courant,
+                comment: $comment
+            );
+
+            $this->queueServiceAssignmentNotificationsAfterCommit(
+                actorId: $actorId,
+                demandId: $demandId,
+                serviceId: (int) $demand->id_service_courant,
+                eventCode: self::ASSIGNMENT_SERVICE_CANCELLED,
                 comment: $comment
             );
 
@@ -463,6 +501,73 @@ class DemandWorkflowService
     }
 
     /**
+     * @param array{
+     *     demand_id: int,
+     *     actor_id: int,
+     *     email: string,
+     *     recipient_name: string,
+     *     tracking_number: string,
+     *     subject_label: string,
+     *     event_code: string,
+     *     mail_subject: string,
+     *     intro_line: string,
+     *     instruction_line: string,
+     *     actor_name: string,
+     *     service_label: string|null,
+     *     comment: string|null,
+     *     login_url: string
+     * } $mailPayload
+     */
+    public function deliverQueuedAssignmentNotification(array $mailPayload): void
+    {
+        Mail::to($mailPayload['email'])->send(new DemandAssignmentNotificationMail(
+            trackingNumber: $mailPayload['tracking_number'],
+            subjectLabel: $mailPayload['subject_label'],
+            eventCode: $mailPayload['event_code'],
+            mailSubject: $mailPayload['mail_subject'],
+            recipientName: $mailPayload['recipient_name'],
+            introLine: $mailPayload['intro_line'],
+            instructionLine: $mailPayload['instruction_line'],
+            actorName: $mailPayload['actor_name'],
+            loginUrl: $mailPayload['login_url'],
+            serviceLabel: $mailPayload['service_label'],
+            comment: $mailPayload['comment']
+        ));
+
+        $this->recordAssignmentNotification($mailPayload, 'succes');
+    }
+
+    /**
+     * @param array{
+     *     demand_id: int,
+     *     actor_id: int,
+     *     email: string,
+     *     recipient_name: string,
+     *     tracking_number: string,
+     *     subject_label: string,
+     *     event_code: string,
+     *     mail_subject: string,
+     *     intro_line: string,
+     *     instruction_line: string,
+     *     actor_name: string,
+     *     service_label: string|null,
+     *     comment: string|null,
+     *     login_url: string
+     * } $mailPayload
+     */
+    public function markQueuedAssignmentNotificationFailed(array $mailPayload, Throwable $exception): void
+    {
+        $this->recordAssignmentNotification($mailPayload, 'echec', $exception->getMessage());
+
+        Log::warning('Echec envoi notification affectation', [
+            'id_demande' => $mailPayload['demand_id'],
+            'destinataire_email' => $mailPayload['email'],
+            'event_code' => $mailPayload['event_code'],
+            'message' => $exception->getMessage(),
+        ]);
+    }
+
+    /**
      * @param UploadedFile[] $files
      */
     public function attachFilesToResponse(int $actorId, int $responseId, array $files): void
@@ -545,6 +650,442 @@ class DemandWorkflowService
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+    }
+
+    private function queueServiceAssignmentNotificationsAfterCommit(
+        int $actorId,
+        int $demandId,
+        int $serviceId,
+        string $eventCode,
+        ?string $comment
+    ): void {
+        DB::afterCommit(function () use ($actorId, $demandId, $serviceId, $eventCode, $comment): void {
+            $payloads = $this->buildServiceAssignmentMailPayloads(
+                actorId: $actorId,
+                demandId: $demandId,
+                serviceId: $serviceId,
+                eventCode: $eventCode,
+                comment: $comment
+            );
+
+            if ($payloads === []) {
+                Log::warning('Aucun destinataire valide pour la notification de service', [
+                    'id_demande' => $demandId,
+                    'id_service' => $serviceId,
+                    'event_code' => $eventCode,
+                ]);
+
+                return;
+            }
+
+            foreach ($payloads as $payload) {
+                $this->dispatchAssignmentNotification($payload);
+            }
+        });
+    }
+
+    private function queueAgentAssignmentNotificationAfterCommit(
+        int $actorId,
+        int $demandId,
+        int $agentId,
+        string $eventCode,
+        ?string $comment
+    ): void {
+        DB::afterCommit(function () use ($actorId, $demandId, $agentId, $eventCode, $comment): void {
+            $payload = $this->buildAgentAssignmentMailPayload(
+                actorId: $actorId,
+                demandId: $demandId,
+                agentId: $agentId,
+                eventCode: $eventCode,
+                comment: $comment
+            );
+
+            if ($payload === null) {
+                Log::warning('Aucun destinataire valide pour la notification agent', [
+                    'id_demande' => $demandId,
+                    'id_agent' => $agentId,
+                    'event_code' => $eventCode,
+                ]);
+
+                return;
+            }
+
+            $this->dispatchAssignmentNotification($payload);
+        });
+    }
+
+    /**
+     * @param array{
+     *     demand_id: int,
+     *     actor_id: int,
+     *     email: string,
+     *     recipient_name: string,
+     *     tracking_number: string,
+     *     subject_label: string,
+     *     event_code: string,
+     *     mail_subject: string,
+     *     intro_line: string,
+     *     instruction_line: string,
+     *     actor_name: string,
+     *     service_label: string|null,
+     *     comment: string|null,
+     *     login_url: string
+     * } $payload
+     */
+    private function dispatchAssignmentNotification(array $payload): void
+    {
+        try {
+            SendDemandAssignmentNotificationJob::dispatch($payload);
+        } catch (Throwable $exception) {
+            $this->markQueuedAssignmentNotificationFailed($payload, $exception);
+        }
+    }
+
+    /**
+     * @return array<int, array{
+     *     demand_id: int,
+     *     actor_id: int,
+     *     email: string,
+     *     recipient_name: string,
+     *     tracking_number: string,
+     *     subject_label: string,
+     *     event_code: string,
+     *     mail_subject: string,
+     *     intro_line: string,
+     *     instruction_line: string,
+     *     actor_name: string,
+     *     service_label: string|null,
+     *     comment: string|null,
+     *     login_url: string
+     * }>
+     */
+    private function buildServiceAssignmentMailPayloads(
+        int $actorId,
+        int $demandId,
+        int $serviceId,
+        string $eventCode,
+        ?string $comment
+    ): array {
+        $context = $this->assignmentContext($actorId, $demandId, $serviceId, $eventCode, $comment);
+        if ($context === null) {
+            return [];
+        }
+
+        return $this->serviceChiefRecipients($serviceId)
+            ->map(fn (object $recipient): ?array => $this->assignmentMailPayloadForRecipient($context, $recipient))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{
+     *     demand_id: int,
+     *     actor_id: int,
+     *     email: string,
+     *     recipient_name: string,
+     *     tracking_number: string,
+     *     subject_label: string,
+     *     event_code: string,
+     *     mail_subject: string,
+     *     intro_line: string,
+     *     instruction_line: string,
+     *     actor_name: string,
+     *     service_label: string|null,
+     *     comment: string|null,
+     *     login_url: string
+     * }|null
+     */
+    private function buildAgentAssignmentMailPayload(
+        int $actorId,
+        int $demandId,
+        int $agentId,
+        string $eventCode,
+        ?string $comment
+    ): ?array {
+        $agent = DB::table('utilisateurs')
+            ->where('id_utilisateur', $agentId)
+            ->where('actif', true)
+            ->select('id_utilisateur', 'nom', 'prenom', 'email', 'id_service')
+            ->first();
+
+        if (!$agent) {
+            return null;
+        }
+
+        $context = $this->assignmentContext(
+            actorId: $actorId,
+            demandId: $demandId,
+            serviceId: $agent->id_service ? (int) $agent->id_service : null,
+            eventCode: $eventCode,
+            comment: $comment
+        );
+        if ($context === null) {
+            return null;
+        }
+
+        return $this->assignmentMailPayloadForRecipient($context, $agent);
+    }
+
+    /**
+     * @return array{
+     *     demand_id: int,
+     *     actor_id: int,
+     *     tracking_number: string,
+     *     subject_label: string,
+     *     event_code: string,
+     *     mail_subject: string,
+     *     intro_line: string,
+     *     instruction_line: string,
+     *     actor_name: string,
+     *     service_label: string|null,
+     *     comment: string|null,
+     *     login_url: string
+     * }|null
+     */
+    private function assignmentContext(
+        int $actorId,
+        int $demandId,
+        ?int $serviceId,
+        string $eventCode,
+        ?string $comment
+    ): ?array {
+        $demand = DB::table('demandes')
+            ->where('id_demande', $demandId)
+            ->select('id_demande', 'numero_suivi', 'objet')
+            ->first();
+
+        if (!$demand) {
+            return null;
+        }
+
+        $trackingNumber = (string) ($demand->numero_suivi ?? 'Demande');
+        $event = $this->assignmentEventLines($eventCode);
+
+        return [
+            'demand_id' => $demandId,
+            'actor_id' => $actorId,
+            'tracking_number' => $trackingNumber,
+            'subject_label' => (string) ($demand->objet ?? 'Demande'),
+            'event_code' => $eventCode,
+            'mail_subject' => $event['subject_prefix'].' '.$trackingNumber,
+            'intro_line' => $event['intro'],
+            'instruction_line' => $event['instruction'],
+            'actor_name' => $this->userDisplayName($actorId),
+            'service_label' => $serviceId ? $this->serviceLabel($serviceId) : null,
+            'comment' => $comment !== null && trim($comment) !== '' ? trim($comment) : null,
+            'login_url' => url('/espace'),
+        ];
+    }
+
+    /**
+     * @param array{
+     *     demand_id: int,
+     *     actor_id: int,
+     *     tracking_number: string,
+     *     subject_label: string,
+     *     event_code: string,
+     *     mail_subject: string,
+     *     intro_line: string,
+     *     instruction_line: string,
+     *     actor_name: string,
+     *     service_label: string|null,
+     *     comment: string|null,
+     *     login_url: string
+     * } $context
+     * @return array{
+     *     demand_id: int,
+     *     actor_id: int,
+     *     email: string,
+     *     recipient_name: string,
+     *     tracking_number: string,
+     *     subject_label: string,
+     *     event_code: string,
+     *     mail_subject: string,
+     *     intro_line: string,
+     *     instruction_line: string,
+     *     actor_name: string,
+     *     service_label: string|null,
+     *     comment: string|null,
+     *     login_url: string
+     * }|null
+     */
+    private function assignmentMailPayloadForRecipient(array $context, object $recipient): ?array
+    {
+        $email = trim((string) ($recipient->email ?? ''));
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return null;
+        }
+
+        return $context + [
+            'email' => $email,
+            'recipient_name' => $this->displayNameFromParts(
+                $recipient->prenom ?? null,
+                $recipient->nom ?? null,
+                $email
+            ),
+        ];
+    }
+
+    private function serviceChiefRecipients(int $serviceId): \Illuminate\Support\Collection
+    {
+        return DB::table('utilisateurs as u')
+            ->join('utilisateur_role as ur', 'ur.id_utilisateur', '=', 'u.id_utilisateur')
+            ->join('roles as r', 'r.id_role', '=', 'ur.id_role')
+            ->leftJoin('perimetre_service as ps', function ($join) use ($serviceId): void {
+                $join->on('ps.id_utilisateur', '=', 'u.id_utilisateur')
+                    ->where('ps.id_service', '=', $serviceId);
+            })
+            ->where('r.code', 'chef_service')
+            ->where('u.actif', true)
+            ->where(function ($query) use ($serviceId): void {
+                $query->where('u.id_service', $serviceId)
+                    ->orWhereNotNull('ps.id_service');
+            })
+            ->distinct()
+            ->orderBy('u.nom')
+            ->get(['u.id_utilisateur', 'u.nom', 'u.prenom', 'u.email']);
+    }
+
+    /**
+     * @return array{subject_prefix: string, intro: string, instruction: string}
+     */
+    private function assignmentEventLines(string $eventCode): array
+    {
+        return match ($eventCode) {
+            self::ASSIGNMENT_SERVICE_CANCELLED => [
+                'subject_prefix' => 'ANBG - Affectation service annulée',
+                'intro' => "L'affectation de cette demande à votre service a été annulée.",
+                'instruction' => "Cette demande n'est plus à traiter dans votre service.",
+            ],
+            self::ASSIGNMENT_AGENT_ASSIGNED => [
+                'subject_prefix' => 'ANBG - Nouvelle demande affectée',
+                'intro' => 'Une demande vous a été affectée.',
+                'instruction' => 'Merci de vous connecter à la plateforme pour traiter cette demande.',
+            ],
+            self::ASSIGNMENT_AGENT_CANCELLED => [
+                'subject_prefix' => 'ANBG - Affectation agent annulée',
+                'intro' => "L'affectation de cette demande à votre nom a été annulée.",
+                'instruction' => "Cette demande n'est plus à traiter dans votre espace agent.",
+            ],
+            default => [
+                'subject_prefix' => 'ANBG - Nouvelle demande affectée au service',
+                'intro' => 'Une demande a été affectée à votre service.',
+                'instruction' => "Merci de vous connecter à la plateforme pour l'analyser, l'affecter à un agent ou la traiter selon votre rôle.",
+            ],
+        };
+    }
+
+    private function userDisplayName(int $userId): string
+    {
+        $user = DB::table('utilisateurs')
+            ->where('id_utilisateur', $userId)
+            ->select('nom', 'prenom', 'email')
+            ->first();
+
+        if (!$user) {
+            return 'Utilisateur ANBG';
+        }
+
+        return $this->displayNameFromParts($user->prenom ?? null, $user->nom ?? null, $user->email ?? null);
+    }
+
+    private function serviceLabel(int $serviceId): ?string
+    {
+        $service = DB::table('services')
+            ->where('id_service', $serviceId)
+            ->select('code', 'libelle')
+            ->first();
+
+        if (!$service) {
+            return null;
+        }
+
+        return trim(trim(((string) ($service->code ?? '')).' - '.((string) ($service->libelle ?? ''))), ' -');
+    }
+
+    private function displayNameFromParts(?string $firstName, ?string $lastName, ?string $fallback = null): string
+    {
+        $name = trim(trim((string) $firstName).' '.trim((string) $lastName));
+
+        return $name !== '' ? $name : (trim((string) $fallback) ?: 'Utilisateur ANBG');
+    }
+
+    /**
+     * @param array{
+     *     demand_id: int,
+     *     actor_id: int,
+     *     email: string,
+     *     recipient_name: string,
+     *     tracking_number: string,
+     *     subject_label: string,
+     *     event_code: string,
+     *     mail_subject: string,
+     *     intro_line: string,
+     *     instruction_line: string,
+     *     actor_name: string,
+     *     service_label: string|null,
+     *     comment: string|null,
+     *     login_url: string
+     * } $mailPayload
+     */
+    private function recordAssignmentNotification(array $mailPayload, string $statusCode, ?string $errorMessage = null): void
+    {
+        try {
+            DB::table('notifications')->insert([
+                'id_demande' => $mailPayload['demand_id'],
+                'id_type_notif' => $this->parameterId('type_notif', 'interne'),
+                'id_statut_notif' => $this->parameterId('statut_notif', $statusCode),
+                'id_emetteur' => $mailPayload['actor_id'],
+                'destinataire_email' => $mailPayload['email'],
+                'sujet' => $mailPayload['mail_subject'],
+                'contenu' => $this->assignmentNotificationContent($mailPayload),
+                'date_envoi' => now(),
+                'message_erreur' => $errorMessage,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (Throwable $exception) {
+            Log::warning('Journalisation notification affectation impossible', [
+                'id_demande' => $mailPayload['demand_id'] ?? null,
+                'destinataire_email' => $mailPayload['email'] ?? null,
+                'status_code' => $statusCode,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * @param array{
+     *     tracking_number: string,
+     *     subject_label: string,
+     *     event_code: string,
+     *     actor_name: string,
+     *     service_label: string|null,
+     *     comment: string|null,
+     *     login_url: string
+     * } $mailPayload
+     */
+    private function assignmentNotificationContent(array $mailPayload): string
+    {
+        $lines = [
+            $mailPayload['intro_line'],
+            'Numero de suivi : '.$mailPayload['tracking_number'],
+            'Objet de la demande : '.$mailPayload['subject_label'],
+            'Action realisee par : '.$mailPayload['actor_name'],
+        ];
+
+        if ($mailPayload['service_label']) {
+            $lines[] = 'Service concerne : '.$mailPayload['service_label'];
+        }
+        if ($mailPayload['comment']) {
+            $lines[] = 'Commentaire : '.$mailPayload['comment'];
+        }
+
+        $lines[] = $mailPayload['instruction_line'];
+        $lines[] = 'Lien de connexion : '.$mailPayload['login_url'];
+
+        return implode("\n", $lines);
     }
 
     private function statusId(string $code): int

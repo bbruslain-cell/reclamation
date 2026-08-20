@@ -48,7 +48,7 @@ class AgentPortalController extends Controller
             $spaces['admin'] = [
                 'code' => 'admin',
                 'title' => 'Administration',
-                'description' => 'Gerer les utilisateurs, les rôles, les referentiels et les paramètres.',
+                'description' => 'Gérer les utilisateurs, les rôles, les referentiels et les paramètres.',
                 'href' => '/admin',
                 'badge' => 'Configuration',
             ];

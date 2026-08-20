@@ -33,7 +33,7 @@ class DemandDeliveryController extends Controller
             Gate::forUser($actor)->authorize('reply', $demand);
 
             if (empty($demand->date_echec_envoi_usager)) {
-                throw new RuntimeException("Aucun echec d'envoi n'est a relancer pour cette demande.");
+                throw new RuntimeException("Aucun echec d'envoi n'est à relancer pour cette demande.");
             }
 
             $this->workflow->sendFinalResponse(
@@ -41,7 +41,7 @@ class DemandDeliveryController extends Controller
                 demandId: $id
             );
 
-            return redirect()->back()->with('success', "Relance d'envoi mise en file. La demande sera cloturee apres confirmation d'envoi.");
+            return redirect()->back()->with('success', "Relance d'envoi mise en file. La demande sera cloturée après confirmation d'envoi.");
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         } catch (RuntimeException $e) {
