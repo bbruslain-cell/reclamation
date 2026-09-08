@@ -1,16 +1,60 @@
-<!doctype html>
-<html lang="fr">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <title>Plateforme réclamations - ANBG</title>
+@php
+    $vite = ['resources/css/app.css', 'resources/js/app.js', 'resources/js/public-demand.js'];
+@endphp
+
+@extends('layouts.app')
+
+@php
+    $publicDemandState = [
+        'categoriesByType' => $categoriesByType,
+        'establishments' => $establishments ?? [],
+        'old' => [
+            'nom' => old('nom', ''),
+            'prenom' => old('prenom', ''),
+            'email' => old('email', ''),
+            'statut_usager' => old('statut_usager', ''),
+            'pays' => old('pays', ''),
+            'etablissement' => old('etablissement', ''),
+            'type_demande_code' => 'reclamation',
+            'categorie' => old('categorie', ''),
+            'objet' => old('objet', ''),
+            'message' => old('message', ''),
+            'consentement' => (bool) old('consentement', false),
+        ],
+        'errors' => [
+            'nom' => $errors->first('nom'),
+            'prenom' => $errors->first('prenom'),
+            'email' => $errors->first('email'),
+            'statut_usager' => $errors->first('statut_usager'),
+            'pays' => $errors->first('pays'),
+            'etablissement' => $errors->first('etablissement'),
+            'categorie' => $errors->first('categorie'),
+            'objet' => $errors->first('objet'),
+            'message' => $errors->first('message'),
+            'piece_jointe' => $errors->first('piece_jointe'),
+            'consentement' => $errors->first('consentement'),
+        ],
+    ];
+@endphp
+
+@section('title', 'Plateforme Réclamation - ANBG')
+@section('body_class', 'bg-white font-sans text-navy-500 antialiased')
+
+@push('meta')
+    <meta property="og:title" content="Plateforme Réclamation - ANBG">
+    <meta property="og:url" content="https://vps-92c74632.vps.ovh.net">
+    <meta property="og:description" content="Plateforme de gestion des réclamations">
+@endpush
+
+@push('preconnect')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
+@endpush
+
+@push('styles')
     <style>
-        [v-cloak] { display: none; }
+        [v-if], [v-else] { display: none; }
 
         /* Transitions */
         .field-group { transition: opacity 0.3s ease, transform 0.3s ease; }
@@ -68,14 +112,30 @@
             flex-shrink: 0;
         }
 
-    </style>
-</head>
-<body class="bg-white font-sans text-navy-500 antialiased">
+        /* Spinner animation */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+        .animate-spin { animation: spin 0.8s linear infinite; }
 
-<div id="app" v-cloak>
+        .public-page-frame {
+            width: 100%;
+            max-width: none;
+            margin-left: 0;
+            margin-right: 0;
+            padding-left: clamp(1rem, 3vw, 4rem);
+            padding-right: clamp(1rem, 3vw, 4rem);
+        }
+
+    </style>
+@endpush
+
+@section('content')
+<div id="app">
     <!-- NAVBAR -->
     <header class="bg-navy-500 sticky top-0 z-50 shadow-md">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div class="public-page-frame h-16 flex items-center justify-between">
             <!-- Logo + Nom -->
             <div class="flex items-center gap-3">
                 <!-- Cartouche blanc logo  -->
@@ -88,25 +148,33 @@
                             Agence Nationale des Bourses du Gabon
                         </span>
                         <div class="text-sky-300 text-[9px] sm:text-xs font-light tracking-wider uppercase mt-0.5 sm:mt-0">
-                            Plateforme Reclamation
+                            Plateforme Réclamation
                         </div>
                     </div> 
                 </a>
             </div>
             <!-- Réseaux sociaux -->
             <div class="flex items-center gap-3">
+                <a href="https://whatsapp.com/channel/0029Va9x0uYChq6Vl1wyP305" target="_blank" rel="noopener"
+                   aria-label="Chaine WhatsApp ANBG"
+                   class="w-9 h-9 rounded-lg bg-white/10 hover:bg-green-400/30 flex items-center justify-center text-white transition-colors duration-150">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12.04 3.5a8.42 8.42 0 0 0-7.16 12.86L4 20.5l4.24-1.1a8.42 8.42 0 1 0 3.8-15.9Zm0 1.55a6.87 6.87 0 0 1 5.84 10.5 6.84 6.84 0 0 1-8.94 2.48l-.3-.18-2.52.66.67-2.46-.2-.32a6.87 6.87 0 0 1 5.45-10.68Zm-2.9 3.54c-.15 0-.4.05-.62.3-.21.25-.81.79-.81 1.93s.83 2.24.94 2.39c.12.15 1.61 2.58 4.02 3.52 1.99.78 2.4.63 2.83.59.44-.04 1.41-.58 1.6-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.15-.46-.27-.25-.12-1.43-.7-1.65-.78-.22-.08-.38-.12-.54.12-.16.25-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.95-1.2-.72-.64-1.2-1.43-1.34-1.67-.14-.24-.01-.38.11-.5.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.41h-.29Z"/>
+                    </svg>
+                </a>
                 <a href="https://www.facebook.com/anbggabon" target="_blank" rel="noopener"
-                   class="w-8 h-8 rounded-lg bg-white/10 hover:bg-sky-400/30 flex items-center justify-center text-white transition-colors duration-150">
-                    <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                   class="w-9 h-9 rounded-lg bg-white/10 hover:bg-sky-400/30 flex items-center justify-center text-white transition-colors duration-150">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                         <path d="M13.5 21v-7h2.3l.4-2.8h-2.7V9.4c0-.8.2-1.3 1.4-1.3H16V5.6c-.6-.1-1.3-.1-2-.1-2 0-3.4 1.2-3.4 3.5v2.2H8.5V14h2.1v7h2.9Z"/>
                     </svg>
                 </a>
+            </div>
         </div>
     </header>
 
     <!-- HERO BANNER -->
     <section class="bg-navy-500 border-b border-navy-600 pb-10 pt-8">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+        <div class="public-page-frame">
             <div class="flex items-start gap-4">
                 <div class="mt-1 w-10 h-10 rounded-full bg-sky-400/20 flex items-center justify-center flex-shrink-0 opacity-0 animate-[fade-in-up_0.6s_ease-out_forwards]">
                     <svg class="icon-svg text-sky-300 text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -116,33 +184,19 @@
                 </div>
                 <div>
                     <h1 class="font-medium text-white text-xl sm:text-2xl leading-snug mb-1 tracking-wide opacity-0 animate-fade-in-up">
-                        Bienvenue sur la Plateforme Réclamation de l'ANBG
+                        Bienvenue sur la Plateforme Réclamation de l'ANBG.
                     </h1>
-                    <p class="text-sky-200 text-sm sm:text-base leading-relaxed max-w-2xl font-light opacity-0 animate-fade-in-up-1">
-                        Soumettez votre réclamation relative à la gestion des bourses. Chaque demande est enregistrée et traitée par nos équipes. Une réponse vous sera apportée dans un délai maximum de<strong class="text-white font-medium"> 72 heures ouvrées.</strong>.
+                    <p class="text-sky-200 text-sm sm:text-base leading-relaxed max-w-2xl 2xl:max-w-4xl font-light opacity-0 animate-fade-in-up-1">
+                        Soumettez votre réclamation relative à la gestion des bourses. Chaque demande est enregistrée et traitée par nos équipes. Une réponse vous sera apportée dans un délai maximum de<strong class="text-white font-medium"> 72 heures ouvrées.</strong>
                     </p>
-                    <!-- Badges SLA -->
-                    <div class="mt-3 flex flex-wrap gap-2 opacity-0 animate-fade-in-up-2">
-                        <span class="inline-flex items-center gap-1.5 bg-sky-400/15 border border-sky-400/25 text-sky-100 text-xs font-medium px-3 py-1 rounded-full hover:bg-sky-400/20 transition-colors">
-                            <svg class="icon-svg text-sky-300 text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/>
-                                <path d="M12 8v4l2.8 1.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg> Réponse sous 72h
-                        </span>
-                        <span class="inline-flex items-center gap-1.5 bg-leaf-400/15 border border-leaf-400/25 text-green-100 text-xs font-medium px-3 py-1 rounded-full hover:bg-leaf-400/20 transition-colors">
-                            <svg class="icon-svg text-leaf-400 text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <path d="M12 4.5 18 7v4.4c0 3.3-2.1 6.2-6 8.1-3.9-1.9-6-4.8-6-8.1V7l6-2.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                                <path d="m9.5 12 1.7 1.7 3.3-3.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg> Données protégées (RGPD)
-                        </span>
-                    </div>
+                    <!-- Badges délai -->
                 </div>
             </div>
         </div>
     </section>
 
     <!-- MAIN CONTENT -->
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+    <main class="public-page-frame py-8">
 
         <!-- Success Message -->
         @if(session('success'))
@@ -176,23 +230,20 @@
         <div class="bg-white rounded-2xl shadow-card overflow-hidden border border-neutral-100">
 
             <!-- Card header -->
-            <div class="px-6 py-5 border-b border-neutral-100 flex flex-col items-center justify-center text-center bg-gradient-to-r from-neutral-200 to-white">
-    
+            <div class="px-6 py-5 border-b border-navy-600 flex flex-col items-center justify-center text-center bg-navy-500">
            <div class="w-full">
-               <h2 class="font-semibold text-navy-500 text-2xl tracking-wide">
-                   Remplissez le Formulaire Relative à Votre Réclamation.
+               <h2 class="font-semibold text-white text-lg sm:text-2xl tracking-wide">
+                   Remplissez le Formulaire Relatif à Votre Réclamation.
                </h2>
-                      <p class="text-neutral-500 text-sm mt-1">
-                   Les champs marqués d'un <span class="text-red-500 font-bold">*</span> sont obligatoires.
+                      <p class="text-sky-50 text-sm mt-1">
+                   Les champs marqués d'un <span class="text-gold-300 font-bold">*</span> sont obligatoires.
                </p>
            </div>
-
-   
-
         </div>
 
-            <!-- FORM -->
-            <form method="post" action="/reclamations" enctype="multipart/form-data" class="divide-y divide-neutral-100">
+            <!-- ✅ MODIF 1 : @submit="handleSubmit" ajouté sur le formulaire -->
+            <form method="post" action="/reclamations" enctype="multipart/form-data"
+                  @submit="handleSubmit" class="divide-y divide-neutral-100">
 
                 @csrf
 
@@ -253,8 +304,11 @@
                                 <input
                                     id="email" name="email" type="email"
                                     v-model="form.email" @input="clearError('email')" required autocomplete="email"
+                                    inputmode="email"
+                                    pattern="[A-Za-z0-9._%+\-']+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+(?:{{ $acceptedEmailTldPattern }})"
+                                    title="Saisissez une adresse email complète, par exemple nom@example.com"
                                     placeholder="prenom.nom@email.com"
-                                    class="w-full pl-9 pr-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
+                                    class="w-full pl-9 pr-10 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
                                            focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150"
                                 >
                             </div>
@@ -277,12 +331,9 @@
                                            focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150 cursor-pointer"
                                 >
                                     <option value="">- Sélectionner -</option>
-                                    <option value="Élève">Élève</option>
-                                    <option value="Étudiant">Étudiant</option>
-                                    <option value="Parent / Tuteur">Parent / Tuteur</option>
-                                    <option value="Enseignant">Enseignant</option>
-                                    <option value="Professionnel">Professionnel</option>
-                                    <option value="Autre">Autre</option>
+                                    @foreach($usagerStatuses as $status)
+                                        <option value="{{ $status }}">{{ $status }}</option>
+                                    @endforeach
                                 </select>
                                 <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none text-xs">
                                     <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -307,13 +358,22 @@
                                         <path d="M4 12h16M12 4a12 12 0 0 1 0 16M12 4a12 12 0 0 0 0 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
                                     </svg>
                                 </span>
-                                <input
-                                    id="pays" name="pays" type="text"
-                                    v-model="form.pays" @input="clearError('pays')" required autocomplete="country-name"
-                                    placeholder="Ex. : Gabon"
-                                    class="w-full pl-9 pr-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
-                                           focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150"
+                                <select
+                                    id="pays" name="pays"
+                                    v-model="form.pays" @change="clearError('pays')" required autocomplete="country-name"
+                                    class="w-full pl-9 pr-9 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 appearance-none
+                                           focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150 cursor-pointer"
                                 >
+                                    <option value="">- Sélectionner -</option>
+                                    @foreach($countries as $country)
+                                        <option value="{{ $country }}">{{ $country }}</option>
+                                    @endforeach
+                                </select>
+                                <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none text-xs">
+                                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="m7 10 5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </span>
                             </div>
                             <p v-if="errors.pays" class="mt-1.5 text-xs text-red-500 flex items-center gap-1">
                                 <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.pays }}
@@ -329,9 +389,8 @@
                                 <span
                                     class="text-[11px] font-medium"
                                     :class="requiresEtablissement ? 'text-amber-600' : 'text-neutral-400'"
-                                >
-                                    @{{ requiresEtablissement ? 'Obligatoire pour les élèves et étudiants' : 'Optionnel pour les autres statuts' }}
-                                </span>
+                                    v-text="requiresEtablissement ? 'Obligatoire pour les élèves et étudiants' : 'Optionnel pour les autres statuts'"
+                                ></span>
                             </div>
                             <div class="relative">
                                 <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-sm pointer-events-none">
@@ -341,13 +400,46 @@
                                     </svg>
                                 </span>
                                 <input
-                                    id="etablissement" name="etablissement" type="text"
-                                    v-model="form.etablissement" @input="clearError('etablissement')"
+                                    id="etablissement_search" type="text"
+                                    v-model="establishmentQuery"
+                                    @focus="openEstablishmentList"
+                                    @input="handleEstablishmentSearch"
+                                    @blur="closeEstablishmentList"
+                                    @keydown.escape="showEstablishmentOptions = false"
                                     :required="requiresEtablissement" autocomplete="organization"
                                     placeholder="Nom de votre établissement"
-                                    class="w-full pl-9 pr-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
+                                    class="w-full pl-9 pr-10 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy-500 placeholder-neutral-400
                                            focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150"
                                 >
+                                <input id="etablissement" name="etablissement" type="hidden" :value="form.etablissement">
+                                <button
+                                    v-if="form.etablissement"
+                                    type="button"
+                                    @click="clearEstablishment"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-red-500 transition-colors"
+                                    aria-label="Effacer l'etablissement"
+                                >
+                                    <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                </button>
+                                <div
+                                    v-if="showEstablishmentOptions"
+                                    class="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-xl"
+                                >
+                                    <button
+                                        v-for="establishment in filteredEstablishments"
+                                        :key="establishment"
+                                        type="button"
+                                        @mousedown.prevent="selectEstablishment(establishment)"
+                                        class="block w-full px-3.5 py-2.5 text-left text-sm text-navy-500 hover:bg-sky-50 focus:bg-sky-50 focus:outline-none"
+                                    >
+                                        @{{ establishment }}
+                                    </button>
+                                    <div v-if="filteredEstablishments.length === 0" class="px-3.5 py-3 text-sm text-neutral-400">
+                                        Continuez la recherche ou choisissez Autre
+                                    </div>
+                                </div>
                             </div>
                             <p v-if="errors.etablissement" class="mt-1.5 text-xs text-red-500 flex items-center gap-1">
                                 <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1" fill="currentColor"/></svg> @{{ errors.etablissement }}
@@ -389,7 +481,9 @@
                                            focus:outline-none focus:border-sky-400 focus:bg-white focus:shadow-input-focus transition-all duration-150 cursor-pointer"
                                 >
                                     <option value="">- Sélectionner -</option>
-                                    <option v-for="cat in categories" :key="cat" :value="cat">@{{ cat }}</option>
+                                    @foreach(($categoriesByType['reclamation'] ?? []) as $category)
+                                        <option value="{{ $category }}" @selected(old('categorie') === $category)>{{ $category }}</option>
+                                    @endforeach
                                 </select>
                                 <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none text-xs">
                                     <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -407,7 +501,7 @@
                         </label>
                         <input
                             id="objet" name="objet" type="text"
-                            v-model="form.objet" readonly tabindex="-1" required
+                            v-model="form.objet" readonly tabindex="-1"
                             placeholder="Sélectionnez une catégorie ci-dessus"
                             class="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-100 text-neutral-500 placeholder-neutral-400
                                    cursor-not-allowed transition-all duration-150"
@@ -430,7 +524,7 @@
                             <label for="message" class="block text-sm font-medium text-navy-500">
                                 Message <span class="text-red-500">*</span>
                             </label>
-                            <span class="char-count">@{{ form.message.length }} / 2000 caractères</span>
+                            <span class="char-count" v-text="`${form.message.length} / 2000 caractères`"></span>
                         </div>
                         <textarea
                             id="message" name="message"
@@ -470,7 +564,7 @@
                             <span class="text-[11px] bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-md font-medium">PDF</span>
                             <span class="text-[11px] bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-md font-medium">JPG</span>
                             <span class="text-[11px] bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-md font-medium">PNG</span>
-                            <span class="text-[11px] bg-neutral-200 text-neutral-500 px-2 py-0.5 rounded-md font-medium">Max 2 Mo</span>
+                            <span class="text-[11px] bg-neutral-200 text-neutral-500 px-2 py-0.5 rounded-md font-medium">Max 3,5 Mo</span>
                         </div>
                     </div>
 
@@ -503,18 +597,27 @@
 
                     <!-- Submit button -->
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <p class="text-xs text-neutral-400 flex items-center gap-1.5">
-                           
-                        </p>
+                        <p class="text-xs text-neutral-400 flex items-center gap-1.5"></p>
+
+                        <!-- ✅ MODIF 2 : bouton avec état submitting -->
                         <button
                             type="submit"
-                            class="inline-flex items-center justify-center gap-2.5 bg-sky-500 hover:bg-navy-600 text-white font-medium text-sm px-8 py-3 rounded-xl shadow-btn hover:shadow-btn-hover transition-all duration-200 w-full sm:w-auto"
+                            :disabled="submitting"
+                            :class="submitting
+                                ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
+                                : 'bg-sky-500 hover:bg-navy-600 text-white shadow-btn hover:shadow-btn-hover'"
+                            class="inline-flex items-center justify-center gap-2.5 bg-sky-500 text-white shadow-btn hover:bg-navy-600 hover:shadow-btn-hover font-medium text-sm px-8 py-3 rounded-xl transition-all duration-200 w-full sm:w-auto"
                         >
-                            <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <!-- Spinner pendant l'envoi -->
+                            <svg v-if="submitting" class="icon-svg animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
+                            </svg>
+                            <!-- Icône normale -->
+                            <svg v-else class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                 <path d="M4 11.5 19 5l-4.8 14-3.1-5.1L4 11.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                                 <path d="M10.8 13.8 19 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                             </svg>
-                            Soumettre ma demande
+                            <span v-text="submitting ? 'Envoi en cours…' : 'Soumettre ma demande'"></span>
                         </button>
                     </div>
                 </div>
@@ -522,13 +625,11 @@
             </form>
         </div>
 
-       
-        
     </main>
 
     <!-- FOOTER -->
     <footer class="mt-8 border-t border-neutral-100 bg-white">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-neutral-400">
+        <div class="public-page-frame py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-neutral-400">
             <span>© {{ date('Y') }} Agence Nationale des Bourses du Gabon.</span>
             <span>Constructeur d'avenir</span>
         </div>
@@ -536,130 +637,11 @@
 
 </div><!-- #app -->
 
-<script>
-    const categoriesByType = {
-        reclamation: [
-            "Demande de modification d'attestation d'attribution de bourse ou maintien",
-            "Reclamation du paiement des frais de scolarite",
-            "Reclamation sur les RIB non valides sur eBourse",
-            "Recours apres deliberation de la CT",
-            "Reclamation diverses"
-        ],
-        autre: ["Autre"]
-    };
+@endsection
 
-    const app = Vue.createApp({
-        data() {
-            return {
-                form: {
-                    nom:               @json(old('nom', '')),
-                    prenom:            @json(old('prenom', '')),
-                    email:             @json(old('email', '')),
-                    statut_usager:     @json(old('statut_usager', '')),
-                    pays:              @json(old('pays', '')),
-                    etablissement:     @json(old('etablissement', '')),
-                    type_demande_code: 'reclamation',
-                    categorie:         @json(old('categorie', '')),
-                    objet:             @json(old('objet', '')),
-                    message:           @json(old('message', '')),
-                    consentement:      @json((bool) old('consentement', false)),
-                },
-                errors: {
-                    nom:               @json($errors->first('nom')),
-                    prenom:            @json($errors->first('prenom')),
-                    email:             @json($errors->first('email')),
-                    statut_usager:     @json($errors->first('statut_usager')),
-                    pays:              @json($errors->first('pays')),
-                    etablissement:     @json($errors->first('etablissement')),
-                    objet:             @json($errors->first('objet')),
-                    message:           @json($errors->first('message')),
-                    piece_jointe:      @json($errors->first('piece_jointe')),
-                    consentement:      @json($errors->first('consentement')),
-                },
-                categories: []
-            };
-        },
-        mounted() {
-            this.form.type_demande_code = 'reclamation';
-            this.fillCategories();
-            this.setupDropzone();
-        },
-        computed: {
-            requiresEtablissement() {
-                return ['Élève', 'Étudiant'].includes(this.form.statut_usager);
-            }
-        },
-        methods: {
-            fillCategories() {
-                this.categories = categoriesByType.reclamation;
-                if (!this.categories.includes(this.form.categorie)) {
-                    this.form.categorie = '';
-                }
-            },
-            handleStatutUsagerChange() {
-                this.clearError('statut_usager');
-                if (!this.requiresEtablissement) {
-                    this.clearError('etablissement');
-                }
-            },
-            applyCategory() {
-                // L'objet prend strictement la valeur de la catégorie choisie
-                this.form.objet = this.form.categorie;
-                if (this.form.objet) {
-                    this.clearError('objet');
-                }
-            },
-            clearError(field) {
-                if (this.errors[field]) {
-                    this.errors[field] = null;
-                }
-            },
-            setupDropzone() {
-                document.addEventListener('dragover', e => e.preventDefault());
-                document.addEventListener('drop', e => e.preventDefault());
-
-                const dz    = document.getElementById('dropzone');
-                const input = document.getElementById('piece_jointe');
-                const list  = document.getElementById('file-list');
-                if (!dz || !input) return;
-
-                const refreshList = () => {
-                    list.innerHTML = '';
-                    Array.from(input.files || []).forEach(file => {
-                        const ext  = file.name.split('.').pop().toUpperCase();
-                        const size = (file.size / 1024).toFixed(0);
-                        const div  = document.createElement('div');
-                        div.className = 'flex items-center gap-2.5 bg-sky-50 border border-sky-100 text-navy-500 text-xs px-3 py-2 rounded-lg';
-                        div.innerHTML = `
-                            <span class="w-7 h-7 rounded bg-sky-100 flex items-center justify-center font-medium text-[10px] text-sky-400 flex-shrink-0">${ext}</span>
-                            <span class="flex-1 font-medium truncate">${file.name}</span>
-                            <span class="text-sky-400">${size} Ko</span>
-                        `;
-                        list.appendChild(div);
-                    });
-                };
-
-                const applyFiles = files => {
-                    const dt = new DataTransfer();
-                    if (files && files.length > 0) dt.items.add(files[0]);
-                    input.files = dt.files;
-                    refreshList();
-                };
-
-                dz.addEventListener('click',    () => input.click());
-                dz.addEventListener('keypress', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
-                dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dropzone-active'); });
-                dz.addEventListener('dragleave',    () => dz.classList.remove('dropzone-active'));
-                dz.addEventListener('drop', e => {
-                    e.preventDefault();
-                    dz.classList.remove('dropzone-active');
-                    if (e.dataTransfer?.files?.length) applyFiles(e.dataTransfer.files);
-                });
-                input.addEventListener('change', refreshList);
-            }
-        }
-    });
-    app.mount('#app');
+@push('scripts')
+{{-- Public-demand behavior lives in resources/js/public-demand.js. --}}
+<script nonce="{{ $cspNonce ?? '' }}" type="application/json" id="public-demand-state">
+@json($publicDemandState)
 </script>
-</body>
-</html>
+@endpush

@@ -6,7 +6,6 @@
     <title>ANBG - Administration - @yield('title', 'Accueil')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -50,6 +49,13 @@
         .fa-plus::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7V4Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7V4Z'/%3E%3C/svg%3E"); }
         .fa-magnifying-glass::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M10.5 3a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm6.9 10.5 3.6 3.6-1.4 1.4-3.6-3.6 1.4-1.4Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M10.5 3a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm6.9 10.5 3.6 3.6-1.4 1.4-3.6-3.6 1.4-1.4Z'/%3E%3C/svg%3E"); }
         .fa-times::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4 6.4 5Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4 6.4 5Z'/%3E%3C/svg%3E"); }
+        .fa-save::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M5 3h11l3 3v15H5V3Zm2 2v4h8V5H7Zm0 14h10v-8H7v8Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M5 3h11l3 3v15H5V3Zm2 2v4h8V5H7Zm0 14h10v-8H7v8Z'/%3E%3C/svg%3E"); }
+        .fa-clock::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5h-2v6l5 3 1-1.7-4-2.3V7Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5h-2v6l5 3 1-1.7-4-2.3V7Z'/%3E%3C/svg%3E"); }
+        .fa-calendar-day::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M7 2h2v2h6V2h2v2h3v17H4V4h3V2Zm11 7H6v10h12V9Zm-5 2h-2v3.8l3.2 1.9 1-1.7-2.2-1.3V11Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M7 2h2v2h6V2h2v2h3v17H4V4h3V2Zm11 7H6v10h12V9Zm-5 2h-2v3.8l3.2 1.9 1-1.7-2.2-1.3V11Z'/%3E%3C/svg%3E"); }
+        .fa-trash-alt::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h2v9H7V9Zm4 0h2v9h-2V9Zm4 0h2v9h-2V9ZM6 7h12l-1 13H7L6 7Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h2v9H7V9Zm4 0h2v9h-2V9Zm4 0h2v9h-2V9ZM6 7h12l-1 13H7L6 7Z'/%3E%3C/svg%3E"); }
+        .fa-pen-to-square::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 17.2V21h3.8l10.9-10.9-3.8-3.8L3 17.2Zm11.9-11.9 1.8-1.8a1.8 1.8 0 0 1 2.6 0l1.2 1.2a1.8 1.8 0 0 1 0 2.6l-1.8 1.8-3.8-3.8Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 17.2V21h3.8l10.9-10.9-3.8-3.8L3 17.2Zm11.9-11.9 1.8-1.8a1.8 1.8 0 0 1 2.6 0l1.2 1.2a1.8 1.8 0 0 1 0 2.6l-1.8 1.8-3.8-3.8Z'/%3E%3C/svg%3E"); }
+        .fa-rotate-left::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 5V2L7 6.5 12 11V7a5 5 0 1 1-4.9 6.1H5a7 7 0 1 0 7-8Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 5V2L7 6.5 12 11V7a5 5 0 1 1-4.9 6.1H5a7 7 0 1 0 7-8Z'/%3E%3C/svg%3E"); }
+        .fa-power-off::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M11 3h2v7h-2V3Zm1 18a8 8 0 0 1-5.7-13.7l1.4 1.4A6 6 0 1 0 16.3 8.7l1.4-1.4A8 8 0 0 1 12 21Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M11 3h2v7h-2V3Zm1 18a8 8 0 0 1-5.7-13.7l1.4 1.4A6 6 0 1 0 16.3 8.7l1.4-1.4A8 8 0 0 1 12 21Z'/%3E%3C/svg%3E"); }
 
         .nav-link {
             transition: background-color .15s ease, color .15s ease, border-color .15s ease;
@@ -67,6 +73,13 @@
             color: #fff;
             border-color: rgba(57, 150, 211, 0.34);
             font-weight: 500;
+        }
+
+        .admin-inline-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
         }
 
         .field:focus {
@@ -105,7 +118,7 @@
 </head>
 
 <body class="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(57,150,211,0.10),_transparent_28%),linear-gradient(180deg,_#f5f9fc_0%,_#eef3f8_100%)] font-sans text-navy">
-<div id="sidebar-overlay" class="fixed inset-0 z-30 hidden bg-slate-900/30 opacity-0 lg:hidden" onclick="closeSidebar()"></div>
+<div id="sidebar-overlay" class="fixed inset-0 z-30 hidden bg-slate-900/30 opacity-0 lg:hidden"></div>
 
 <aside id="sidebar" class="fixed left-0 top-0 z-40 flex h-full w-72 -translate-x-full flex-col border-r border-white/10 bg-navy lg:translate-x-0">
     <div class="border-b border-white/10 px-6 py-5">
@@ -169,7 +182,7 @@
     <header class="sticky top-0 z-20 border-b border-sky-100 bg-white/88 backdrop-blur">
         <div class="flex min-h-[68px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
             <div class="flex items-center gap-3">
-                <button onclick="openSidebar()" class="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sky lg:hidden">
+                <button id="sidebar-open" type="button" class="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sky lg:hidden">
                     <i class="fas fa-bars text-sm"></i>
                 </button>
                 <div>
@@ -192,8 +205,8 @@
 
                 <form method="post" action="/admin/avatar" enctype="multipart/form-data" id="avatar-form" class="flex items-center gap-3">
                     @csrf
-                    <input type="file" name="avatar" id="avatar-input" accept="image/*" class="hidden" onchange="document.getElementById('avatar-form').submit()">
-                    <button type="button" onclick="document.getElementById('avatar-input').click()"
+                    <input type="file" name="avatar" id="avatar-input" accept="image/*" class="hidden">
+                    <button id="avatar-select" type="button"
                         class="h-10 w-10 overflow-hidden rounded-full border border-sky-100 bg-sky-50 transition-colors hover:border-sky">
                         @if($hasAvatar)
                             <img src="{{ $avatarUrl }}" alt="Avatar" class="h-full w-full object-cover">
@@ -221,8 +234,8 @@
         </div>
     </header>
 
-    <main class="px-4 py-6 sm:px-6 lg:px-8">
-        <div class="mx-auto max-w-[1480px] space-y-5">
+    <main class="py-6">
+        <div class="app-page-frame space-y-5">
             @if(session('success'))
             <div class="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 shadow-soft">
                 {{ session('success') }}
@@ -251,7 +264,7 @@
     </main>
 </div>
 
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
     function openSidebar() {
         document.getElementById('sidebar').classList.add('translate-x-0');
         document.getElementById('sidebar-overlay').classList.remove('hidden');
@@ -263,6 +276,15 @@
         document.getElementById('sidebar-overlay').classList.remove('opacity-100');
         setTimeout(() => document.getElementById('sidebar-overlay').classList.add('hidden'), 250);
     }
+
+    document.getElementById('sidebar-overlay')?.addEventListener('click', closeSidebar);
+    document.getElementById('sidebar-open')?.addEventListener('click', openSidebar);
+    document.getElementById('avatar-select')?.addEventListener('click', () => {
+        document.getElementById('avatar-input')?.click();
+    });
+    document.getElementById('avatar-input')?.addEventListener('change', () => {
+        document.getElementById('avatar-form')?.requestSubmit();
+    });
 </script>
 
 @stack('scripts')

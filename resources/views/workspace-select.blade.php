@@ -1,13 +1,15 @@
-<!doctype html>
-<html lang="fr">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Choix de l'espace | ANBG</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+@extends('layouts.app')
+
+@section('title', "Choix de l'espace | ANBG")
+@section('body_class', 'min-h-screen bg-neutral-100 font-sans text-navy')
+
+@push('preconnect')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+@endpush
+
+@push('styles')
     <style>
         i[class*='fa-'] {
             display: inline-block;
@@ -43,17 +45,18 @@
         .fa-star::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m12 2 2.9 6 6.6 1-4.8 4.7 1.1 6.6L12 17.3 6.2 20.3l1.1-6.6L2.5 9l6.6-1L12 2Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m12 2 2.9 6 6.6 1-4.8 4.7 1.1 6.6L12 17.3 6.2 20.3l1.1-6.6L2.5 9l6.6-1L12 2Z'/%3E%3C/svg%3E"); }
         .fa-arrow-right::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m13.3 5.3-1.4 1.4 4.3 4.3H4v2h12.2l-4.3 4.3 1.4 1.4 6.7-6.7-6.7-6.7Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m13.3 5.3-1.4 1.4 4.3 4.3H4v2h12.2l-4.3 4.3 1.4 1.4 6.7-6.7-6.7-6.7Z'/%3E%3C/svg%3E"); }
     </style>
-</head>
-<body class="min-h-screen bg-neutral-100 font-sans text-navy">
+@endpush
+
+@section('content')
     <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(57,150,211,0.18),_transparent_32%),linear-gradient(180deg,_#f8f9fa_0%,_#eef3f7_100%)]">
         <header class="bg-navy text-white shadow-sm">
-            <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+            <div class="app-page-frame h-16 flex items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
                     <div class="bg-white rounded-lg px-2.5 py-1.5">
                         <img src="/Logo_anbg.png" alt="ANBG" class="h-9 w-auto object-contain block">
                     </div>
                     <div>
-                        <p class="text-xs uppercase tracking-[0.22em] text-white/60">Portail collaborateur</p>
+                        <p class="text-xs uppercase tracking-[0.22em] text-white/60">Portail Multi-Rôle</p>
                         <p class="text-sm font-medium">Choisissez votre espace</p>
                     </div>
                 </div>
@@ -61,28 +64,20 @@
                     @csrf
                     <button type="submit" class="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium hover:bg-white/20 transition-colors duration-150">
                         <i class="fas fa-right-from-bracket text-[10px]"></i>
-                        <span>Deconnexion</span>
+                        <span>Déconnexion</span>
                     </button>
                 </form>
             </div>
         </header>
 
-        <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        <main class="app-page-frame py-8">
             <section class="rounded-3xl bg-navy text-white shadow-card overflow-hidden">
                 <div class="px-6 py-8 sm:px-8">
-                    <p class="text-xs uppercase tracking-[0.22em] text-sky-100/70">Connexion multi-role</p>
-                    <h1 class="mt-2 text-2xl sm:text-3xl font-medium">Plusieurs espaces sont disponibles pour votre compte.</h1>
+                    <h1 class="mt-2 text-2xl sm:text-3xl font-medium">Espaces disponibles pour votre compte.</h1>
                     <p class="mt-3 max-w-3xl text-sm sm:text-base text-sky-100/90 leading-relaxed">
                         Choisissez l'espace dans lequel vous souhaitez travailler maintenant. Vos autres droits restent actifs pendant la séssion.
                     </p>
-                    <div class="mt-4 flex flex-wrap gap-2">
-                        @foreach($roles as $role)
-                            <span class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium">
-                                <i class="fas fa-key text-[10px] text-sky-200"></i>
-                                {{ $role }}
-                            </span>
-                        @endforeach
-                    </div>
+
                 </div>
             </section>
 
@@ -95,16 +90,7 @@
                             <div class="w-11 h-11 rounded-2xl {{ $isDefault ? 'bg-sky text-white' : 'bg-navy-50 text-navy' }} flex items-center justify-center flex-shrink-0">
                                 <i class="fas {{ $space['code'] === 'admin' ? 'fa-sliders' : ($space['code'] === 'accueil' ? 'fa-inbox' : ($space['code'] === 'chef' ? 'fa-briefcase' : ($space['code'] === 'chef_direction' ? 'fa-building-user' : ($space['code'] === 'agent' ? 'fa-headset' : 'fa-chart-line')))) }} text-sm"></i>
                             </div>
-                            <div class="flex flex-wrap items-center justify-end gap-2">
-                                @if($isDefault)
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-leaf-50 px-2.5 py-1 text-[11px] font-medium text-green-700 border border-green-200">
-                                        <i class="fas fa-star text-[10px]"></i> Recommande
-                                    </span>
-                                @endif
-                                <span class="inline-flex items-center gap-1 rounded-full bg-gold-50 px-2.5 py-1 text-[11px] font-medium text-amber-700 border border-amber-200">
-                                    {{ $space['badge'] }}
-                                </span>
-                            </div>
+
                         </div>
 
                         <div class="mt-4">
@@ -121,5 +107,4 @@
             </section>
         </main>
     </div>
-</body>
-</html>
+@endsection

@@ -86,7 +86,8 @@
                                             </select>
                                     </td>
                                     <td class="px-3 py-2 text-right">
-                                            <button type="submit" class="rounded border border-sky-200 px-2.5 py-1 text-[10px] text-sky transition-colors hover:bg-sky-50">
+                                            <button type="submit" class="admin-inline-action rounded border border-sky-200 px-2.5 py-1 text-[10px] text-sky transition-colors hover:bg-sky-50">
+                                                <i class="fas fa-save text-[10px]"></i>
                                                 Sauvegarder
                                             </button>
                                         </form>
@@ -112,7 +113,7 @@
             </div>
             @else
             <div class="rounded-2xl border border-neutral-100 bg-white p-5 shadow-card">
-                <p class="text-xs uppercase tracking-widest text-neutral-400">Configurations SLA</p>
+                <p class="text-xs uppercase tracking-widest text-neutral-400">Configurations des délais</p>
                 <p class="mt-2 text-3xl font-bold text-navy">{{ collect($configurationsSla)->count() }}</p>
             </div>
             @endif
@@ -125,7 +126,7 @@
         <div class="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-card">
             <div class="flex items-center gap-2 border-b border-neutral-100 px-5 py-4">
                 <i class="fas fa-clock text-sm text-sky"></i>
-                <h2 class="text-sm font-medium text-navy">Configuration SLA active</h2>
+                <h2 class="text-sm font-medium text-navy">Configuration active des délais</h2>
             </div>
             <div class="space-y-4 p-5">
                 @if($slaConfig)
@@ -155,7 +156,7 @@
                         </div>
                     </div>
                 @else
-                    <p class="text-sm text-neutral-400">Aucune configuration SLA active.</p>
+                    <p class="text-sm text-neutral-400">Aucune configuration de délai active.</p>
                 @endif
             </div>
         </div>
@@ -164,7 +165,7 @@
             <div class="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
                 <div class="flex items-center gap-2">
                     <i class="fas fa-calendar-day text-sm text-sky"></i>
-                    <h2 class="text-sm font-medium text-navy">Jours fériés exclus du SLA</h2>
+                    <h2 class="text-sm font-medium text-navy">Jours fériés exclus du délai</h2>
                 </div>
             </div>
 
@@ -220,7 +221,7 @@
                                     </div>
                                 </form>
 
-                                <form method="post" action="/admin/jours-feries/{{ $jf->id_sla_jour_ferie }}" onsubmit="return confirm('Supprimer ce jour férié ?')" class="lg:justify-self-end">
+                                <form method="post" action="/admin/jours-feries/{{ $jf->id_sla_jour_ferie }}" data-confirm="Supprimer ce jour férié ?" class="lg:justify-self-end">
                                     @csrf
                                     @method('delete')
                                     <button type="submit" class="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50">

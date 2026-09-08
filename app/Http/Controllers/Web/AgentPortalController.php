@@ -37,7 +37,7 @@ class AgentPortalController extends Controller
             return redirect($defaultSpace['href']);
         }
 
-        return redirect('/login');
+        abort(403, 'Aucun espace accessible pour cet utilisateur. Verifiez ses roles et permissions.');
     }
 
     private function availableSpaces(Utilisateur $actor, array $roles): array
@@ -48,7 +48,7 @@ class AgentPortalController extends Controller
             $spaces['admin'] = [
                 'code' => 'admin',
                 'title' => 'Administration',
-                'description' => 'Gerer les utilisateurs, les roles, les referentiels et les parametres.',
+                'description' => 'Gérer les utilisateurs, les rôles, les referentiels et les paramètres.',
                 'href' => '/admin',
                 'badge' => 'Configuration',
             ];
@@ -68,7 +68,7 @@ class AgentPortalController extends Controller
             $spaces['chef'] = [
                 'code' => 'chef',
                 'title' => 'Chef de service',
-                'description' => 'Piloter le traitement du service, affecter les demandes aux  agents et suivre le delai partager.',
+                'description' => 'Piloter le traitement du service, affecter les demandes aux  agents et suivre le délai partager.',
                 'href' => '/chef/inbox',
                 'badge' => 'Operationnel',
             ];

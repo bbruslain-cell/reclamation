@@ -71,7 +71,7 @@
 
     {{-- ═══════ TOPBAR ═══════ --}}
     <header class="bg-navy sticky top-0 z-50 shadow-md">
-        <div class="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        <div class="app-page-frame h-14 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
                 <div class="bg-white rounded-lg px-2.5 py-1.5 flex-shrink-0">
                     <img src="/Logo_anbg.png" alt="ANBG" class="h-9 w-auto object-contain block">
@@ -106,7 +106,7 @@
 
     {{-- ═══════ HERO ═══════ --}}
     <section class="bg-navy border-b border-white/10 pb-8 pt-6">
-        <div class="max-w-screen-xl mx-auto px-4 sm:px-6">
+        <div class="app-page-frame">
             <div class="flex items-start gap-4">
                 <div class="w-10 h-10 rounded-full bg-sky/20 flex items-center justify-center flex-shrink-0 mt-1">
                     <svg class="icon-svg text-sky-300 text-sm" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3a8 8 0 0 0-8 8v5a3 3 0 0 0 3 3h2v-7H6v-1a6 6 0 1 1 12 0v1h-3v7h2a3 3 0 0 0 3-3v-5a8 8 0 0 0-8-8Z"/></svg>
@@ -116,7 +116,7 @@
                    
                     <div class="mt-3 flex flex-wrap gap-2">
                         <span class="inline-flex items-center gap-1.5 bg-sky/15 border border-sky/25 text-sky-100 text-xs font-medium px-3 py-1 rounded-full">
-                            <svg class="icon-svg text-sky text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5h-2v6l5 3 1-1.7-4-2.3V7Z"/></svg> Fenêtre partagée 48h
+                            <svg class="icon-svg text-sky text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5h-2v6l5 3 1-1.7-4-2.3V7Z"/></svg> Fenêtre partagée 16h
                         </span>
                         <span class="inline-flex items-center gap-1.5 bg-leaf/15 border border-leaf/25 text-green-100 text-xs font-medium px-3 py-1 rounded-full">
                             <svg class="icon-svg text-leaf text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m16.6 3 4.4 4.4-10 10L6 19l1.6-5 9-11ZM5 21h14v-2H5v2Z"/></svg> Réponse finale agent
@@ -131,7 +131,7 @@
     </section>
 
     {{-- ═══════ MAIN ═══════ --}}
-    <main class="max-w-screen-xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+    <main class="app-page-frame py-6 space-y-5">
 
         {{-- Toasts --}}
         @if(session('success'))
@@ -166,6 +166,10 @@
         {{-- ══════════════════════════════════════
              TABLE DEMANDES
         ══════════════════════════════════════ --}}
+        <div id="agent-live-content"
+            class="space-y-5"
+            data-refresh-url="{{ request()->fullUrl() }}"
+            data-refresh-interval="20000">
         <div class="bg-white rounded-2xl shadow-card border border-neutral-100 overflow-hidden">
             <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -185,16 +189,19 @@
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">N° Suivi</th>
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Usager</th>
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Service</th>
-                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Statut</th>
-                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Alerte 48h</th>
-                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Temps restant 48h</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Statut / envoi</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Alerte 16h</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Temps restant 16h</th>
                             <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-neutral-100">
                     @forelse($demandes as $demande)
                         {{-- Ligne principale --}}
-                        <tr class="trow transition-colors duration-100">
+                        <tr class="trow transition-colors duration-100"
+                            data-delivery-id="{{ $demande->id_demande }}"
+                            data-delivery-label="{{ $demande->numero_suivi }}"
+                            data-delivery-state="{{ $demande->delivery_state ?? 'idle' }}">
                             <td class="px-4 py-3">
                                 <span class="font-mono text-xs font-medium text-navy bg-navy-50 px-2 py-1 rounded">
                                     {{ $demande->numero_suivi }}
@@ -207,9 +214,15 @@
                                 <span class="text-xs bg-neutral-100 text-neutral-600 px-2 py-1 rounded-full">
                                     {{ $demande->service_code }} — {{ $demande->service }}
                                 </span>
+                                @if(!empty($demande->commentaire_affectation_agent))
+                                    <span class="mt-1 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Consigne chef</span>
+                                @endif
                             </td>
                             <td class="px-4 py-3">
-                                <span class="text-xs text-neutral-500">{{ $demande->statut }}</span>
+                                <div class="flex flex-col items-start">
+                                    <span class="text-xs text-neutral-500">{{ $demande->statut }}</span>
+                                    @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'badge'])
+                                </div>
                             </td>
                             <td class="px-4 py-3">
                                 @if($demande->alerte_agent === 'rouge')
@@ -272,6 +285,11 @@
                                             <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap max-h-44 overflow-y-auto">{{ $demande->message }}</div>
                                         </div>
 
+                                        @include('workflow.partials.assignment-comment', [
+                                            'label' => 'Consigne du chef de service',
+                                            'comment' => $demande->commentaire_affectation_agent ?? '',
+                                        ])
+
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div>
                                                 <p class="text-xs text-neutral-400">Email</p>
@@ -296,11 +314,7 @@
                                             <p class="text-xs text-neutral-400 mb-1.5">Pièces jointes usager</p>
                                             <div class="space-y-1.5">
                                                 @foreach($pieces as $piece)
-                                                <a href="/pieces-jointes/{{ $piece->id_piece_jointe }}" target="_blank" rel="noopener"
-                                                    class="flex items-center gap-2 bg-sky-50 border border-sky-100 text-sky text-xs font-medium px-3 py-2 rounded-lg hover:bg-sky-100 transition-colors duration-150">
-                                                    <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8.5 12.5 13 8a3 3 0 1 1 4.2 4.2l-6 6a5 5 0 1 1-7.1-7.1l6.3-6.3 1.4 1.4-6.3 6.3a3 3 0 1 0 4.2 4.2l6-6a1 1 0 1 0-1.4-1.4l-4.5 4.5-1.4-1.4Z"/></svg>
-                                                    {{ $piece->nom_fichier }}
-                                                </a>
+                                                @include('workflow.partials.attachment-actions', ['piece' => $piece])
                                                 @endforeach
                                             </div>
                                         </div>
@@ -316,6 +330,9 @@
                                         </h4>
 
                                        
+                                        @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'panel'])
+
+                                        @if(($demande->delivery_state ?? 'idle') !== 'pending')
                                         <form method="post" action="/agent/demandes/{{ $demande->id_demande }}/envoyer" enctype="multipart/form-data" class="space-y-3">
                                             @csrf @method('put')
 
@@ -339,11 +356,18 @@
                                             </div>
 
                                             <button type="submit"
+                                                data-submit-loading
+                                                data-loading-label="{{ ($demande->delivery_state ?? 'idle') === 'failed' ? 'Modification en cours...' : 'Envoi en cours...' }}"
                                                 class="w-full flex items-center justify-center gap-2 bg-navy hover:bg-navy-600 text-white text-sm font-medium py-3 rounded-xl transition-colors duration-150">
                                                 <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 6h18v12H3V6Zm2 2v1l7 4 7-4V8l-7 4-7-4Zm11.2 5.8-1.4 1.4-1.3-1.3-1.4 1.4 2.7 2.7 4.8-4.8-1.4-1.4-3.4 3.4Z"/></svg>
+                                                @if(($demande->delivery_state ?? 'idle') === 'failed')
+                                                    Modifier la réponse et renvoyer
+                                                @else
                                                 Envoyer et clôturer
+                                                @endif
                                             </button>
                                         </form>
+                                        @endif
                                     </div>
 
                                 </div>
@@ -373,6 +397,7 @@
             </div>
             @endif
         </div>
+        </div>
 
         {{-- Footer --}}
         <footer class="border-t border-neutral-200 pt-4 pb-2 flex items-center justify-between text-xs text-neutral-400">
@@ -382,28 +407,130 @@
 
     </main>
 
-<script>
+    <div
+        id="agent-delivery-toast"
+        class="pointer-events-none fixed right-4 top-24 z-50 w-[min(92vw,360px)] transition-all duration-300 ease-out"
+        style="opacity: 0; transform: translateY(8px); visibility: hidden;"
+        aria-live="polite"
+        aria-atomic="true"
+    >
+        <div id="agent-delivery-toast-card" class="flex items-start gap-3 rounded-2xl border bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur">
+            <span id="agent-delivery-toast-icon" class="mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-white"></span>
+            <div>
+                <p id="agent-delivery-toast-title" class="text-sm font-semibold"></p>
+                <p id="agent-delivery-toast-message" class="mt-0.5 text-xs leading-5 text-neutral-500"></p>
+            </div>
+        </div>
+    </div>
+
+<script nonce="{{ $cspNonce ?? '' }}">
 (function () {
-    document.querySelectorAll('.view-toggle').forEach((btn) => {
+    const eyeSvg = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5C5.6 5 2 12 2 12s3.6 7 10 7 10-7 10-7-3.6-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg>';
+    const eyeOffSvg = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m3.3 2 18.7 18.7-1.4 1.4-4.1-4.1A11.7 11.7 0 0 1 12 19C5.6 19 2 12 2 12a19 19 0 0 1 4.4-5.3L1.9 3.4 3.3 2Zm6.1 6.1A4 4 0 0 0 12 16c.7 0 1.4-.2 2-.5L9.4 8.1ZM12 5c6.4 0 10 7 10 7a18.9 18.9 0 0 1-4.1 5.1l-2.2-2.2A4 4 0 0 0 9.1 8.3L7.5 6.7A10.8 10.8 0 0 1 12 5Z"/></svg>';
+    const liveContent = document.getElementById('agent-live-content');
+    const deliveryToast = document.getElementById('agent-delivery-toast');
+    const deliveryToastCard = document.getElementById('agent-delivery-toast-card');
+    const deliveryToastIcon = document.getElementById('agent-delivery-toast-icon');
+    const deliveryToastTitle = document.getElementById('agent-delivery-toast-title');
+    const deliveryToastMessage = document.getElementById('agent-delivery-toast-message');
+    let deliveryToastTimeout = null;
+    const deliverySuccessIcon = '<svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-7Z" stroke="currentColor" stroke-width="1.8"/><path d="m6 9 6 4 6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="m10.4 13.1 1.7 1.7 3.4-3.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const deliveryErrorIcon = '<svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 16.8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    const showDeliveryNotification = (kind, title, message) => {
+        if (!deliveryToast || !deliveryToastCard || !deliveryToastIcon || !deliveryToastTitle || !deliveryToastMessage) return;
+
+        if (kind === 'success') {
+            deliveryToastCard.className = 'flex items-start gap-3 rounded-2xl border border-green-200 bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur';
+            deliveryToastIcon.className = 'mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-leaf text-white';
+            deliveryToastIcon.innerHTML = deliverySuccessIcon;
+        } else {
+            deliveryToastCard.className = 'flex items-start gap-3 rounded-2xl border border-red-200 bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur';
+            deliveryToastIcon.className = 'mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-red-500 text-white';
+            deliveryToastIcon.innerHTML = deliveryErrorIcon;
+        }
+
+        deliveryToastTitle.textContent = title;
+        deliveryToastMessage.textContent = message;
+
+        window.clearTimeout(deliveryToastTimeout);
+        deliveryToast.style.visibility = 'visible';
+        deliveryToast.style.opacity = '1';
+        deliveryToast.style.transform = 'translateY(0)';
+
+        deliveryToastTimeout = window.setTimeout(() => {
+            deliveryToast.style.opacity = '0';
+            deliveryToast.style.transform = 'translateY(8px)';
+            window.setTimeout(() => {
+                if (deliveryToast.style.opacity === '0') {
+                    deliveryToast.style.visibility = 'hidden';
+                }
+            }, 320);
+        }, 4500);
+    };
+    const getDeliveryStateMap = (root) => {
+        const map = new Map();
+        (root?.querySelectorAll('[data-delivery-id][data-delivery-state]') || []).forEach((row) => {
+            map.set(String(row.dataset.deliveryId || ''), {
+                state: String(row.dataset.deliveryState || 'idle'),
+                label: String(row.dataset.deliveryLabel || '').trim(),
+            });
+        });
+
+        return map;
+    };
+    const summarizeDeliveryTransitions = (currentRoot, nextRoot) => {
+        const currentStates = getDeliveryStateMap(currentRoot);
+        const nextStates = getDeliveryStateMap(nextRoot);
+        const delivered = [];
+        const failed = [];
+
+        currentStates.forEach((entry, id) => {
+            if (entry.state !== 'pending') {
+                return;
+            }
+
+            const nextEntry = nextStates.get(id);
+            if (!nextEntry || nextEntry.state === 'sent') {
+                delivered.push(entry.label || id);
+                return;
+            }
+
+            if (nextEntry.state === 'failed') {
+                failed.push(nextEntry.label || entry.label || id);
+            }
+        });
+
+        return { delivered, failed };
+    };
+    const initViewToggles = (root = document) => {
+    root.querySelectorAll('.view-toggle:not([data-toggle-ready])').forEach((btn) => {
+        btn.dataset.toggleReady = '1';
         btn.addEventListener('click', () => {
             const row = document.getElementById(btn.dataset.target);
             if (!row) return;
             const isOpen = row.style.display !== 'none';
             row.style.display = isOpen ? 'none' : '';
             btn.setAttribute('aria-expanded', String(!isOpen));
-            const icon  = btn.querySelector('.toggle-icon');
-            const label = btn.querySelector('span');
+            const icon = btn.querySelector('.toggle-icon');
+            const spans = btn.querySelectorAll('span');
+            const label = spans.length > 1 ? spans[1] : null;
             if (isOpen) {
-                icon.innerHTML    = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5C5.6 5 2 12 2 12s3.6 7 10 7 10-7 10-7-3.6-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg>';
-                label.textContent = 'Voir';
+                row.querySelectorAll('form').forEach((form) => {
+                    delete form.dataset.refreshDirty;
+                });
+                if (icon) icon.innerHTML = eyeSvg;
+                if (label) label.textContent = 'Voir';
             } else {
-                icon.innerHTML    = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m3.3 2 18.7 18.7-1.4 1.4-4.1-4.1A11.7 11.7 0 0 1 12 19C5.6 19 2 12 2 12a19 19 0 0 1 4.4-5.3L1.9 3.4 3.3 2Zm6.1 6.1A4 4 0 0 0 12 16c.7 0 1.4-.2 2-.5L9.4 8.1ZM12 5c6.4 0 10 7 10 7a18.9 18.9 0 0 1-4.1 5.1l-2.2-2.2A4 4 0 0 0 9.1 8.3L7.5 6.7A10.8 10.8 0 0 1 12 5Z"/></svg>';
-                label.textContent = 'Masquer';
+                if (icon) icon.innerHTML = eyeOffSvg;
+                if (label) label.textContent = 'Masquer';
             }
         });
     });
+    };
 
-    document.querySelectorAll('input[data-file-feedback]').forEach((input) => {
+    const initFileFeedback = (root = document) => {
+    root.querySelectorAll('input[data-file-feedback]:not([data-file-feedback-ready])').forEach((input) => {
+        input.dataset.fileFeedbackReady = '1';
         input.addEventListener('change', () => {
             const feedback = input.closest('div')?.querySelector('.file-selection-feedback');
             if (!feedback) return;
@@ -417,6 +544,155 @@
             }
         });
     });
+    };
+
+    const initFormRefreshLocks = (root = document) => {
+        root.querySelectorAll('form:not([data-refresh-form-ready])').forEach((form) => {
+            form.dataset.refreshFormReady = '1';
+            form.addEventListener('input', () => {
+                form.dataset.refreshDirty = '1';
+            });
+            form.addEventListener('change', () => {
+                form.dataset.refreshDirty = '1';
+            });
+            form.addEventListener('submit', () => {
+                if (liveContent && liveContent.contains(form)) {
+                    liveContent.dataset.refreshLocked = '1';
+                }
+            });
+        });
+    };
+
+    const initAgentInteractions = (root = document) => {
+        initViewToggles(root);
+        initFileFeedback(root);
+        initFormRefreshLocks(root);
+        window.initAnbgSubmitLoading?.(root);
+    };
+
+    const hasFocusedControl = () => {
+        const active = document.activeElement;
+        if (!active || !liveContent || !liveContent.contains(active)) return false;
+
+        return ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName) || active.isContentEditable;
+    };
+
+    const openDetailIds = () => {
+        if (!liveContent) return [];
+
+        return Array.from(liveContent.querySelectorAll('tr[id^="detail-"]'))
+            .filter((row) => row.style.display !== 'none')
+            .map((row) => row.id);
+    };
+
+    const restoreOpenDetails = (ids) => {
+        ids.forEach((id) => {
+            const row = document.getElementById(id);
+            if (!row) return;
+
+            row.style.display = '';
+
+            const btn = Array.from(document.querySelectorAll('.view-toggle'))
+                .find((candidate) => candidate.dataset.target === id);
+            if (!btn) return;
+
+            btn.setAttribute('aria-expanded', 'true');
+            const icon = btn.querySelector('.toggle-icon');
+            const spans = btn.querySelectorAll('span');
+            const label = spans.length > 1 ? spans[1] : null;
+            if (icon) icon.innerHTML = eyeOffSvg;
+            if (label) label.textContent = 'Masquer';
+        });
+    };
+
+    const hasDirtyForm = () => {
+        if (!liveContent) return false;
+
+        return Array.from(liveContent.querySelectorAll('form')).some((form) => form.dataset.refreshDirty === '1');
+    };
+
+    const shouldSkipRefresh = (isRefreshing) => {
+        if (!liveContent || isRefreshing || document.hidden || liveContent.dataset.refreshLocked === '1') {
+            return true;
+        }
+
+        return hasFocusedControl() || hasDirtyForm();
+    };
+
+    const initAgentAutoRefresh = () => {
+        if (!liveContent || liveContent.dataset.autoRefreshReady === '1') return;
+        liveContent.dataset.autoRefreshReady = '1';
+
+        let isRefreshing = false;
+        const interval = Math.max(Number(liveContent.dataset.refreshInterval || 20000), 10000);
+
+        const refreshContent = async () => {
+            if (shouldSkipRefresh(isRefreshing)) return;
+            isRefreshing = true;
+
+            try {
+                const url = new URL(liveContent.dataset.refreshUrl || window.location.href, window.location.origin);
+                url.searchParams.set('_agent_refresh', Date.now().toString());
+
+                const response = await fetch(url.toString(), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-Agent-Refresh': 'tables',
+                    },
+                    cache: 'no-store',
+                });
+
+                if (!response.ok) return;
+
+                const html = await response.text();
+                const nextDocument = new DOMParser().parseFromString(html, 'text/html');
+                const nextContent = nextDocument.getElementById('agent-live-content');
+                if (!nextContent) return;
+
+                const transitions = summarizeDeliveryTransitions(liveContent, nextContent);
+                const openedDetails = openDetailIds();
+
+                liveContent.innerHTML = nextContent.innerHTML;
+                initAgentInteractions(liveContent);
+                restoreOpenDetails(openedDetails);
+
+                if (transitions.delivered.length > 0) {
+                    const firstLabel = transitions.delivered[0];
+                    showDeliveryNotification(
+                        'success',
+                        transitions.delivered.length > 1 ? 'Réponses envoyées' : 'Réponse envoyée',
+                        transitions.delivered.length > 1
+                            ? `${transitions.delivered.length} réponses ont été confirmées par le système.`
+                            : `La demande ${firstLabel} a bien été envoyée à l'usager.`
+                    );
+                }
+
+                if (transitions.failed.length > 0) {
+                    const firstLabel = transitions.failed[0];
+                    showDeliveryNotification(
+                        'error',
+                        "Échec d'envoi",
+                        transitions.failed.length > 1
+                            ? `${transitions.failed.length} envois ont échoués. Une relance est possible.`
+                            : `L'envoi pour la demande ${firstLabel} a échoué. Vous pouvez relancer la réponse.`
+                    );
+                }
+            } catch (error) {
+                console.warn('Rafraîchissement agent interrompu.', error);
+            } finally {
+                isRefreshing = false;
+            }
+        };
+
+        window.setInterval(refreshContent, interval);
+        window.addEventListener('focus', refreshContent);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) refreshContent();
+        });
+    };
+
+    initAgentInteractions(document);
+    initAgentAutoRefresh();
 })();
 </script>
 </body>

@@ -26,7 +26,7 @@ class RoleSyncService
 
         $roleNames = $roles->pluck('name')->filter()->values()->all();
         if ($roleNames === []) {
-            throw new InvalidArgumentException('Aucun role exploitable n a ete fourni.');
+            throw new InvalidArgumentException("Aucun rôle exploitable n'a été fourni.");
         }
 
         $userModel->syncRoles($roleNames);

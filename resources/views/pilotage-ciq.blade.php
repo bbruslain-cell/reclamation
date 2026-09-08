@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="fr">
 @php
     $roleCodes = $roleCodes ?? [];
@@ -12,17 +12,20 @@
 
     $pageTitle = 'Pilotage';
     $pageSubtitle = 'Lecture globale, supervision et reporting.';
+    $pageEyebrow = 'Vue de pilotage';
+    $dashboardLabel = 'Dashboard';
+    $scopeChipLabel = 'Lecture de supervision';
+    $reportingChipLabel = 'Reporting global';
+    $sectionPresentation = 'Présentation alignée sur le modèle bureautique de pilotage : réception, affectation, traitement et respect des délais.';
     $canViewScopedCiqTables = in_array('ciq', $roleCodes, true)
         || in_array('chef_direction', $roleCodes, true)
         || in_array('chef_service', $roleCodes, true)
         || in_array('lecture_seule', $roleCodes, true);
-    $canExportPilotage = isset($actor) && $actor
-        ? \Illuminate\Support\Facades\Gate::forUser($actor)->allows('dashboard.export')
-        : false;
+    $canExportPilotage = (bool) ($canExportPilotage ?? false);
 
     if (in_array('ciq', $roleCodes, true)) {
         $pageTitle = 'Contrôle interne et qualité';
-        $pageSubtitle = 'Statistiques de volume et d activité sur la période sélectionnée.';
+        $pageSubtitle = "Statistiques de volume et d'activité sur la période sélectionnée.";
     } elseif (in_array('chef_direction', $roleCodes, true)) {
         $pageTitle = 'Pilotage de direction';
         $pageSubtitle = 'Tableaux de supervision limités aux services de votre direction.';
@@ -31,10 +34,10 @@
         $pageSubtitle = 'Tableaux de supervision limités à votre service.';
     } elseif (in_array('dg', $roleCodes, true)) {
         $pageTitle = 'Direction générale';
-        $pageSubtitle = 'Statistiques de volume et d activité sur la période sélectionnée.';
+        $pageSubtitle = "Statistiques de volume et d'activité sur la période sélectionnée.";
     } elseif (in_array('lecture_seule', $roleCodes, true)) {
         $pageTitle = 'Consultation en lecture seule';
-        $pageSubtitle = 'Statistiques de volume et d activité sur la période sélectionnée.';
+        $pageSubtitle = "Statistiques de volume et d'activité sur la période sélectionnée.";
     }
 
     $formatPercent = function ($value) {
@@ -43,24 +46,91 @@
 
     $periodLabels = [
         'all' => 'Toute période',
-        'today' => 'Aujourd hui',
+        'today' => "Aujourd'hui",
         'week' => 'Cette semaine',
         'month' => 'Ce mois',
         'quarter' => 'Ce trimestre',
-        'year' => 'Cette annee',
-        'custom' => 'Personnalisee',
+        'year' => 'Cette année',
+        'custom' => 'Personnalisée',
     ];
 
     $selectedPeriod = (string) ($filters['periode'] ?? 'month');
     $selectedDirectionId = (string) ($filters['direction_id'] ?? '');
     $selectedServiceId = (string) ($filters['service_id'] ?? '');
-    $selectedStatusCode = (string) ($filters['statut_code'] ?? '');
     $selectedApplicationState = (string) ($filters['application_state'] ?? '');
     $dateFromValue = isset($filters['date_from']) && $filters['date_from'] ? substr((string) $filters['date_from'], 0, 10) : '';
     $dateToValue = isset($filters['date_to']) && $filters['date_to'] ? substr((string) $filters['date_to'], 0, 10) : '';
+    $directionOptions = collect($catalogues['directions'] ?? [])->values();
+    $serviceOptions = collect($catalogues['services'] ?? [])->values();
+    $currentDirection = null;
+    $currentService = null;
+
+    if ($selectedDirectionId !== '') {
+        $currentDirection = $directionOptions->first(fn ($direction) => (string) ($direction['id_direction'] ?? '') === $selectedDirectionId);
+    }
+
+    if ($selectedServiceId !== '') {
+        $currentService = $serviceOptions->first(fn ($service) => (string) ($service['id_service'] ?? '') === $selectedServiceId);
+    }
+
+    if (!$currentService && !empty($actor->id_service)) {
+        $currentService = $serviceOptions->first(fn ($service) => (int) ($service['id_service'] ?? 0) === (int) $actor->id_service);
+    }
+
+    if (!$currentDirection && $currentService) {
+        $currentDirection = $directionOptions->first(fn ($direction) => (int) ($direction['id_direction'] ?? 0) === (int) ($currentService['id_direction'] ?? 0));
+    }
+
+    if (!$currentDirection && in_array('chef_direction', $roleCodes, true) && $directionOptions->count() === 1) {
+        $currentDirection = $directionOptions->first();
+    }
+
+    if (!$currentService && in_array('chef_service', $roleCodes, true) && $serviceOptions->count() === 1) {
+        $currentService = $serviceOptions->first();
+    }
+
+    $currentDirectionLabel = $currentDirection
+        ? trim(trim(((string) ($currentDirection['code'] ?? '')).' - '.((string) ($currentDirection['libelle'] ?? ''))), ' -')
+        : null;
+    $currentServiceLabel = $currentService
+        ? trim(trim(((string) ($currentService['code'] ?? '')).' - '.((string) ($currentService['libelle'] ?? ''))), ' -')
+        : null;
+
+    if (in_array('ciq', $roleCodes, true)) {
+        $pageEyebrow = 'Contrôle interne et qualité';
+        $reportingChipLabel = 'Reporting CIQ';
+        $sectionPresentation = 'Présentation alignée sur le modèle CIQ : réception, affectation, service, réalisation et respect des délais.';
+    } elseif (in_array('chef_direction', $roleCodes, true)) {
+        $pageEyebrow = 'Direction';
+        $dashboardLabel = 'Dashboard direction';
+        $scopeChipLabel = 'Périmètre direction';
+        $pageSubtitle = $currentDirectionLabel
+            ? 'Tableaux de supervision limités à la direction '.$currentDirectionLabel.'.'
+            : 'Tableaux de supervision limités aux services de votre direction.';
+        $reportingChipLabel = $currentDirectionLabel ? 'Direction '.$currentDirectionLabel : 'Reporting direction';
+        $sectionPresentation = $currentDirectionLabel
+            ? 'Présentation dédiée à la direction '.$currentDirectionLabel.', limitée aux services de votre périmètre.'
+            : 'Présentation dédiée à votre direction, limitée aux services de votre périmètre.';
+    } elseif (in_array('chef_service', $roleCodes, true)) {
+        $pageEyebrow = 'Service';
+        $dashboardLabel = 'Dashboard service';
+        $scopeChipLabel = 'Périmètre service';
+        $pageSubtitle = $currentServiceLabel
+            ? 'Tableaux de supervision limités au service '.$currentServiceLabel.'.'
+            : 'Tableaux de supervision limités à votre service.';
+        $reportingChipLabel = $currentServiceLabel ? 'Service '.$currentServiceLabel : 'Reporting service';
+        $sectionPresentation = $currentServiceLabel
+            ? 'Présentation dédiée au service '.$currentServiceLabel.', limitée aux réclamations de votre périmètre.'
+            : 'Présentation dediée à votre service, limitée aux réclamations de votre périmètre.';
+    } elseif (in_array('dg', $roleCodes, true)) {
+        $pageEyebrow = 'Direction générale';
+        $reportingChipLabel = 'Reporting direction générale';
+    } elseif (in_array('lecture_seule', $roleCodes, true)) {
+        $pageEyebrow = 'Lecture seule';
+        $reportingChipLabel = 'Consultation sécurisée';
+    }
 
     $totalReclamations = (int) ($typeTotals['reclamation']['total'] ?? 0);
-    $typeGrandTotal = max(0, $totalReclamations);
 
     $annexeRepartition = $overviewData['annexe_repartition'] ?? [];
     $annexeReclamationsRows = collect($annexeRepartition['reclamations'] ?? []);
@@ -72,87 +142,28 @@
     $reclamationServiceDistributionRows = collect($reclamationServiceDistribution['rows'] ?? []);
     $reclamationServiceDistributionTotals = $reclamationServiceDistribution['totaux'] ?? [];
 
-    $typeChartEntries = collect([
-        [
-            'label' => 'Réclamations',
-            'total' => $totalReclamations,
-            'color' => '#3996d3',
-        ],
-    ])->filter(fn (array $entry) => $entry['total'] > 0)
-      ->values()
-      ->all();
-
-    $statusChartEntries = [
-        [
-            'label' => 'Dans les délais',
-            'total' => (int) ($kpis['global_dans_les_delais'] ?? 0),
-            'color' => '#8fc043',
-        ],
-        [
-            'label' => 'A risque',
-            'total' => (int) ($kpis['global_a_risque'] ?? 0),
-            'color' => '#f9b13c',
-        ],
-        [
-            'label' => 'En retard',
-            'total' => (int) ($kpis['global_en_retard'] ?? 0),
-            'color' => '#d92d20',
-        ],
-    ];
-
-    $temporalEvolution = $overviewData['evolution_temporelle'] ?? [];
-    $temporalLabels = $temporalEvolution['labels'] ?? [];
-    $temporalGranularity = (string) ($temporalEvolution['granularite'] ?? 'month');
-    $temporalSeries = $temporalEvolution['series'] ?? [];
-    $temporalGranularityLabel = [
-        'day' => 'jour',
-        'week' => 'semaine',
-        'month' => 'mois',
-    ][$temporalGranularity] ?? 'periode';
-
-    $palette = ['#3996d3', '#8fc043', '#f9b13c', '#d92d20', '#6b5b95', '#18a999', '#ef6f6c', '#4361ee', '#7f5539', '#577590', '#bc6c25', '#118ab2'];
-    $withAlpha = function (string $hex, string $alpha) {
-        $clean = ltrim($hex, '#');
-        if (strlen($clean) !== 6) {
-            return $hex;
-        }
-
-        return sprintf('rgba(%d, %d, %d, %s)', hexdec(substr($clean, 0, 2)), hexdec(substr($clean, 2, 2)), hexdec(substr($clean, 4, 2)), $alpha);
-    };
-
-    $directionProcessingEntries = collect($overviewData['performance_directions'] ?? [])
-        ->map(function (array $row) {
-            $appliquees = (int) ($row['total_cloturees'] ?? 0);
-            $dansDelai = (int) ($row['total_cloturees_delai'] ?? 0);
-
-            return [
-                'label' => (string) ($row['direction'] ?? '-'),
-                'appliquees' => $appliquees,
-                'dans_delais' => $dansDelai,
-                'hors_delais' => max(0, (int) ($row['total_cloturees_hors_delai'] ?? ($appliquees - $dansDelai))),
-                'taux_dans_delais' => (float) ($row['taux_reponse_dans_delais'] ?? 0),
-            ];
-        })
-        ->filter(fn (array $row) => $row['appliquees'] > 0)
-        ->sortByDesc('appliquees')
-        ->values();
-
-    $buildDirectionVolumeChart = function ($entries) use ($palette) {
-        $entries = collect($entries)->values();
-
-        return [
-            'labels' => $entries->pluck('label')->all(),
-            'dataset' => [
-                'label' => 'Demandes traitees',
-                'data' => $entries->pluck('appliquees')->map(fn ($value) => (int) $value)->all(),
-                'backgroundColor' => $entries->values()->map(fn ($row, $index) => $palette[$index % count($palette)])->all(),
-            ],
-        ];
-    };
-
-    $directionVolumeChart = $buildDirectionVolumeChart($directionProcessingEntries);
     $ciqTrackingRows = collect($overviewData['tableau_suivi_annexe'] ?? []);
-    $ciqTrackingRowsJson = $ciqTrackingRows->values()->all();
+    $ciqTrackingPagination = $overviewData['tableau_suivi_pagination'] ?? [];
+    $ciqTrackingCurrentPage = max(1, (int) ($ciqTrackingPagination['current_page'] ?? 1));
+    $ciqTrackingLastPage = max(1, (int) ($ciqTrackingPagination['last_page'] ?? 1));
+    $ciqTrackingTotal = (int) ($ciqTrackingPagination['total'] ?? $ciqTrackingRows->count());
+    $ciqTrackingFrom = (int) ($ciqTrackingPagination['from'] ?? ($ciqTrackingRows->isNotEmpty() ? 1 : 0));
+    $ciqTrackingTo = (int) ($ciqTrackingPagination['to'] ?? $ciqTrackingRows->count());
+    $ciqTrackingPreviousUrl = $ciqTrackingCurrentPage > 1
+        ? request()->fullUrlWithQuery(['tracking_page' => $ciqTrackingCurrentPage - 1])
+        : null;
+    $ciqTrackingNextUrl = $ciqTrackingCurrentPage < $ciqTrackingLastPage
+        ? request()->fullUrlWithQuery(['tracking_page' => $ciqTrackingCurrentPage + 1])
+        : null;
+    $ciqTrackingRowsJson = $ciqTrackingRows
+        ->map(fn (array $row) => [
+            'id_demande' => (int) ($row['id_demande'] ?? 0),
+            'numero_suivi' => (string) ($row['numero_suivi'] ?? ''),
+            'expediteur' => (string) ($row['expediteur'] ?? ''),
+            'type_demande' => (string) ($row['type_demande'] ?? ''),
+        ])
+        ->values()
+        ->all();
     $formatShortDate = function ($value) {
         if (!$value) {
             return '-';
@@ -164,15 +175,55 @@
             return (string) $value;
         }
     };
+
+    $trackingStatusCode = function (array $row): string {
+        $code = trim((string) ($row['statut_code'] ?? ''));
+        if ($code !== '') {
+            return $code;
+        }
+
+        $label = \Illuminate\Support\Str::of((string) ($row['statut_traitement'] ?? ''))
+            ->lower()
+            ->ascii()
+            ->value();
+
+        return match (true) {
+            str_contains($label, 'affectee a un agent') => 'affectee_agent',
+            str_contains($label, 'affectee au service') => 'affectee_service',
+            str_contains($label, 'reponse') => 'reponse_prete',
+            str_contains($label, 'cloturee') => 'cloturee',
+            str_contains($label, 'recu') => 'nouvelle',
+            default => '',
+        };
+    };
+
+    $trackingStatusLabel = function (array $row) use ($trackingStatusCode): string {
+        return match ($trackingStatusCode($row)) {
+            'nouvelle' => 'Reçu',
+            'affectee_service' => 'Affectée au service',
+            'affectee_agent' => 'Affectée à un agent',
+            'reponse_prete' => 'Réponse rédigée',
+            'cloturee' => 'Clôturée',
+            default => trim((string) ($row['statut_traitement'] ?? '')) ?: '-',
+        };
+    };
+
+    $trackingStatusClass = function (array $row) use ($trackingStatusCode): string {
+        return match ($trackingStatusCode($row)) {
+            'nouvelle' => 'border-sky-200 bg-sky-50 text-sky-700',
+            'affectee_service' => 'border-amber-200 bg-amber-50 text-amber-700',
+            'affectee_agent' => 'border-indigo-200 bg-indigo-50 text-indigo-700',
+            'reponse_prete' => 'border-leaf/30 bg-leaf/10 text-green-700',
+            'cloturee' => 'border-neutral-200 bg-neutral-100 text-neutral-700',
+            default => 'border-neutral-200 bg-white text-neutral-600',
+        };
+    };
 @endphp
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <title>{{ $pageTitle }} - ANBG</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -423,7 +474,7 @@
 </head>
 <body class="font-sans text-navy min-h-screen">
     <header class="bg-navy sticky top-0 z-50 shadow-md">
-        <div class="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        <div class="app-page-frame h-14 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
                 <div class="bg-white rounded-lg px-2.5 py-1.5 flex-shrink-0">
                     <img src="/Logo_anbg.png" alt="ANBG" class="h-9 w-auto object-contain block">
@@ -437,6 +488,14 @@
                     </svg>
                     <span>Mon espace</span>
                 </a>
+                @if ($canViewScopedCiqTables)
+                <a href="{{ url('/pilotage/dashboard') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="inline-flex items-center gap-1.5 bg-sky/20 hover:bg-sky/30 border border-sky/30 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150" aria-label="Ouvrir le {{ strtolower($dashboardLabel) }}">
+                    <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 19h16v2H2V4h2v15Zm2.5-2.5v-5h3v5h-3Zm5 0v-9h3v9h-3Zm5 0v-12h3v12h-3Z" fill="currentColor"/>
+                    </svg>
+                    <span class="hidden sm:inline">{{ $dashboardLabel }}</span>
+                </a>
+                @endif
                 @if (in_array('admin', $roleCodes, true))
                 <a href="/admin" class="hidden sm:inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150">
                     <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -460,7 +519,7 @@
                         <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2H5V5h5V3Zm9.7 9-4.2-4.2-1.4 1.4 1.8 1.8H9v2h6.9l-1.8 1.8 1.4 1.4 4.2-4.2Z" fill="currentColor"/>
                         </svg>
-                        <span class="hidden sm:inline">Deconnexion</span>
+                        <span class="hidden sm:inline">Déconnexion</span>
                     </button>
                 </form>
             </div>
@@ -468,7 +527,7 @@
     </header>
 
     <section class="hero-shell border-b border-white/10 pb-8 pt-6">
-        <div class="max-w-screen-xl mx-auto px-4 sm:px-6">
+        <div class="app-page-frame">
             <div class="relative z-10 flex items-start gap-4">
                 <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 mt-1 shadow-lg" style="background: linear-gradient(135deg, rgba(143,192,67,0.9) 0%, rgba(248,233,50,0.95) 100%);">
                     <svg class="icon-svg text-navy text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -476,6 +535,7 @@
                     </svg>
                 </div>
                 <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-100 mb-2">{{ $pageEyebrow }}</p>
                     <h1 class="text-white text-xl font-medium leading-snug mb-1">{{ $pageTitle }}</h1>
                     <p class="text-sky-100 text-sm font-light leading-relaxed max-w-3xl">{{ $pageSubtitle }}</p>
                     <div class="mt-3 flex flex-wrap gap-2">
@@ -483,13 +543,13 @@
                             <svg class="icon-svg text-[#f8e932]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                 <path d="M11 2v10h10A10 10 0 0 0 11 2Zm-1 1.1A10 10 0 1 0 20.9 14H10V3.1Z" fill="currentColor"/>
                             </svg>
-                            Lecture de supervision
+                            {{ $scopeChipLabel }}
                         </span>
                         <span class="hero-chip inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs text-white/90">
                             <svg class="icon-svg text-[#8fc043]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                 <path d="M3 4h18v16H3V4Zm2 2v3h14V6H5Zm0 5v3h4v-3H5Zm6 0v3h8v-3h-8Zm-6 5v2h4v-2H5Zm6 0v2h8v-2h-8Z" fill="currentColor"/>
                             </svg>
-                            Reporting de direction
+                            {{ $reportingChipLabel }}
                         </span>
                     </div>
                 </div>
@@ -497,7 +557,7 @@
         </div>
     </section>
 
-    <main class="max-w-screen-xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <main class="app-page-frame py-6 space-y-6">
         <section class="ciq-surface rounded-2xl overflow-hidden">
             <div class="px-5 py-4 border-b border-sky/10">
                 <h2 class="ciq-section-title text-sm font-medium text-navy">Filtres de supervision</h2>
@@ -513,10 +573,10 @@
                     </select>
                 </div>
                 <div>
-                    <label for="date_from" class="block text-xs text-neutral-500 mb-1">Date debut</label>
+                    <label for="date_from" class="block text-xs text-neutral-500 mb-1">Date début</label>
                     <div class="relative">
                         <input id="date_from" type="date" name="date_from" value="{{ $dateFromValue }}" class="field w-full px-3 py-2.5 pr-11 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy">
-                        <button type="button" class="date-picker-trigger absolute inset-y-0 right-0 px-3 text-neutral-400 hover:text-navy transition-colors" data-target="date_from" aria-label="Choisir la date de debut">
+                        <button type="button" class="date-picker-trigger absolute inset-y-0 right-0 px-3 text-neutral-400 hover:text-navy transition-colors" data-target="date_from" aria-label="Choisir la date de début">
                             <svg class="icon-svg text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                 <path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2Zm13 8H4v10h16V10ZM4 8h16V6H4v2Zm2 4h4v4H6v-4Z" fill="currentColor"/>
                             </svg>
@@ -553,15 +613,6 @@
                     </select>
                 </div>
                 <div>
-                    <label for="statut_code" class="block text-xs text-neutral-500 mb-1">Statut</label>
-                    <select id="statut_code" name="statut_code" class="field w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy">
-                        <option value="">Tous les statuts</option>
-                        @foreach(($catalogues['statuts'] ?? []) as $status)
-                        <option value="{{ $status['code'] }}" @selected($selectedStatusCode === (string) $status['code'])>{{ $status['libelle'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
                     <label for="application_state" class="block text-xs text-neutral-500 mb-1">Application</label>
                     <select id="application_state" name="application_state" class="field w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy">
                         <option value="">Tous</option>
@@ -581,28 +632,23 @@
                         <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path d="M12 5a7 7 0 1 1-6.6 9.3l1.9-.6A5 5 0 1 0 12 7h-1.6l2.3 2.3-1.4 1.4L6.6 6l4.7-4.7 1.4 1.4L10.4 5H12Z" fill="currentColor"/>
                         </svg>
-                        <span>Reinitialiser</span>
+                        <span>Réinitialiser</span>
                     </a>
                 </div>
                 <div class="md:col-span-2 xl:col-span-4">
-                    <p class="text-xs text-neutral-400">Si vous choisissez une date de début ou de fin, la période passe automatiquement en mode personnalisée. Si vous revenez sur `Aujourd hui`, `Semaine`, `Mois` ou `Annee`, la plage manuelle est effacée.</p>
+                    <p class="text-xs text-neutral-400">Si vous choisissez une date de début ou de fin, la période passe automatiquement en mode personnalisée. Si vous revenez sur `Aujourd'hui`, `Semaine`, `Mois` ou `Année`, la plage manuelle est effacée.</p>
                 </div>
             </form>
         </section>
-
         @if ($canViewScopedCiqTables)
         <section class="space-y-5">
             <div>
-                <h2 class="ciq-section-title text-sm font-medium text-navy">Volume & activite</h2>
-                <p class="text-xs text-neutral-400 mt-1">Vue d ensemble du volume reçu, du traitement et de l état global sur la période sélectionnée.</p>
+                <h2 class="ciq-section-title text-sm font-medium text-navy">Volume & activité</h2>
+                <p class="text-xs text-neutral-400 mt-1">Vue d'ensemble du volume reçu, du traitement et de l'état global sur la période sélectionnée.</p>
             </div>
 
             <div class="flex gap-4 overflow-x-auto pb-2">
-                <div class="ciq-kpi-card ciq-kpi-card--navy">
-                    <p class="ciq-kpi-label">Total mails reçus</p>
-                    <p class="ciq-kpi-value" data-countup="{{ (int) ($kpis['total_demandes'] ?? 0) }}">{{ number_format((int) ($kpis['total_demandes'] ?? 0), 0, ',', ' ') }}</p>
-                    <p class="ciq-kpi-meta">Toutes demandes confondues</p>
-                </div>
+
                 <div class="ciq-kpi-card ciq-kpi-card--sky">
                     <p class="ciq-kpi-label">Réclamations reçues</p>
                     <p class="ciq-kpi-value" data-countup="{{ $totalReclamations }}">{{ number_format($totalReclamations, 0, ',', ' ') }}</p>
@@ -642,190 +688,12 @@
             </div>
         </section>
 
-        <section class="space-y-5">
-            <div>
-                <h2 class="ciq-section-title text-sm font-medium text-navy">Graphiques de performance</h2>
-                <p class="text-xs text-neutral-400 mt-1">Choisissez un graphique pour garder une lecture compacte et cibler l information utile.</p>
-            </div>
-
-            <section class="ciq-surface rounded-2xl overflow-hidden">
-                <div class="px-5 py-4 border-b border-sky/10 space-y-4">
-                    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                        <h3 class="text-sm font-medium text-navy">Vue graphique</h3>
-                        @if ($canExportPilotage)
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" id="download-chart-png" class="ciq-export-button ciq-export-button--png inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
-                                <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                    <path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm0 2v10h16V7H4Zm3 2.5A1.5 1.5 0 1 0 7 12a1.5 1.5 0 0 0 0-3Zm12 6.5H5l4-4 2.5 2.5 2-2L19 16Z" fill="currentColor"/>
-                                </svg>
-                                <span>Telecharger PNG</span>
-                            </button>
-                            <button type="button" id="download-chart-pdf" class="ciq-export-button ciq-export-button--pdf inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
-                                <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                    <path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm6 1.5V8h4.5L13 3.5ZM8 12h2.2a2.3 2.3 0 1 1 0 4.6H9.5V19H8v-7Zm1.5 1.4v1.8h.7a.9.9 0 1 0 0-1.8h-.7ZM13 12h2.1a2.5 2.5 0 1 1 0 5H14.5V19H13v-7Zm1.5 1.4v2.2h.6a1.1 1.1 0 1 0 0-2.2h-.6ZM18.5 13.4H17V15h1.2v1.4H17V19h-1.5v-7h3v1.4Z" fill="currentColor"/>
-                                </svg>
-                                <span>Telecharger PDF</span>
-                            </button>
-                        </div>
-                        @endif
-                    </div>
-                    <div>
-                        <p class="text-xs text-neutral-400">Les boutons ci-dessous affichent un seul graphique à la fois.</p>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                        <button type="button" data-chart-target="type" class="performance-tab inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
-                            <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <path d="M11 2v10h10A10 10 0 0 0 11 2Zm-1 1.1A10 10 0 1 0 20.9 14H10V3.1Z" fill="currentColor"/>
-                            </svg>
-                            <span>Types</span>
-                        </button>
-                        <button type="button" data-chart-target="status" class="performance-tab inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
-                            <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <path d="M4 20h16v2H2V4h2v16Zm2-8h3v6H6v-6Zm5-5h3v11h-3V7Zm5 3h3v8h-3v-8Z" fill="currentColor"/>
-                            </svg>
-                            <span>Statut global</span>
-                        </button>
-                        <button type="button" data-chart-target="timeline" class="performance-tab inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
-                            <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <path d="M4 19h16v2H2V4h2v15Zm2.7-4.3 3.5-3.5 2.6 2.6 4.5-5.3 1.5 1.3-5.9 7-2.7-2.7-2.1 2.1-1.4-1.5Z" fill="currentColor"/>
-                            </svg>
-                            <span>Evolution</span>
-                        </button>
-                        <button type="button" data-chart-target="direction" class="performance-tab inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors">
-                            <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <path d="M4 21V5a2 2 0 0 1 2-2h8v18H4Zm4-14H6v2h2V7Zm4 0h-2v2h2V7Zm-4 4H6v2h2v-2Zm4 0h-2v2h2v-2Zm7 10h-4V9l4 2v10Zm-2-6h-1v2h1v-2Z" fill="currentColor"/>
-                            </svg>
-                            <span>Directions</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="p-5">
-                    <section data-chart-panel="type" class="performance-panel hidden space-y-4">
-                        <div>
-                            <h4 class="text-sm font-medium text-navy">Réclamations</h4>
-                            <p class="text-xs text-neutral-400 mt-1">Répartition du volume par type avec pourcentage.</p>
-                        </div>
-                        <div class="grid grid-cols-1 xl:grid-cols-[16rem_1fr] gap-5 items-start">
-                            <div class="mx-auto w-full max-w-[16rem]">
-                                <div class="relative aspect-square">
-                                    <canvas id="type-volume-chart"></canvas>
-                                </div>
-                            </div>
-                            <div class="space-y-3">
-                                @forelse($typeChartEntries as $entry)
-                                @php
-                                    $entryPercent = $typeGrandTotal > 0 ? (($entry['total'] / $typeGrandTotal) * 100) : 0;
-                                @endphp
-                                <div class="ciq-inner-card rounded-xl p-4">
-                                    <div class="flex items-center justify-between gap-3">
-                                        <div class="flex items-center gap-2">
-                                            <span class="w-3 h-3 rounded-full" style="background-color: {{ $entry['color'] }}"></span>
-                                            <p class="text-sm font-medium text-navy">{{ $entry['label'] }}</p>
-                                        </div>
-                                        <p class="text-sm font-semibold text-navy">{{ number_format((int) $entry['total'], 0, ',', ' ') }}</p>
-                                    </div>
-                                    <p class="mt-2 text-xs text-neutral-400">{{ $formatPercent($entryPercent) }} du volume total filtré</p>
-                                </div>
-                                @empty
-                                <div class="rounded-xl border border-dashed border-sky/20 bg-white/70 px-4 py-8 text-center text-sm text-neutral-400">
-                                    Aucune donnée disponible pour cette répartition.
-                                </div>
-                                @endforelse
-                            </div>
-                        </div>
-                    </section>
-
-                    <section data-chart-panel="status" class="performance-panel hidden space-y-4">
-                        <div>
-                            <h4 class="text-sm font-medium text-navy">Traitement global des demandes</h4>
-                            <p class="text-xs text-neutral-400 mt-1">Comparaison des demandes dans les délais, à risque et en retard.</p>
-                        </div>
-                        <div class="space-y-4">
-                            <div class="h-72">
-                                <canvas id="status-volume-chart"></canvas>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                @foreach($statusChartEntries as $entry)
-                                <div class="ciq-inner-card rounded-xl p-4">
-                                    <div class="flex items-center gap-2">
-                                        <span class="w-3 h-3 rounded-full" style="background-color: {{ $entry['color'] }}"></span>
-                                        <p class="text-sm font-medium text-navy">{{ $entry['label'] }}</p>
-                                    </div>
-                                    <p class="mt-3 text-2xl font-semibold text-navy">{{ number_format((int) $entry['total'], 0, ',', ' ') }}</p>
-                                </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    </section>
-
-                    <section data-chart-panel="timeline" class="performance-panel hidden space-y-4">
-                        <div>
-                            <h4 class="text-sm font-medium text-navy">Evolution temporelle</h4>
-                            <p class="text-xs text-neutral-400 mt-1">Suivi comparé des réclamations reçues et des demandes clôturées par {{ $temporalGranularityLabel }}.</p>
-                        </div>
-                        <div class="space-y-4">
-                            <div class="h-80">
-                                <canvas id="temporal-evolution-chart"></canvas>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                <div class="ciq-inner-card rounded-xl p-4">
-                                    <div class="flex items-center gap-2">
-                                        <span class="w-3 h-3 rounded-full bg-sky"></span>
-                                        <p class="text-sm font-medium text-navy">Réclamations reçues</p>
-                                    </div>
-                                    <p class="mt-3 text-2xl font-semibold text-navy">{{ number_format(array_sum($temporalSeries['reclamations_recues'] ?? []), 0, ',', ' ') }}</p>
-                                </div>
-                                <div class="ciq-inner-card rounded-xl p-4">
-                                    <div class="flex items-center gap-2">
-                                        <span class="w-3 h-3 rounded-full bg-gold"></span>
-                                        <p class="text-sm font-medium text-navy">Demandes clôturées</p>
-                                    </div>
-                                    <p class="mt-3 text-2xl font-semibold text-navy">{{ number_format(array_sum($temporalSeries['demandes_cloturees'] ?? []), 0, ',', ' ') }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section data-chart-panel="direction" class="performance-panel hidden space-y-4">
-                        <div>
-                            <h4 class="text-sm font-medium text-navy">Directions qui traitent le plus de demandes</h4>
-                            <p class="text-xs text-neutral-400 mt-1">Le donut montre la part de demandes clôturées traitée par chaque direction.</p>
-                        </div>
-                        <div class="grid grid-cols-1 xl:grid-cols-[16rem_1fr] gap-5 items-start">
-                            <div class="mx-auto w-full max-w-[16rem]">
-                                <div class="relative aspect-square">
-                                    <canvas id="direction-compliance-chart"></canvas>
-                                </div>
-                            </div>
-                            <div class="space-y-3 max-h-80 overflow-y-auto pr-1">
-                                @forelse($directionProcessingEntries as $entry)
-                                <div class="ciq-inner-card rounded-xl p-4">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <p class="text-sm font-medium text-navy">{{ $entry['label'] }}</p>
-                                        <p class="text-sm font-semibold text-navy">{{ number_format((int) $entry['appliquees'], 0, ',', ' ') }}</p>
-                                    </div>
-                                    <div class="mt-2 flex flex-wrap gap-4 text-xs text-neutral-500">
-                                        <span>Traitées : {{ number_format((int) $entry['appliquees'], 0, ',', ' ') }}</span>
-                                        <span>Dans les délais : {{ number_format((int) $entry['dans_delais'], 0, ',', ' ') }}</span>
-                                        <span>Conformité : {{ $formatPercent($entry['taux_dans_delais']) }}</span>
-                                    </div>
-                                </div>
-                                @empty
-                                <div class="rounded-xl border border-dashed border-sky/20 bg-white/70 px-4 py-8 text-center text-sm text-neutral-400">
-                                    Aucune demande traitée disponible sur cette période.
-                                </div>
-                                @endforelse
-                            </div>
-                        </div>
-                    </section>
-                </div>
-            </section>
+        {{-- Graphiques CIQ disponibles sur la page dédiée /pilotage/dashboard. --}}
 
             <div id="ciq-tracking-modal" class="fixed inset-0 z-[80] hidden">
                 <div id="ciq-tracking-backdrop" class="absolute inset-0 bg-navy/55 backdrop-blur-[2px]"></div>
                 <div class="relative z-[81] min-h-full flex items-center justify-center px-4 py-6">
-                    <div class="w-full max-w-4xl rounded-3xl bg-white shadow-2xl border border-white/70 overflow-hidden">
+                    <div class="w-full max-w-6xl rounded-3xl bg-white shadow-2xl border border-white/70 overflow-hidden">
                         <div class="flex items-start justify-between gap-4 px-6 py-5 border-b border-neutral-200 bg-gradient-to-r from-neutral-50 to-white">
                             <div>
                                 <p class="text-xs uppercase tracking-[0.25em] text-neutral-400">Lecture du dossier</p>
@@ -849,7 +717,7 @@
                                         <p id="ciq-modal-nom" class="mt-1 text-sm font-medium text-neutral-700">-</p>
                                     </div>
                                     <div class="rounded-xl bg-white border border-neutral-200 p-4">
-                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Prenom</p>
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Prénom</p>
                                         <p id="ciq-modal-prenom" class="mt-1 text-sm font-medium text-neutral-700">-</p>
                                     </div>
                                     <div class="rounded-xl bg-white border border-neutral-200 p-4">
@@ -899,51 +767,102 @@
                             <section class="rounded-2xl border border-sky/20 bg-sky/5 p-5">
                                 <div class="flex items-center gap-2 mb-4">
                                     <div class="w-6 h-6 rounded-full bg-sky text-white text-xs font-semibold flex items-center justify-center">2</div>
-                                    <h4 class="text-sm font-semibold text-navy uppercase tracking-[0.15em]">Suivi dossier</h4>
+                                    <h4 class="text-sm font-semibold text-navy uppercase tracking-[0.15em]">Traitement et traçabilité</h4>
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
-                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Date de dispatch</p>
-                                        <p id="ciq-modal-dispatch" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                    <article class="rounded-2xl bg-white border border-sky/15 p-4 shadow-soft">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <p class="text-xs uppercase tracking-wide text-neutral-400">Affectation UCAS</p>
+                                            <span id="ciq-modal-accueil-date" class="rounded-full bg-sky/10 px-2.5 py-1 text-[11px] font-medium text-sky">-</span>
+                                        </div>
+                                        <div class="mt-3 space-y-3">
+                                            <div>
+                                                <p class="text-[11px] uppercase tracking-wide text-neutral-400">Agent UCAS</p>
+                                                <p id="ciq-modal-accueil-agent" class="mt-1 text-sm font-semibold text-navy">-</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-[11px] uppercase tracking-wide text-neutral-400">Service affecté</p>
+                                                <p id="ciq-modal-accueil-service" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                                <p id="ciq-modal-accueil-service-libelle" class="mt-0.5 text-xs text-neutral-400">-</p>
+                                            </div>
+                                            <p id="ciq-modal-accueil-commentaire" class="hidden rounded-xl bg-neutral-50 px-3 py-2 text-xs leading-5 text-neutral-500"></p>
+                                        </div>
+                                    </article>
+
+                                    <article class="rounded-2xl bg-white border border-leaf/20 p-4 shadow-soft">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <p class="text-xs uppercase tracking-wide text-neutral-400">Affectation agent</p>
+                                            <span id="ciq-modal-agent-date" class="rounded-full bg-leaf/10 px-2.5 py-1 text-[11px] font-medium text-leaf">-</span>
+                                        </div>
+                                        <div class="mt-3 space-y-3">
+                                            <div>
+                                                <p class="text-[11px] uppercase tracking-wide text-neutral-400">Chef de service</p>
+                                                <p id="ciq-modal-chef-agent" class="mt-1 text-sm font-semibold text-navy">-</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-[11px] uppercase tracking-wide text-neutral-400">Agent assigné</p>
+                                                <p id="ciq-modal-agent-assigne" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                            </div>
+                                            <p id="ciq-modal-agent-commentaire" class="hidden rounded-xl bg-neutral-50 px-3 py-2 text-xs leading-5 text-neutral-500"></p>
+                                        </div>
+                                    </article>
+
+                                    <article class="rounded-2xl bg-white border border-neutral-200 p-4 shadow-soft">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <p class="text-xs uppercase tracking-wide text-neutral-400">Clôture</p>
+                                            <span id="ciq-modal-reponse-date" class="rounded-full bg-navy/10 px-2.5 py-1 text-[11px] font-medium text-navy">-</span>
+                                        </div>
+                                        <div class="mt-3 space-y-3">
+                                            <div>
+                                                <p class="text-[11px] uppercase tracking-wide text-neutral-400">Rédacteur de la réponse</p>
+                                                <p id="ciq-modal-reponse-redacteur" class="mt-1 text-sm font-semibold text-navy">-</p>
+                                            </div>
+                                            <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                                <div class="rounded-xl bg-neutral-50 p-3">
+                                                    <p class="text-[10px] uppercase tracking-wide text-neutral-400">Statut</p>
+                                                    <p id="ciq-modal-statut" class="mt-1 text-xs font-semibold text-neutral-700">-</p>
+                                                </div>
+                                                <div class="rounded-xl bg-neutral-50 p-3">
+                                                    <p class="text-[10px] uppercase tracking-wide text-neutral-400">Délais</p>
+                                                    <p id="ciq-modal-respect" class="mt-1 text-xs font-semibold text-neutral-700">-</p>
+                                                </div>
+                                                <div class="rounded-xl bg-neutral-50 p-3">
+                                                    <p class="text-[10px] uppercase tracking-wide text-neutral-400">Responsable du retard</p>
+                                                    <p id="ciq-modal-responsable-retard" class="mt-1 text-xs font-semibold text-neutral-700">-</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </article>
+                                </div>
+
+                                <div class="mt-5 rounded-2xl border border-neutral-200 bg-white p-4 shadow-soft">
+                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                            <p class="text-xs uppercase tracking-wide text-neutral-400">Réponse apportée à la demande</p>
+                                            <p id="ciq-modal-reponse-meta" class="mt-1 text-xs text-neutral-500">-</p>
+                                        </div>
+                                        <span id="ciq-modal-realisation" class="inline-flex w-fit items-center rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-500">-</span>
                                     </div>
-                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
-                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Service</p>
-                                        <p id="ciq-modal-service" class="mt-1 text-sm font-medium text-neutral-700">-</p>
-                                    </div>
-                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
-                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Realisation</p>
-                                        <p id="ciq-modal-realisation" class="mt-1 text-sm font-medium text-neutral-700">-</p>
-                                    </div>
-                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
-                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Statut</p>
-                                        <p id="ciq-modal-statut" class="mt-1 text-sm font-medium text-neutral-700">-</p>
-                                    </div>
-                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
-                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Respect délais</p>
-                                        <p id="ciq-modal-respect" class="mt-1 text-sm font-medium text-neutral-700">-</p>
-                                    </div>
-                                    <div class="rounded-xl bg-white border border-neutral-200 p-4">
-                                        <p class="text-xs uppercase tracking-wide text-neutral-400">RZ / CS</p>
-                                        <p id="ciq-modal-qcs" class="mt-1 text-sm font-medium text-neutral-700">-</p>
+                                    <p id="ciq-modal-reponse-contenu" class="mt-3 rounded-xl bg-neutral-50 px-4 py-3 text-sm leading-6 text-neutral-700 whitespace-pre-line">Aucune réponse finale enregistrée.</p>
+                                    <div class="mt-4 rounded-xl bg-neutral-50 px-4 py-3">
+                                        <p class="text-xs uppercase tracking-wide text-neutral-400">Pieces jointes transmises avec la reponse</p>
+                                        <div id="ciq-modal-reponse-pieces" class="mt-3 flex flex-wrap gap-2">
+                                            <span class="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs text-neutral-500">Aucune piece jointe de reponse</span>
+                                        </div>
                                     </div>
                                 </div>
+
                             </section>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
-
         @if ($canViewScopedCiqTables)
         <section class="space-y-5">
             <div>
                 <h2 class="ciq-section-title text-sm font-medium text-navy">Tableau actuel du suivi des réclamations</h2>
                 <p class="text-xs text-neutral-400 mt-1">
-                    {{ in_array('chef_direction', $roleCodes, true)
-                        ? 'Presentation alignee sur le modele CIQ, limitee a votre perimetre de services.'
-                        : (in_array('chef_service', $roleCodes, true)
-                            ? 'Présentation alignée sur le modèle CIQ, limitée aux réclamations de votre service.'
-                            : 'Présentation alignée sur le modèle bureautique CIQ : réception, dispatch, service, réalisation et respect des délais.') }}
+                    {{ $sectionPresentation }}
                 </p>
             </div>
 
@@ -955,7 +874,10 @@
                     </div>
                     @if ($canExportPilotage)
                     <div class="flex items-center gap-2">
-                      <p class="text-xs text-neutral-400 hidden sm:block">{{ number_format($ciqTrackingRows->count(), 0, ',', ' ') }} ligne(s) sur le filtre courant</p>
+                      <p class="text-xs text-neutral-400 hidden sm:block">
+                          {{ number_format($ciqTrackingFrom, 0, ',', ' ') }}-{{ number_format($ciqTrackingTo, 0, ',', ' ') }}
+                          sur {{ number_format($ciqTrackingTotal, 0, ',', ' ') }} ligne(s)
+                      </p>
                         <button type="button" id="ciq-tracking-export-xls" class="ciq-export-button ciq-export-button--excel inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-colors">
                         <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8.5 12.5 3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="m11.5 12.5-3 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M14.5 12.5h2.5M14.5 15.5H17M14.5 18.5h2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
                         <span>Excel</span>
@@ -969,7 +891,7 @@
                 </div>
 
                 <div id="ciq-tracking-export-area" class="overflow-x-auto bg-white">
-                    <table id="ciq-tracking-table" class="w-full min-w-[1220px] table-fixed">
+                    <table id="ciq-tracking-table" class="w-full min-w-[1280px] table-fixed">
                         <colgroup>
                             <col class="w-[52px]">
                             <col class="w-[112px]">
@@ -979,7 +901,7 @@
                             <col class="w-[108px]">
                             <col class="w-[86px]">
                             <col class="w-[112px]">
-                            <col class="w-[100px]">
+                            <col class="w-[150px]">
                             <col class="w-[96px]">
                             <col class="w-[126px]">
                             <col class="w-[148px]">
@@ -987,13 +909,13 @@
                         <thead>
                             <tr class="bg-[#2f5f93] border-b border-[#274f79]">
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">N°</th>
-                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Date de reception</th>
-                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Expediteur</th>
+                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Date de réception</th>
+                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Expéditeur</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Objet</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Date de dispatch</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Délais de transmission</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Service</th>
-                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Realisation</th>
+                                <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Réalisation</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Statut</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Respect délais</th>
                                 <th class="px-3 py-3 text-left text-[11px] font-medium text-white uppercase tracking-wider">Nombre de jours d attente</th>
@@ -1013,7 +935,11 @@
                                 </td>
                                 <td class="px-3 py-3 text-sm text-neutral-700 whitespace-nowrap">{{ $row['service_direction'] ?? '-' }}</td>
                                 <td class="px-3 py-3 text-sm text-neutral-700 whitespace-nowrap">{{ $formatShortDate($row['realisation'] ?? null) }}</td>
-                                <td class="px-3 py-3 text-sm font-medium text-neutral-700">{{ $row['statut_traitement'] ?? '-' }}</td>
+                                <td class="px-3 py-3 text-sm">
+                                    <span class="inline-flex max-w-full items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-tight whitespace-nowrap {{ $trackingStatusClass($row) }}">
+                                        {{ $trackingStatusLabel($row) }}
+                                    </span>
+                                </td>
                                 <td class="px-3 py-3 text-sm font-medium {{ ($row['respect_delais'] ?? 'NON') === 'OUI' ? 'text-green-700' : 'text-red-700' }}">
                                     {{ $row['respect_delais'] ?? '-' }}
                                 </td>
@@ -1027,6 +953,25 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+                <div class="flex flex-col gap-3 border-t border-neutral-200 bg-neutral-50 px-5 py-3 text-xs text-neutral-500 sm:flex-row sm:items-center sm:justify-between">
+                    <span>
+                        Page {{ number_format($ciqTrackingCurrentPage, 0, ',', ' ') }} / {{ number_format($ciqTrackingLastPage, 0, ',', ' ') }}
+                        - lignes {{ number_format($ciqTrackingFrom, 0, ',', ' ') }} à {{ number_format($ciqTrackingTo, 0, ',', ' ') }}
+                        sur {{ number_format($ciqTrackingTotal, 0, ',', ' ') }}
+                    </span>
+                    <div class="flex items-center gap-2">
+                        @if ($ciqTrackingPreviousUrl)
+                            <a href="{{ $ciqTrackingPreviousUrl }}" class="inline-flex items-center rounded-lg border border-neutral-200 bg-white px-3 py-1.5 font-medium text-neutral-600 hover:border-sky/30 hover:text-navy">Précédent</a>
+                        @else
+                            <span class="inline-flex items-center rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 font-medium text-neutral-300">Précédent</span>
+                        @endif
+                        @if ($ciqTrackingNextUrl)
+                            <a href="{{ $ciqTrackingNextUrl }}" class="inline-flex items-center rounded-lg border border-neutral-200 bg-white px-3 py-1.5 font-medium text-neutral-600 hover:border-sky/30 hover:text-navy">Suivant</a>
+                        @else
+                            <span class="inline-flex items-center rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 font-medium text-neutral-300">Suivant</span>
+                        @endif
+                    </div>
                 </div>
             </section>
         </section>
@@ -1117,14 +1062,14 @@
                         <thead>
                             <tr class="bg-neutral-50">
                                 <th rowspan="2" class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300 w-[120px]">Fonctions</th>
-                                <th colspan="6" class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Repartition par fonction</th>
+                                <th colspan="6" class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Répartition par fonction</th>
                             </tr>
                             <tr class="bg-white">
                                 <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de réclamations total</th>
                                 <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de réclamations traitées</th>
                                 <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux d'exécution (%)</th>
                                 <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nombre de réclamations traitées dans les délais</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux de conformité (72h)(%)</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux de conformité (24h)(%)</th>
                                 <th class="px-3 py-3 text-center text-sm font-semibold text-red-500 border border-neutral-300">(A + B) / 2</th>
                             </tr>
                         </thead>
@@ -1190,7 +1135,7 @@
                                 <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails traités</th>
                                 <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux d'exécution (%) (A)</th>
                                 <th class="px-3 py-3 text-center text-sm font-semibold text-navy border border-neutral-300">Nbre de mails traités dans les délais</th>
-                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux de conformité (72h) (%) (B)</th>
+                                <th class="px-3 py-3 text-center text-sm font-semibold text-emerald-600 border border-neutral-300">Taux de conformité (24h) (%) (B)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1227,9 +1172,12 @@
             <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                 <div>
                     <h2 class="ciq-section-title text-sm font-medium text-navy">Consultation des dossiers usagers</h2>
-                    <p class="text-xs text-neutral-400 mt-1">Registre de consultation des demandes, avec ouverture detaillee via le bouton Consulter.</p>
+                    <p class="text-xs text-neutral-400 mt-1">Registre de consultation des demandes, avec ouverture détaillée via le bouton Consulter.</p>
                 </div>
-                <p class="text-xs text-neutral-400">{{ number_format($ciqTrackingRows->count(), 0, ',', ' ') }} dossier(s) disponibles sur le filtre courant</p>
+                <p class="text-xs text-neutral-400">
+                    {{ number_format($ciqTrackingFrom, 0, ',', ' ') }}-{{ number_format($ciqTrackingTo, 0, ',', ' ') }}
+                    sur {{ number_format($ciqTrackingTotal, 0, ',', ' ') }} dossier(s)
+                </p>
             </div>
 
             <section class="ciq-surface rounded-2xl overflow-hidden">
@@ -1243,9 +1191,9 @@
                         <thead class="bg-neutral-50 border-b border-neutral-200">
                             <tr>
                                 <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Numéro de suivi</th>
-                                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Expediteur</th>
+                                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Expéditeur</th>
                                 <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Objet</th>
-                                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Reception</th>
+                                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Réception</th>
                                 <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Service</th>
                                 <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Statut</th>
                                 <th class="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Action</th>
@@ -1265,15 +1213,15 @@
                                 <td class="px-4 py-3 text-sm text-neutral-600 whitespace-nowrap align-top">{{ $formatShortDate($row['date_reception'] ?? null) }}</td>
                                 <td class="px-4 py-3 text-sm text-neutral-600 whitespace-nowrap align-top">{{ $row['service_direction'] ?? '-' }}</td>
                                 <td class="px-4 py-3 align-top">
-                                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium {{ ($row['respect_delais'] ?? 'NON') === 'OUI' ? 'bg-leaf/10 text-green-700' : 'bg-red-50 text-red-700' }}">
-                                        {{ $row['statut_traitement'] ?? '-' }}
+                                    <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-tight whitespace-nowrap {{ $trackingStatusClass($row) }}">
+                                        {{ $trackingStatusLabel($row) }}
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 text-right align-top">
                                     <button
                                         type="button"
                                         class="tracking-detail-trigger inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-600 hover:border-sky/35 hover:text-navy transition-colors"
-                                        data-tracking-index="{{ $loop->index }}"
+                                        data-tracking-id="{{ $row['id_demande'] ?? '' }}"
                                     >
                                         <svg class="icon-svg h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/></svg>
                                         <span>Consulter</span>
@@ -1290,8 +1238,25 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="px-5 py-3 border-t border-neutral-200 bg-neutral-50 text-xs text-neutral-400">
-                    Utiliser le bouton <span class="font-medium text-neutral-500">Consulter</span> pour ouvrir la fiche complete de la demande.
+                <div class="px-5 py-3 border-t border-neutral-200 bg-neutral-50 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-xs text-neutral-400">
+                    <span>
+                        Utiliser le bouton <span class="font-medium text-neutral-500">Consulter</span> pour ouvrir la fiche complète de la demande.
+                    </span>
+                    @if ($ciqTrackingLastPage > 1)
+                    <div class="inline-flex items-center gap-2">
+                        <span class="font-medium text-neutral-500">Page {{ number_format($ciqTrackingCurrentPage, 0, ',', ' ') }} / {{ number_format($ciqTrackingLastPage, 0, ',', ' ') }}</span>
+                        @if ($ciqTrackingPreviousUrl)
+                            <a href="{{ $ciqTrackingPreviousUrl }}" class="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 font-medium text-neutral-600 hover:border-sky/40 hover:text-navy transition-colors">Précédent</a>
+                        @else
+                            <span class="rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 font-medium text-neutral-300">Précédent</span>
+                        @endif
+                        @if ($ciqTrackingNextUrl)
+                            <a href="{{ $ciqTrackingNextUrl }}" class="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 font-medium text-neutral-600 hover:border-sky/40 hover:text-navy transition-colors">Suivant</a>
+                        @else
+                            <span class="rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 font-medium text-neutral-300">Suivant</span>
+                        @endif
+                    </div>
+                    @endif
                 </div>
             </section>
         </section>
@@ -1303,18 +1268,12 @@
             <span class="font-medium">Constructeur d avenir</span>
         </footer>
     </main>
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         (function () {
             const periodSelect = document.getElementById('periode');
             const dateFrom = document.getElementById('date_from');
             const dateTo = document.getElementById('date_to');
             const datePickerTriggers = document.querySelectorAll('.date-picker-trigger');
-            const performanceTabs = document.querySelectorAll('.performance-tab');
-            const performancePanels = document.querySelectorAll('.performance-panel');
-            const initializedCharts = {};
-            const chartInstances = {};
-            const downloadChartPngButton = document.getElementById('download-chart-png');
-            const downloadChartPdfButton = document.getElementById('download-chart-pdf');
             const ciqTrackingExportXlsButton = document.getElementById('ciq-tracking-export-xls');
             const ciqTrackingExportPdfButton = document.getElementById('ciq-tracking-export-pdf');
             const annexe2ExportXlsButton = document.getElementById('annexe2-export-xls');
@@ -1323,13 +1282,18 @@
             const functionDistributionExportPdfButton = document.getElementById('function-distribution-export-pdf');
             const reclamationServiceDistributionExportXlsButton = document.getElementById('reclamation-service-distribution-export-xls');
             const reclamationServiceDistributionExportPdfButton = document.getElementById('reclamation-service-distribution-export-pdf');
-            const trackingDetailButtons = document.querySelectorAll('.tracking-detail-trigger');
             const ciqTrackingModal = document.getElementById('ciq-tracking-modal');
             const ciqTrackingBackdrop = document.getElementById('ciq-tracking-backdrop');
             const ciqTrackingClose = document.getElementById('ciq-tracking-close');
+            const trackingDetailButtons = document.querySelectorAll('.tracking-detail-trigger');
             const ciqTrackingDetails = @json($ciqTrackingRowsJson);
-            let activePerformanceTarget = 'type';
-
+            const ciqTrackingDetailsById = new Map(
+                Array.isArray(ciqTrackingDetails)
+                    ? ciqTrackingDetails.map((row) => [String(row.id_demande ?? ''), row])
+                    : []
+            );
+            const ciqTrackingDetailCache = new Map();
+            const ciqTrackingDetailBaseUrl = @json(url('/pilotage/demandes/__ID__/detail'));
             function formatCountUpValue(value, decimals, suffix = '') {
                 return `${Number(value).toLocaleString('fr-FR', {
                     minimumFractionDigits: decimals,
@@ -1395,8 +1359,8 @@
                 element.textContent = value && `${value}`.trim() !== '' ? value : '-';
             }
 
-            function renderTrackingAttachments(attachments) {
-                const container = document.getElementById('ciq-modal-pieces');
+            function renderTrackingAttachments(attachments, containerId = 'ciq-modal-pieces', emptyText = 'Aucune piece jointe') {
+                const container = document.getElementById(containerId);
                 if (!container) {
                     return;
                 }
@@ -1406,17 +1370,16 @@
                 if (!Array.isArray(attachments) || attachments.length === 0) {
                     const empty = document.createElement('span');
                     empty.className = 'inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-500';
+                    empty.textContent = emptyText;
                     empty.textContent = 'Aucune pièce jointe';
+                    empty.textContent = emptyText;
                     container.appendChild(empty);
                     return;
                 }
 
                 attachments.forEach((piece) => {
-                    const link = document.createElement('a');
-                    link.href = `/pieces-jointes/${piece.id_piece_jointe}`;
-                    link.target = '_blank';
-                    link.rel = 'noopener';
-                    link.className = 'inline-flex items-center gap-2 rounded-full border border-sky/20 bg-sky/5 px-3 py-1.5 text-xs font-medium text-sky hover:bg-sky/10 transition-colors';
+                    const item = document.createElement('span');
+                    item.className = 'inline-flex flex-wrap items-center gap-2 rounded-full border border-sky/20 bg-sky/5 px-3 py-1.5 text-xs font-medium text-sky';
 
                     const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                     icon.setAttribute('viewBox', '0 0 24 24');
@@ -1433,41 +1396,215 @@
                     const label = document.createElement('span');
                     label.textContent = piece.nom_fichier ?? 'Pièce jointe';
 
-                    link.appendChild(icon);
-                    link.appendChild(label);
-                    container.appendChild(link);
+                    const previewLink = document.createElement('a');
+                    previewLink.href = `/pieces-jointes/${piece.id_piece_jointe}?preview=1`;
+                    previewLink.dataset.attachmentPreview = '1';
+                    previewLink.dataset.attachmentName = piece.nom_fichier ?? 'Pièce jointe';
+                    previewLink.className = 'rounded-full bg-white px-2 py-1 text-sky hover:bg-sky/10 transition-colors';
+                    previewLink.textContent = 'Aperçu';
+
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = `/pieces-jointes/${piece.id_piece_jointe}`;
+                    downloadLink.className = 'rounded-full bg-white px-2 py-1 text-neutral-600 hover:bg-neutral-100 transition-colors';
+                    downloadLink.textContent = 'Télécharger';
+
+                    item.appendChild(icon);
+                    item.appendChild(label);
+                    item.appendChild(previewLink);
+                    item.appendChild(downloadLink);
+                    container.appendChild(item);
                 });
             }
 
-            function openTrackingModal(index) {
-                const row = ciqTrackingDetails[index];
-                if (!row || !ciqTrackingModal) {
+            function detailValue(value, fallback = '-') {
+                const normalized = value === null || value === undefined ? '' : `${value}`.trim();
+                return normalized !== '' ? normalized : fallback;
+            }
+
+            function setOptionalBlock(id, value) {
+                const element = document.getElementById(id);
+                if (!element) {
                     return;
                 }
 
-                setModalText('ciq-modal-tracking-number', row.numero_suivi ?? '-');
-                setModalText('ciq-modal-subtitle', `${row.expediteur ?? '-'} - ${row.type_demande ?? '-'}`);
-                setModalText('ciq-modal-nom', row.usager_nom ?? '-');
-                setModalText('ciq-modal-prenom', row.usager_prenom ?? '-');
-                setModalText('ciq-modal-email', row.usager_email ?? '-');
-                setModalText('ciq-modal-statut-usager', row.usager_statut ?? '-');
-                setModalText('ciq-modal-type', row.type_demande ?? '-');
-                setModalText('ciq-modal-categorie', row.categorie ?? '-');
-                setModalText('ciq-modal-pays', row.usager_pays ?? '-');
-                setModalText('ciq-modal-etablissement', row.usager_etablissement ?? '-');
-                setModalText('ciq-modal-objet', row.objet_original ?? row.objet ?? '-');
-                setModalText('ciq-modal-message', row.message ?? '-');
-                setModalText('ciq-modal-reception', `Soumise le ${formatDetailDate(row.date_reception ?? null)}`);
-                setModalText('ciq-modal-dispatch', formatDetailDate(row.date_dispatching ?? null));
-                setModalText('ciq-modal-service', row.service_direction ?? '-');
-                setModalText('ciq-modal-realisation', formatDetailDate(row.realisation ?? null));
-                setModalText('ciq-modal-statut', row.statut_traitement ?? '-');
-                setModalText('ciq-modal-respect', row.respect_delais ?? '-');
-                setModalText('ciq-modal-qcs', row.qcs ?? '-');
-                renderTrackingAttachments(row.pieces_jointes ?? []);
+                const normalized = value === null || value === undefined ? '' : `${value}`.trim();
+                element.textContent = normalized;
+                element.classList.toggle('hidden', normalized === '');
+            }
 
+            function formatShortDetailDate(value) {
+                const formatted = formatDetailDate(value);
+                return formatted === '-' ? '-' : formatted.replace(',', ' à');
+            }
+
+            function renderTreatmentTrace(row) {
+                const traitement = row.traitement ?? {};
+                const accueil = traitement.affectation_accueil ?? {};
+                const agent = traitement.affectation_agent ?? {};
+                const reponse = traitement.reponse ?? {};
+
+                setModalText('ciq-modal-accueil-date', formatShortDetailDate(accueil.date ?? row.date_dispatching ?? null));
+                setModalText('ciq-modal-accueil-agent', detailValue(accueil.agent, '-'));
+                setModalText('ciq-modal-accueil-service', detailValue(accueil.service, row.service_direction ?? '-'));
+                setModalText('ciq-modal-accueil-service-libelle', [
+                    detailValue(accueil.service_libelle, ''),
+                    detailValue(accueil.direction, ''),
+                ].filter(Boolean).join(' - ') || '-');
+                setOptionalBlock('ciq-modal-accueil-commentaire', accueil.commentaire ?? '');
+
+                const hasAgentAssignment = detailValue(agent.date ?? row.date_affectation_agent ?? null, '') !== '';
+                setModalText('ciq-modal-agent-date', formatShortDetailDate(agent.date ?? row.date_affectation_agent ?? null));
+                setModalText('ciq-modal-chef-agent', hasAgentAssignment ? detailValue(agent.chef, row.qcs ?? '-') : 'Aucune affectation agent');
+                setModalText('ciq-modal-agent-assigne', hasAgentAssignment ? detailValue(agent.agent, '-') : 'Traitement direct ou en attente');
+                setOptionalBlock('ciq-modal-agent-commentaire', agent.commentaire ?? '');
+
+                const responseDate = reponse.date_envoi_usager ?? row.realisation ?? null;
+                const redactionDate = reponse.date_redaction ?? null;
+                const responseType = detailValue(reponse.type_reponse, 'Réponse finale');
+                const responseAuthor = detailValue(reponse.redacteur, row.qcs ?? '-');
+                const responseSender = detailValue(reponse.envoyeur, '');
+
+                setModalText('ciq-modal-reponse-date', formatShortDetailDate(responseDate));
+                setModalText('ciq-modal-reponse-redacteur', responseAuthor);
+                setModalText('ciq-modal-realisation', `Envoi usager : ${formatShortDetailDate(responseDate)}`);
+                setModalText(
+                    'ciq-modal-reponse-meta',
+                    `${responseType} | Rédigée par ${responseAuthor} le ${formatShortDetailDate(redactionDate)}${responseSender !== '' ? ` | Envoyée par ${responseSender}` : ''}`
+                );
+                setModalText('ciq-modal-reponse-contenu', detailValue(reponse.contenu, 'Aucune réponse finale enregistrée.'));
+                renderTrackingAttachments(
+                    reponse.pieces_jointes ?? [],
+                    'ciq-modal-reponse-pieces',
+                    'Aucune piece jointe de reponse'
+                );
+            }
+
+            function buildTrackingDetailUrl(demandId) {
+                const url = new URL(
+                    ciqTrackingDetailBaseUrl.replace('__ID__', encodeURIComponent(demandId)),
+                    window.location.origin
+                );
+                const currentParams = new URLSearchParams(window.location.search);
+
+                currentParams.forEach((value, key) => {
+                    if (value !== '') {
+                        url.searchParams.set(key, value);
+                    }
+                });
+
+                return url;
+            }
+
+            function setTrackingModalLoading(row) {
+                const placeholderIds = [
+                    'ciq-modal-nom',
+                    'ciq-modal-prenom',
+                    'ciq-modal-email',
+                    'ciq-modal-statut-usager',
+                    'ciq-modal-type',
+                    'ciq-modal-categorie',
+                    'ciq-modal-pays',
+                    'ciq-modal-etablissement',
+                    'ciq-modal-objet',
+                    'ciq-modal-message',
+                    'ciq-modal-reception',
+                    'ciq-modal-accueil-date',
+                    'ciq-modal-accueil-agent',
+                    'ciq-modal-accueil-service',
+                    'ciq-modal-accueil-service-libelle',
+                    'ciq-modal-agent-date',
+                    'ciq-modal-chef-agent',
+                    'ciq-modal-agent-assigne',
+                    'ciq-modal-reponse-date',
+                    'ciq-modal-reponse-redacteur',
+                    'ciq-modal-statut',
+                    'ciq-modal-respect',
+                    'ciq-modal-reponse-meta',
+                    'ciq-modal-realisation',
+                    'ciq-modal-responsable-retard',
+                ];
+
+                setModalText('ciq-modal-tracking-number', row?.numero_suivi ?? 'Demande');
+                setModalText('ciq-modal-subtitle', 'Chargement sécurisé du dossier...');
+                placeholderIds.forEach((id) => setModalText(id, '-'));
+                setModalText('ciq-modal-reponse-contenu', 'Chargement du traitement...');
+                setOptionalBlock('ciq-modal-accueil-commentaire', '');
+                setOptionalBlock('ciq-modal-agent-commentaire', '');
+                renderTrackingAttachments([]);
+                renderTrackingAttachments([], 'ciq-modal-reponse-pieces', 'Aucune piece jointe de reponse');
+            }
+
+            async function loadTrackingDetail(demandId) {
+                const normalizedDemandId = String(demandId ?? '');
+                if (ciqTrackingDetailCache.has(normalizedDemandId)) {
+                    return ciqTrackingDetailCache.get(normalizedDemandId);
+                }
+
+                const response = await fetch(buildTrackingDetailUrl(normalizedDemandId), {
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+
+                if (!response.ok) {
+                    let message = 'Impossible de charger le dossier.';
+                    try {
+                        const errorPayload = await response.json();
+                        message = errorPayload.message || message;
+                    } catch (error) {
+                        // Keep the generic message if the server did not return JSON.
+                    }
+                    throw new Error(message);
+                }
+
+                const payload = await response.json();
+                const detail = payload.data ?? payload;
+                ciqTrackingDetailCache.set(normalizedDemandId, detail);
+
+                return detail;
+            }
+
+            async function openTrackingModal(demandId) {
+                const normalizedDemandId = String(demandId ?? '');
+                const row = ciqTrackingDetailsById.get(normalizedDemandId)
+                    || (Array.isArray(ciqTrackingDetails)
+                        ? ciqTrackingDetails.find((item) => String(item.id_demande ?? '') === normalizedDemandId)
+                        : null);
+
+                if (!row || !ciqTrackingModal) {
+                    console.warn('Dossier introuvable pour consultation', normalizedDemandId);
+                    return;
+                }
+
+                setTrackingModalLoading(row);
                 ciqTrackingModal.classList.remove('hidden');
                 document.body.classList.add('overflow-hidden');
+
+                try {
+                    const detail = await loadTrackingDetail(normalizedDemandId);
+                    setModalText('ciq-modal-tracking-number', detail.numero_suivi ?? '-');
+                    setModalText('ciq-modal-subtitle', `${detail.expediteur ?? '-'} - ${detail.type_demande ?? '-'}`);
+                    setModalText('ciq-modal-nom', detail.usager_nom ?? '-');
+                    setModalText('ciq-modal-prenom', detail.usager_prenom ?? '-');
+                    setModalText('ciq-modal-email', detail.usager_email ?? '-');
+                    setModalText('ciq-modal-statut-usager', detail.usager_statut ?? '-');
+                    setModalText('ciq-modal-type', detail.type_demande ?? '-');
+                    setModalText('ciq-modal-categorie', detail.categorie ?? '-');
+                    setModalText('ciq-modal-pays', detail.usager_pays ?? '-');
+                    setModalText('ciq-modal-etablissement', detail.usager_etablissement ?? '-');
+                    setModalText('ciq-modal-objet', detail.objet_original ?? detail.objet ?? '-');
+                    setModalText('ciq-modal-message', detail.message ?? '-');
+                    setModalText('ciq-modal-reception', `Soumise le ${formatDetailDate(detail.date_reception ?? null)}`);
+                    setModalText('ciq-modal-statut', detail.statut_traitement ?? '-');
+                    setModalText('ciq-modal-respect', detail.respect_delais ?? '-');
+                    setModalText('ciq-modal-responsable-retard', detail.responsable_retard ?? '-');
+                    renderTrackingAttachments(detail.pieces_jointes ?? []);
+                    renderTreatmentTrace(detail);
+                } catch (error) {
+                    setModalText('ciq-modal-subtitle', error.message || 'Erreur de chargement');
+                    setModalText('ciq-modal-reponse-contenu', error.message || 'Impossible de charger le dossier.');
+                }
             }
 
             function closeTrackingModal() {
@@ -1535,328 +1672,6 @@
                 input.focus();
             }
 
-            function initTypeVolumeChart() {
-                const canvas = document.getElementById('type-volume-chart');
-                const entries = @json($typeChartEntries);
-
-                if (!canvas || !entries.length || typeof Chart === 'undefined') {
-                    return null;
-                }
-
-                if (chartInstances.type) {
-                    return chartInstances.type;
-                }
-
-                const total = entries.reduce((sum, entry) => sum + Number(entry.total || 0), 0);
-
-                chartInstances.type = new Chart(canvas, {
-                    type: 'doughnut',
-                    data: {
-                        labels: entries.map((entry) => entry.label),
-                        datasets: [{
-                            data: entries.map((entry) => Number(entry.total || 0)),
-                            backgroundColor: entries.map((entry) => entry.color),
-                            borderColor: '#ffffff',
-                            borderWidth: 4,
-                            hoverOffset: 6,
-                        }],
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '58%',
-                        plugins: {
-                            legend: {
-                                display: false,
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label(context) {
-                                        const value = Number(context.parsed || 0);
-                                        const percent = total > 0 ? ((value / total) * 100).toFixed(1).replace('.', ',') : '0,0';
-                                        return `${context.label}: ${new Intl.NumberFormat('fr-FR').format(value)} (${percent} %)`;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-
-                return chartInstances.type;
-            }
-
-            function initStatusVolumeChart() {
-                const canvas = document.getElementById('status-volume-chart');
-                const entries = @json($statusChartEntries);
-
-                if (!canvas || typeof Chart === 'undefined') {
-                    return null;
-                }
-
-                if (chartInstances.status) {
-                    return chartInstances.status;
-                }
-
-                chartInstances.status = new Chart(canvas, {
-                    type: 'bar',
-                    data: {
-                        labels: entries.map((entry) => entry.label),
-                        datasets: [{
-                            label: 'Demandes',
-                            data: entries.map((entry) => Number(entry.total || 0)),
-                            backgroundColor: entries.map((entry) => entry.color),
-                            borderRadius: 12,
-                            borderSkipped: false,
-                            maxBarThickness: 72,
-                        }],
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false,
-                            },
-                        },
-                        scales: {
-                            x: {
-                                grid: {
-                                    display: false,
-                                },
-                                ticks: {
-                                    color: '#495057',
-                                },
-                            },
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    precision: 0,
-                                    color: '#495057',
-                                },
-                                grid: {
-                                    color: 'rgba(28, 32, 61, 0.08)',
-                                },
-                            },
-                        },
-                    }
-                });
-
-                return chartInstances.status;
-            }
-
-            function initTemporalEvolutionChart() {
-                const canvas = document.getElementById('temporal-evolution-chart');
-                const labels = @json($temporalLabels);
-                const series = @json($temporalSeries);
-                const normalizeSeries = (values) => {
-                    if (Array.isArray(values)) {
-                        return values.map((value) => Number(value || 0));
-                    }
-
-                    if (values && typeof values === 'object') {
-                        return Object.values(values).map((value) => Number(value || 0));
-                    }
-
-                    return [];
-                };
-                const reclamationsRecues = normalizeSeries(series.reclamations_recues);
-                const demandesCloturees = normalizeSeries(series.demandes_cloturees);
-
-                if (!canvas || typeof Chart === 'undefined' || !labels.length) {
-                    return null;
-                }
-
-                if (chartInstances.timeline) {
-                    return chartInstances.timeline;
-                }
-
-                chartInstances.timeline = new Chart(canvas, {
-                    type: 'line',
-                    data: {
-                        labels,
-                        datasets: [
-                            {
-                                label: 'Réclamations reçues',
-                                data: reclamationsRecues,
-                                borderColor: '#3996d3',
-                                backgroundColor: 'rgba(57, 150, 211, 0.14)',
-                                tension: 0.3,
-                                spanGaps: true,
-                                fill: false,
-                                borderWidth: 3,
-                                pointRadius: 3,
-                                pointHoverRadius: 5,
-                            },
-                            {
-                                label: 'Demandes clôturées',
-                                data: demandesCloturees,
-                                borderColor: '#f9b13c',
-                                backgroundColor: 'rgba(249, 177, 60, 0.16)',
-                                tension: 0.3,
-                                spanGaps: true,
-                                fill: false,
-                                borderWidth: 3,
-                                pointRadius: 3,
-                                pointHoverRadius: 5,
-                            }
-                        ],
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: {
-                            mode: 'index',
-                            intersect: false,
-                        },
-                        plugins: {
-                            legend: {
-                                display: false,
-                            },
-                        },
-                        scales: {
-                            x: {
-                                grid: {
-                                    display: false,
-                                },
-                                ticks: {
-                                    color: '#495057',
-                                },
-                            },
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    precision: 0,
-                                    color: '#495057',
-                                },
-                                grid: {
-                                    color: 'rgba(28, 32, 61, 0.08)',
-                                },
-                            },
-                        },
-                    }
-                });
-
-                return chartInstances.timeline;
-            }
-
-            function initDirectionVolumeChart(canvasId, chartData) {
-                const canvas = document.getElementById(canvasId);
-
-                if (!canvas || typeof Chart === 'undefined' || !chartData?.labels?.length) {
-                    return null;
-                }
-
-                if (chartInstances.direction) {
-                    return chartInstances.direction;
-                }
-
-                chartInstances.direction = new Chart(canvas, {
-                    type: 'doughnut',
-                    data: {
-                        labels: chartData.labels,
-                        datasets: [{
-                            label: chartData.dataset?.label || 'Demandes traitees',
-                            data: chartData.dataset?.data || [],
-                            backgroundColor: chartData.dataset?.backgroundColor || [],
-                            borderColor: '#ffffff',
-                            borderWidth: 3,
-                            hoverOffset: 6,
-                        }],
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '58%',
-                        plugins: {
-                            legend: {
-                                display: false,
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label(context) {
-                                        const seriesLabel = context.dataset?.label || '';
-                                        const value = Number(context.parsed || 0);
-                                        return `${seriesLabel} - ${context.label}: ${new Intl.NumberFormat('fr-FR').format(value)}`;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-
-                return chartInstances.direction;
-            }
-
-            function slugifyChartTitle(value) {
-                return (value || 'graphique')
-                    .toString()
-                    .normalize('NFD')
-                    .replace(/[\u0300-\u036f]/g, '')
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/^-+|-+$/g, '');
-            }
-
-            function getActiveChartExportContext() {
-                const panel = document.querySelector(`[data-chart-panel="${activePerformanceTarget}"]`);
-                const canvas = panel?.querySelector('canvas') || null;
-                const title = panel?.querySelector('h4')?.textContent?.trim() || 'Graphique de performance';
-
-                if (!panel || !canvas) {
-                    return null;
-                }
-
-                return { panel, canvas, title };
-            }
-
-            function downloadActiveChartAsPng() {
-                const context = getActiveChartExportContext();
-
-                if (!context) {
-                    return;
-                }
-
-                const link = document.createElement('a');
-                link.href = context.canvas.toDataURL('image/png', 1.0);
-                link.download = `${slugifyChartTitle(context.title)}.png`;
-                link.click();
-            }
-
-            function downloadActiveChartAsPdf() {
-                const context = getActiveChartExportContext();
-
-                if (!context || !window.jspdf?.jsPDF) {
-                    return;
-                }
-
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'mm',
-                    format: 'a4',
-                });
-
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 12;
-                const titleY = 16;
-                const imageData = context.canvas.toDataURL('image/png', 1.0);
-                const imageWidth = context.canvas.width || 1;
-                const imageHeight = context.canvas.height || 1;
-                const availableWidth = pageWidth - (margin * 2);
-                const availableHeight = pageHeight - 30;
-                const ratio = Math.min(availableWidth / imageWidth, availableHeight / imageHeight);
-                const renderWidth = imageWidth * ratio;
-                const renderHeight = imageHeight * ratio;
-                const renderX = (pageWidth - renderWidth) / 2;
-                const renderY = 22;
-
-                pdf.setFontSize(13);
-                pdf.text(context.title, margin, titleY);
-                pdf.addImage(imageData, 'PNG', renderX, renderY, renderWidth, renderHeight);
-                pdf.save(`${slugifyChartTitle(context.title)}.pdf`);
-            }
-
             const pilotageExportBaseUrl = @json(url('/pilotage/export/__SECTION__/__FORMAT__'));
 
             function redirectToPilotageExport(section, format) {
@@ -1885,49 +1700,6 @@
             async function exportFunctionDistributionAsPdf() { redirectToPilotageExport('function-distribution', 'pdf'); }
             function exportReclamationServiceDistributionAsExcel() { redirectToPilotageExport('reclamation-service-distribution', 'xlsx'); }
             async function exportReclamationServiceDistributionAsPdf() { redirectToPilotageExport('reclamation-service-distribution', 'pdf'); }
-            function setActivePerformanceChart(target) {
-                performanceTabs.forEach((tab) => {
-                    const active = tab.dataset.chartTarget === target;
-                    tab.classList.toggle('bg-navy', active);
-                    tab.classList.toggle('text-white', active);
-                    tab.classList.toggle('border-navy', active);
-                    tab.classList.toggle('bg-neutral-50', !active);
-                    tab.classList.toggle('text-neutral-600', !active);
-                    tab.classList.toggle('border-neutral-200', !active);
-                });
-
-                performancePanels.forEach((panel) => {
-                    panel.classList.toggle('hidden', panel.dataset.chartPanel !== target);
-                });
-
-                activePerformanceTarget = target;
-
-                const initializeChart = () => {
-                    if (!initializedCharts[target]) {
-                        if (target === 'type') {
-                            initTypeVolumeChart();
-                        }
-
-                        if (target === 'status') {
-                            initStatusVolumeChart();
-                        }
-
-                        if (target === 'timeline') {
-                            initTemporalEvolutionChart();
-                        }
-
-                        if (target === 'direction') {
-                            initDirectionVolumeChart('direction-compliance-chart', @json($directionVolumeChart));
-                        }
-
-                        initializedCharts[target] = true;
-                    }
-
-                    chartInstances[target]?.resize();
-                };
-
-                requestAnimationFrame(() => requestAnimationFrame(initializeChart));
-            }
 
             if (periodSelect) {
                 periodSelect.addEventListener('change', handlePeriodChange);
@@ -1945,17 +1717,8 @@
                 trigger.addEventListener('click', openDatePicker);
             });
 
-            performanceTabs.forEach((tab) => {
-                tab.addEventListener('click', () => setActivePerformanceChart(tab.dataset.chartTarget));
-            });
-
             trackingDetailButtons.forEach((button) => {
-                button.addEventListener('click', () => {
-                    const index = Number(button.dataset.trackingIndex ?? '-1');
-                    if (index >= 0) {
-                        openTrackingModal(index);
-                    }
-                });
+                button.addEventListener('click', () => openTrackingModal(button.dataset.trackingId));
             });
 
             if (ciqTrackingClose) {
@@ -1971,14 +1734,6 @@
                     closeTrackingModal();
                 }
             });
-
-            if (downloadChartPngButton) {
-                downloadChartPngButton.addEventListener('click', downloadActiveChartAsPng);
-            }
-
-            if (downloadChartPdfButton) {
-                downloadChartPdfButton.addEventListener('click', downloadActiveChartAsPdf);
-            }
 
             if (ciqTrackingExportXlsButton) {
                 ciqTrackingExportXlsButton.addEventListener('click', exportCiqTrackingAsExcel);
@@ -2014,7 +1769,6 @@
 
             syncDateInputs();
             initCountUps();
-            setActivePerformanceChart('type');
         })();
     </script>
 </body>

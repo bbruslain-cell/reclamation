@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Mail\PublicDemandAcknowledgementMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -72,7 +74,7 @@ class AuthAndPublicFlowTest extends TestCase
             ->assertOk()
             ->assertSee('Je souhaite connaitre la date du prochain paiement.');
         $this->get('/pilotage')->assertForbidden();
-        $this->getJson('/api/overview')->assertUnauthorized();
+        $this->getJson('/api/overview')->assertForbidden();
     }
 
     public function test_public_submission_creates_demand_and_attachment(): void
@@ -86,8 +88,8 @@ class AuthAndPublicFlowTest extends TestCase
             'prenom' => 'Jane',
             'email' => 'jane@example.com',
             'statut_usager' => 'Étudiant',
-            'pays' => 'Gabon',
-            'etablissement' => 'Université Omar Bongo',
+            'pays' => 'GABON',
+            'etablissement' => 'UNIVERSITE DES SCIENCES ET TECHNIQUES DE MASUKU (USTM)',
             'qualite' => 'Etudiante',
             'objet' => 'Objet test',
             'message' => 'Message de test suffisamment long.',
@@ -98,8 +100,226 @@ class AuthAndPublicFlowTest extends TestCase
         $response->assertRedirect('/reclamations/nouvelle');
         $this->assertDatabaseCount('demandes', 6);
         $this->assertDatabaseCount('pieces_jointes', 1);
+        $this->assertDatabaseHas('usagers', [
+            'email' => 'jane@example.com',
+            'pays' => 'GABON',
+        ]);
         Storage::disk('local')->assertExists((string) DB::table('pieces_jointes')->value('chemin_fichier'));
         Storage::disk('public')->assertMissing((string) DB::table('pieces_jointes')->value('chemin_fichier'));
+    }
+
+    public function test_public_submission_sends_acknowledgement_email_with_tracking_number(): void
+    {
+        $this->seed();
+        Mail::fake();
+
+        $response = $this->post('/reclamations', [
+            'nom' => 'Doe',
+            'prenom' => 'Jane',
+            'email' => 'acknowledgement@example.com',
+            'statut_usager' => 'Parent / Tuteur',
+            'pays' => 'GABON',
+            'etablissement' => '',
+            'objet' => 'Objet accuse reception',
+            'message' => 'Message de test suffisamment long.',
+            'consentement' => 'on',
+        ]);
+
+        $response->assertRedirect('/reclamations/nouvelle');
+        $trackingNumber = (string) DB::table('demandes as d')
+            ->join('usagers as u', 'u.id_usager', '=', 'd.id_usager')
+            ->where('u.email', 'acknowledgement@example.com')
+            ->value('d.numero_suivi');
+
+        Mail::assertSent(PublicDemandAcknowledgementMail::class, function (PublicDemandAcknowledgementMail $mail) use ($trackingNumber): bool {
+            return $mail->hasTo('acknowledgement@example.com')
+                && $mail->trackingNumber === $trackingNumber
+                && $mail->subjectLabel === 'Objet accuse reception'
+                && $mail->recipientName === 'Jane Doe'
+                && $mail->maxProcessingHours === 72;
+        });
+        $this->assertDatabaseHas('notifications', [
+            'destinataire_email' => 'acknowledgement@example.com',
+            'sujet' => 'ANBG - Accusé de réception '.$trackingNumber,
+        ]);
+    }
+
+    public function test_public_form_has_security_headers_and_uses_local_vue_bundle(): void
+    {
+        $this->seed();
+
+        $response = $this->get('/reclamations/nouvelle');
+
+        $response
+            ->assertOk()
+            ->assertHeader('X-Frame-Options', 'DENY')
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+            ->assertSee('id="public-demand-state"', false)
+            ->assertDontSee('https://unpkg.com/vue', false);
+
+        $csp = (string) $response->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString("default-src 'self'", $csp);
+        $this->assertStringContainsString("frame-ancestors 'none'", $csp);
+        $this->assertStringContainsString("object-src 'none'", $csp);
+    }
+
+    public function test_public_submission_rejects_tampered_status_value(): void
+    {
+        $this->seed();
+
+        $this->from('/reclamations/nouvelle')->post('/reclamations', [
+            'nom' => 'Zap',
+            'prenom' => 'Scanner',
+            'email' => 'zap@example.com',
+            'statut_usager' => 'Élève AND 1=1 --',
+            'pays' => 'Gabon',
+            'etablissement' => '',
+            'objet' => 'Objet test',
+            'message' => 'Message de test suffisamment long.',
+            'consentement' => 'on',
+        ])
+            ->assertRedirect('/reclamations/nouvelle')
+            ->assertSessionHasErrors('statut_usager');
+
+        $this->assertDatabaseMissing('usagers', [
+            'email' => 'zap@example.com',
+        ]);
+    }
+
+    public function test_public_submission_rejects_country_outside_allowed_list(): void
+    {
+        $this->seed();
+
+        $this->from('/reclamations/nouvelle')->post('/reclamations', [
+            'nom' => 'Zap',
+            'prenom' => 'Country',
+            'email' => 'country@example.com',
+            'statut_usager' => 'Etudiant',
+            'pays' => 'Atlantide',
+            'etablissement' => 'UNIVERSITE DES SCIENCES ET TECHNIQUES DE MASUKU (USTM)',
+            'objet' => 'Objet test',
+            'message' => 'Message de test suffisamment long.',
+            'consentement' => 'on',
+        ])
+            ->assertRedirect('/reclamations/nouvelle')
+            ->assertSessionHasErrors('pays');
+
+        $this->assertDatabaseMissing('usagers', [
+            'email' => 'country@example.com',
+        ]);
+    }
+
+    public function test_public_submission_rejects_secondary_school_establishment(): void
+    {
+        $this->seed();
+
+        $this->from('/reclamations/nouvelle')->post('/reclamations', [
+            'nom' => 'Zap',
+            'prenom' => 'Lycee',
+            'email' => 'lycee@example.com',
+            'statut_usager' => 'Etudiant',
+            'pays' => 'GABON',
+            'etablissement' => 'LYCEE VICTOR HUGO',
+            'objet' => 'Objet test',
+            'message' => 'Message de test suffisamment long.',
+            'consentement' => 'on',
+        ])
+            ->assertRedirect('/reclamations/nouvelle')
+            ->assertSessionHasErrors('etablissement');
+
+        $this->assertDatabaseMissing('usagers', [
+            'email' => 'lycee@example.com',
+        ]);
+    }
+
+    public function test_public_submission_rejects_email_without_domain_extension(): void
+    {
+        $this->seed();
+
+        $this->from('/reclamations/nouvelle')->post('/reclamations', [
+            'nom' => 'Email',
+            'prenom' => 'Invalide',
+            'email' => 'usager@anbg',
+            'statut_usager' => 'Autre',
+            'pays' => 'Gabon',
+            'objet' => 'Test email invalide',
+            'message' => 'Message de test suffisamment long.',
+            'consentement' => 'on',
+        ])
+            ->assertRedirect('/reclamations/nouvelle')
+            ->assertSessionHasErrors('email');
+
+        $this->assertDatabaseMissing('usagers', [
+            'email' => 'usager@anbg',
+        ]);
+    }
+
+    public function test_public_submission_rejects_unknown_email_domain_extension(): void
+    {
+        $this->seed();
+
+        $this->from('/reclamations/nouvelle')->post('/reclamations', [
+            'nom' => 'Email',
+            'prenom' => 'Extension',
+            'email' => 'fugeohfehf@gmail.gdghd',
+            'statut_usager' => 'Autre',
+            'pays' => 'Gabon',
+            'objet' => 'Test extension invalide',
+            'message' => 'Message de test suffisamment long.',
+            'consentement' => 'on',
+        ])
+            ->assertRedirect('/reclamations/nouvelle')
+            ->assertSessionHasErrors('email');
+
+        $this->assertDatabaseMissing('usagers', [
+            'email' => 'fugeohfehf@gmail.gdghd',
+        ]);
+    }
+
+    public function test_public_submission_rejects_script_payloads_in_message(): void
+    {
+        $this->seed();
+
+        $this->from('/reclamations/nouvelle')->post('/reclamations', [
+            'nom' => 'Script',
+            'prenom' => 'Test',
+            'email' => 'script@example.com',
+            'statut_usager' => 'Autre',
+            'pays' => 'Gabon',
+            'objet' => 'Test script',
+            'message' => '<script>alert(1)</script> Message de test suffisamment long.',
+            'consentement' => 'on',
+        ])
+            ->assertRedirect('/reclamations/nouvelle')
+            ->assertSessionHasErrors('message');
+
+        $this->assertDatabaseMissing('usagers', [
+            'email' => 'script@example.com',
+        ]);
+    }
+
+    public function test_public_submission_rejects_sql_injection_payloads_in_public_text(): void
+    {
+        $this->seed();
+
+        $this->from('/reclamations/nouvelle')->post('/reclamations', [
+            'nom' => 'Sql',
+            'prenom' => 'Test',
+            'email' => 'sql@example.com',
+            'statut_usager' => 'Autre',
+            'pays' => 'Gabon',
+            'objet' => "Objet test' OR 1=1 --",
+            'message' => 'Message de test suffisamment long.',
+            'consentement' => 'on',
+        ])
+            ->assertRedirect('/reclamations/nouvelle')
+            ->assertSessionHasErrors('objet');
+
+        $this->assertDatabaseMissing('usagers', [
+            'email' => 'sql@example.com',
+        ]);
     }
 
     public function test_public_submission_with_existing_email_creates_a_new_usager_snapshot(): void
@@ -111,7 +331,6 @@ class AuthAndPublicFlowTest extends TestCase
             'nom' => 'Premier',
             'prenom' => 'Profil',
             'email' => $existingEmail,
-            'qualite' => 'Parent',
             'consentement_rgpd' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -125,7 +344,7 @@ class AuthAndPublicFlowTest extends TestCase
             'email' => $existingEmail,
             'statut_usager' => 'Étudiant',
             'pays' => 'Gabon',
-            'etablissement' => 'Université Omar Bongo',
+            'etablissement' => 'UNIVERSITE DES SCIENCES ET TECHNIQUES DE MASUKU (USTM)',
             'qualite' => 'Etudiant',
             'objet' => 'Nouvelle demande',
             'message' => 'Message de test suffisamment long pour creer une demande.',
@@ -145,7 +364,7 @@ class AuthAndPublicFlowTest extends TestCase
             'nom' => 'Deuxieme',
             'prenom' => 'Profil',
             'statut_usager' => 'Étudiant',
-            'pays' => 'Gabon',
+            'pays' => 'GABON',
         ]);
     }
 
@@ -161,7 +380,7 @@ class AuthAndPublicFlowTest extends TestCase
             'email' => 'jane@example.com',
             'statut_usager' => 'Étudiant',
             'pays' => 'Gabon',
-            'etablissement' => 'Université Omar Bongo',
+            'etablissement' => 'UNIVERSITE DES SCIENCES ET TECHNIQUES DE MASUKU (USTM)',
             'qualite' => 'Etudiante',
             'objet' => 'Objet test',
             'message' => 'Message de test suffisamment long.',
@@ -192,6 +411,17 @@ class AuthAndPublicFlowTest extends TestCase
             'attachment;',
             (string) $response->headers->get('content-disposition')
         );
+
+        $previewResponse = $this->get("/pieces-jointes/{$pieceId}?preview=1");
+        $previewResponse
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('x-content-type-options', 'nosniff');
+
+        $this->assertStringContainsString(
+            'inline;',
+            (string) $previewResponse->headers->get('content-disposition')
+        );
     }
 
     public function test_unrelated_agent_cannot_open_attachment_outside_scope(): void
@@ -206,7 +436,7 @@ class AuthAndPublicFlowTest extends TestCase
             'email' => 'jane@example.com',
             'statut_usager' => 'Etudiant',
             'pays' => 'Gabon',
-            'etablissement' => 'Universite Omar Bongo',
+            'etablissement' => 'UNIVERSITE DES SCIENCES ET TECHNIQUES DE MASUKU (USTM)',
             'objet' => 'Objet test',
             'message' => 'Message de test suffisamment long.',
             'consentement' => 'on',
@@ -253,7 +483,7 @@ class AuthAndPublicFlowTest extends TestCase
         $this->get('/agent/inbox')
             ->assertOk()
             ->assertSee('Message complet')
-            ->assertSee('Temps restant 48h')
+            ->assertSee('Temps restant 16h')
             ->assertSee('Mes frais de scolarite ne sont pas encore regles.')
             ->assertDontSee('Cloturee')
             ->assertDontSee('Reponse transmise a l usager')
@@ -298,6 +528,9 @@ class AuthAndPublicFlowTest extends TestCase
         $userId = (int) DB::table('utilisateurs')
             ->where('email', 'chef.direction.ds@anbg.ga')
             ->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->where('id_utilisateur', $userId)
+            ->update(['changement_mdp_requis' => false]);
 
         $this->get("/espace?as_user_id={$userId}")->assertRedirect('/chef-direction/inbox');
 
@@ -305,13 +538,18 @@ class AuthAndPublicFlowTest extends TestCase
             ->get('/direction/inbox')
             ->assertRedirect('/chef-direction/inbox');
 
-        $this->withHeader('X-User-Id', (string) $userId)
+        $response = $this->withHeader('X-User-Id', (string) $userId)
             ->get('/chef-direction/inbox')
             ->assertOk()
             ->assertSee('Chef de direction')
             ->assertSee('Consultation uniquement')
             ->assertSee('Performance des services')
             ->assertSee('Comparatif des services');
+
+        preg_match('/<section id="direction-kpi-content".*?<\/section>/s', $response->getContent(), $matches);
+        $kpiContent = $matches[0] ?? '';
+        $this->assertStringContainsString('CS_SENB', $kpiContent);
+        $this->assertStringNotContainsString('CS_SENB - Etudiants Boursiers', $kpiContent);
 
         $this->withHeader('X-User-Id', (string) $userId)
             ->get('/agent/inbox')
@@ -451,13 +689,15 @@ class AuthAndPublicFlowTest extends TestCase
 
         $this->get('/chef/inbox')
             ->assertOk()
-            ->assertSee('Temps restant 48h');
+            ->assertSee('Temps restant 16h');
         $this->get('/pilotage')->assertOk();
     }
 
     public function test_agent_can_respond_with_attachment_and_close(): void
     {
         $this->seed();
+        config(['queue.default' => 'sync']);
+        Mail::fake();
         Storage::fake('local');
         Storage::fake('public');
 
@@ -516,11 +756,27 @@ class AuthAndPublicFlowTest extends TestCase
         $this->assertDatabaseHas('reponse_piece_jointe', [
             'id_reponse' => $responseId,
         ]);
+
+        $ciqId = (int) DB::table('utilisateurs')
+            ->where('email', 'ciq@anbg.ga')
+            ->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->where('id_utilisateur', $ciqId)
+            ->update(['changement_mdp_requis' => false]);
+
+        $detailResponse = $this->withHeader('X-User-Id', (string) $ciqId)
+            ->getJson("/pilotage/demandes/{$demandId}/detail?periode=all");
+
+        $detailResponse
+            ->assertOk()
+            ->assertJsonPath('data.traitement.reponse.pieces_jointes.0.nom_fichier', 'avis-direction.pdf');
     }
 
     public function test_accueil_can_send_direct_response_for_reclamation_and_close_it(): void
     {
         $this->seed();
+        config(['queue.default' => 'sync']);
+        Mail::fake();
         Storage::fake('local');
 
         $this->post('/reclamations', [
@@ -604,7 +860,7 @@ class AuthAndPublicFlowTest extends TestCase
             'email' => 'jane.agent-piece@example.com',
             'statut_usager' => 'Étudiant',
             'pays' => 'Gabon',
-            'etablissement' => 'Université Omar Bongo',
+            'etablissement' => 'UNIVERSITE DES SCIENCES ET TECHNIQUES DE MASUKU (USTM)',
             'qualite' => 'Etudiante',
             'objet' => 'Verification piece jointe agent',
             'message' => 'Demande avec piece jointe qui doit rester visible apres affectation a un agent.',
@@ -622,6 +878,8 @@ class AuthAndPublicFlowTest extends TestCase
         $directionId = (int) DB::table('services')
             ->where('id_service', $serviceId)
             ->value('id_direction');
+        $serviceComment = 'Urgent: bourse bloquee depuis deux semaines.';
+        $agentComment = 'Traiter en priorite avant vendredi.';
 
         $this->post('/login', [
             'email' => 'accueil@anbg.ga',
@@ -638,7 +896,12 @@ class AuthAndPublicFlowTest extends TestCase
             '_method' => 'PUT',
             'id_direction' => $directionId,
             'id_service' => $serviceId,
+            'commentaire' => $serviceComment,
         ])->assertRedirect();
+
+        $this->get('/accueil/inbox')
+            ->assertOk()
+            ->assertSee($serviceComment);
 
         Auth::guard('web')->logout();
 
@@ -657,9 +920,15 @@ class AuthAndPublicFlowTest extends TestCase
             'password_confirmation' => 'ChangeMe@124',
         ])->assertRedirect('/espace');
 
+        $this->get('/chef/inbox')
+            ->assertOk()
+            ->assertSee('Verification piece jointe agent')
+            ->assertSee($serviceComment);
+
         $this->post("/chef/demandes/{$demandId}/affecter-agent", [
             '_method' => 'PUT',
             'id_agent' => $agentId,
+            'commentaire' => $agentComment,
         ])->assertRedirect();
 
         Auth::guard('web')->logout();
@@ -678,12 +947,15 @@ class AuthAndPublicFlowTest extends TestCase
         $this->get('/agent/inbox')
             ->assertOk()
             ->assertSee('Verification piece jointe agent')
+            ->assertSee($agentComment)
             ->assertSee('piece-usager.pdf');
     }
 
     public function test_chef_can_reply_directly_and_close(): void
     {
         $this->seed();
+        config(['queue.default' => 'sync']);
+        Mail::fake();
         Storage::fake('local');
         Storage::fake('public');
 
@@ -835,6 +1107,10 @@ class AuthAndPublicFlowTest extends TestCase
         $adminId = (int) DB::table('utilisateurs')
             ->where('email', 'admin@anbg.ga')
             ->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->where('id_utilisateur', $adminId)
+            ->update(['changement_mdp_requis' => false]);
+
         $roleId = (int) DB::table('roles')
             ->where('code', 'chef_direction')
             ->value('id_role');
@@ -870,6 +1146,48 @@ class AuthAndPublicFlowTest extends TestCase
         $this->assertDatabaseMissing('perimetre_service', [
             'id_utilisateur' => $userId,
         ]);
+    }
+
+    public function test_admin_space_resolves_from_legacy_role_even_when_spatie_pivot_is_missing(): void
+    {
+        $this->seed();
+
+        $adminId = (int) DB::table('utilisateurs')
+            ->where('email', 'admin@anbg.ga')
+            ->value('id_utilisateur');
+
+        DB::table('utilisateurs')
+            ->where('id_utilisateur', $adminId)
+            ->update(['changement_mdp_requis' => false]);
+
+        DB::table('model_has_roles')
+            ->where('model_type', \App\Models\Utilisateur::class)
+            ->where('model_id', $adminId)
+            ->delete();
+
+        $this->withHeader('X-User-Id', (string) $adminId)
+            ->get('/espace')
+            ->assertRedirect('/admin');
+    }
+
+    public function test_authenticated_user_without_space_gets_forbidden_instead_of_login_loop(): void
+    {
+        $this->seed();
+
+        $userId = (int) DB::table('utilisateurs')->insertGetId([
+            'nom' => 'Sans',
+            'prenom' => 'Role',
+            'email' => 'sans.role@example.com',
+            'password_hash' => bcrypt('Password@123'),
+            'actif' => true,
+            'changement_mdp_requis' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], 'id_utilisateur');
+
+        $this->withHeader('X-User-Id', (string) $userId)
+            ->get('/espace')
+            ->assertForbidden();
     }
 
     public function test_admin_forces_ucas_service_for_accueil_role(): void
@@ -1029,6 +1347,92 @@ class AuthAndPublicFlowTest extends TestCase
         $this->assertDatabaseMissing('utilisateurs', [
             'email' => 'clarisse.sans-direction@anbg.ga',
         ]);
+    }
+
+    public function test_admin_can_sync_role_permissions_without_server_error(): void
+    {
+        $this->seed();
+
+        $adminId = (int) DB::table('utilisateurs')
+            ->where('email', 'admin@anbg.ga')
+            ->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->where('id_utilisateur', $adminId)
+            ->update(['changement_mdp_requis' => false]);
+        $roleId = (int) DB::table('roles')
+            ->where('code', 'dg')
+            ->value('id_role');
+        $exportPermissionId = (int) DB::table('permissions')
+            ->where('name', 'dashboard.export')
+            ->value('id_permission');
+        $viewPermissionId = (int) DB::table('permissions')
+            ->where('name', 'dashboard.view')
+            ->value('id_permission');
+
+        $response = $this->withHeader('X-User-Id', (string) $adminId)
+            ->post("/admin/roles/{$roleId}/permissions", [
+                'permissions' => ['dashboard.export'],
+            ]);
+
+        $response->assertRedirect('/admin/roles');
+        $response->assertSessionDoesntHaveErrors();
+
+        $this->assertDatabaseHas('permission_role', [
+            'id_role' => $roleId,
+            'id_permission' => $exportPermissionId,
+        ]);
+        $this->assertDatabaseMissing('permission_role', [
+            'id_role' => $roleId,
+            'id_permission' => $viewPermissionId,
+        ]);
+    }
+
+    public function test_admin_cannot_delete_user_with_open_demands(): void
+    {
+        $this->seed();
+
+        $adminId = (int) DB::table('utilisateurs')
+            ->where('email', 'admin@anbg.ga')
+            ->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->where('id_utilisateur', $adminId)
+            ->update(['changement_mdp_requis' => false]);
+        $agentId = (int) DB::table('utilisateurs')
+            ->where('email', 'agent.daf@anbg.ga')
+            ->value('id_utilisateur');
+
+        $response = $this->from('/admin/utilisateurs')
+            ->withHeader('X-User-Id', (string) $adminId)
+            ->post("/admin/utilisateurs/{$agentId}/delete");
+
+        $response->assertRedirect('/admin/utilisateurs');
+        $response->assertSessionHasErrors('user');
+
+        $this->assertDatabaseHas('utilisateurs', [
+            'id_utilisateur' => $agentId,
+        ]);
+    }
+
+    public function test_admin_avatar_upload_rejects_svg_files(): void
+    {
+        $this->seed();
+        Storage::fake('public');
+
+        $adminId = (int) DB::table('utilisateurs')
+            ->where('email', 'admin@anbg.ga')
+            ->value('id_utilisateur');
+        DB::table('utilisateurs')
+            ->where('id_utilisateur', $adminId)
+            ->update(['changement_mdp_requis' => false]);
+
+        $response = $this->from('/admin')
+            ->withHeader('X-User-Id', (string) $adminId)
+            ->post('/admin/avatar', [
+                'avatar' => UploadedFile::fake()->create('avatar.svg', 10, 'image/svg+xml'),
+            ]);
+
+        $response->assertRedirect('/admin');
+        $response->assertSessionHasErrors('avatar');
     }
 
     public function test_anbg_services_catalogue_is_seeded_with_full_structure(): void

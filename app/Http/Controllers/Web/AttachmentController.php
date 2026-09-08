@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Demande;
 use App\Services\AccessControlService;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+
 
 class AttachmentController extends Controller
 {
@@ -61,15 +63,22 @@ class AttachmentController extends Controller
         $disk = $this->resolveAttachmentDisk((string) $piece->chemin_fichier);
         abort_unless($disk !== null, 404);
 
-        return Storage::disk($disk)->download(
-            (string) $piece->chemin_fichier,
-            (string) $piece->nom_fichier,
-            [
-                'Content-Type' => $this->safeMimeType((string) $piece->nom_fichier, (string) ($piece->type_mime ?? '')),
-                'X-Content-Type-Options' => 'nosniff',
-                'Content-Security-Policy' => "default-src 'none'; sandbox",
-            ]
-        );
+        /** @var FilesystemAdapter $storage */
+        $storage = Storage::disk($disk);
+
+        $path = (string) $piece->chemin_fichier;
+        $filename = (string) $piece->nom_fichier;
+        $headers = [
+            'Content-Type' => $this->safeMimeType($filename, (string) ($piece->type_mime ?? '')),
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Security-Policy' => "default-src 'none'; sandbox",
+        ];
+
+        if ($request->boolean('preview')) {
+            return $storage->response($path, $filename, $headers, 'inline');
+        }
+
+        return $storage->download($path, $filename, $headers);
     }
 
     private function resolveAttachmentDisk(string $path): ?string

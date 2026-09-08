@@ -91,7 +91,7 @@
 
 <!-- ═══════════════════ TOPBAR ═══════════════════ -->
 <header class="bg-navy sticky top-0 z-50 shadow-md">
-    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+    <div class="app-page-frame h-14 flex items-center justify-between gap-4">
 
         <!-- Logo -->
         <div class="flex items-center gap-3">
@@ -131,7 +131,7 @@
 </header>
 
 <!-- ═══════════════════ MAIN ═══════════════════ -->
-<main class="max-w-screen-xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+<main class="app-page-frame py-4 sm:py-6 space-y-5">
 
     <!-- Toasts -->
     @if(session('success'))
@@ -187,12 +187,12 @@
         ])->filter()->values();
     @endphp
 
-    <section class="hero-shell rounded-[28px] px-6 py-6 sm:px-8 sm:py-7 text-white shadow-card">
+    <section class="hero-shell rounded-[22px] sm:rounded-[28px] px-4 py-5 sm:px-8 sm:py-7 text-white shadow-card">
         <div class="relative z-10 grid gap-6 lg:grid-cols-[1.45fr_0.85fr] lg:items-end">
             <div class="space-y-4">
                 
                 <div class="space-y-6">
-                    <h1 class="text-2xl font-bold leading-tight sm:text-[2rem]">Pilotage opérationnel des demandes</h1>
+                    <h1 class="text-xl font-bold leading-tight sm:text-[2rem]">Pilotage opérationnel des demandes</h1>
                     <p class="max-w-3xl text-sm leading-6 text-white/78 sm:text-[15px]">
                     </p>
                 </div>
@@ -227,8 +227,8 @@
         </div>
     </section>
 
-    <section class="flex flex-wrap items-stretch justify-center gap-3">
-        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#1c203d_0%,#2a3163_100%)] px-4 py-4 text-white shadow-card">
+    <section id="accueil-kpi-content" data-new-demand-count="{{ $summary->total_nouvelles }}" class="flex flex-wrap items-stretch justify-center gap-3">
+        <article class="kpi-card aspect-square w-[calc(50%_-_0.375rem)] min-w-[132px] max-w-[146px] rounded-[18px] sm:rounded-[22px] bg-[linear-gradient(135deg,#1c203d_0%,#2a3163_100%)] px-3 py-3 sm:px-4 sm:py-4 text-white shadow-card">
             <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
                 <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/12">
                     <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -236,13 +236,12 @@
                         <path d="m6 9 6 4 6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </span>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/68">Flux filtre</p>
                 <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_demandes }}">0</p>
-                <p class="text-xs text-white/68">Demandes recues</p>
+                <p class="text-xs text-white/68">Demandes totales</p>
             </div>
         </article>
 
-        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#3996d3_0%,#1c203d_120%)] px-4 py-4 text-white shadow-card">
+        <article class="kpi-card aspect-square w-[calc(50%_-_0.375rem)] min-w-[132px] max-w-[146px] rounded-[18px] sm:rounded-[22px] bg-[linear-gradient(135deg,#3996d3_0%,#1c203d_120%)] px-3 py-3 sm:px-4 sm:py-4 text-white shadow-card">
             <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
                 <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/12">
                     <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -250,29 +249,14 @@
                         <path d="M4 13h4l1.5 2h5L16 13h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </span>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">A traiter</p>
                 <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_nouvelles }}">0</p>
                 <p class="text-xs text-white/68">Demandes nouvelles</p>
             </div>
         </article>
 
-        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#f8e932_0%,#d9a90a_110%)] px-4 py-4 text-[#1c203d] shadow-card">
-            <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
-                <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/35">
-                    <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M8 3.5h5l4 4V18a2 2 0 0 1-2 2H8A2 2 0 0 1 6 18V5.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                        <path d="M13 3.5V8h4.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                        <path d="M12 10.5v3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                        <circle cx="12" cy="16.8" r="1" fill="currentColor"/>
-                    </svg>
-                </span>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1c203d]/72">Pour Directions</p>
-                <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_reclamations }}">0</p>
-                <p class="text-xs text-[#1c203d]/72">Réclamations</p>
-            </div>
-        </article>
 
-        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#fff7df_0%,#ffe28b_100%)] px-4 py-4 text-[#8a5b00] shadow-card">
+
+        <article class="kpi-card aspect-square w-[calc(50%_-_0.375rem)] min-w-[132px] max-w-[146px] rounded-[18px] sm:rounded-[22px] bg-[linear-gradient(135deg,#fff7df_0%,#ffe28b_100%)] px-3 py-3 sm:px-4 sm:py-4 text-[#8a5b00] shadow-card">
             <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
                 <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/60">
                     <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -281,13 +265,12 @@
                         <circle cx="12" cy="15.8" r="1" fill="currentColor"/>
                     </svg>
                 </span>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8a5b00]/72">Délai pour l'accueil</p>
                 <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_a_risque }}">0</p>
                 <p class="text-xs text-[#8a5b00]/72">Demandes à risque</p>
             </div>
         </article>
 
-        <article class="kpi-card aspect-square w-[146px] rounded-[22px] bg-[linear-gradient(135deg,#ffe7e7_0%,#ffc9c9_100%)] px-4 py-4 text-[#8b1d1d] shadow-card">
+        <article class="kpi-card aspect-square w-[calc(50%_-_0.375rem)] min-w-[132px] max-w-[146px] rounded-[18px] sm:rounded-[22px] bg-[linear-gradient(135deg,#ffe7e7_0%,#ffc9c9_100%)] px-3 py-3 sm:px-4 sm:py-4 text-[#8b1d1d] shadow-card">
             <div class="flex h-full flex-col items-center justify-center text-center gap-1.5">
                 <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/60">
                     <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -296,7 +279,6 @@
                         <circle cx="12" cy="16.7" r="1" fill="currentColor"/>
                     </svg>
                 </span>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8b1d1d]/70">Suivi</p>
                 <p class="text-[1.75rem] font-bold leading-none" data-countup="{{ $summary->total_en_retard }}">0</p>
                 <p class="text-xs text-[#8b1d1d]/70">Demandes en retard</p>
             </div>
@@ -304,8 +286,8 @@
     </section>
 
     <!-- ── FILTRES ── -->
-    <div class="surface-card rounded-[26px] overflow-hidden">
-        <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center gap-2">
+    <div class="surface-card rounded-[20px] sm:rounded-[26px] overflow-hidden">
+        <div class="section-title-bar px-4 py-4 sm:px-5 border-b border-white/70 flex items-center gap-2">
             <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M5 6h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
                 <path d="M8 12h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
@@ -316,10 +298,10 @@
             </svg>
             <h2 class="text-sm font-semibold text-navy">Filtres et tri des Demandes</h2>
         </div>
-        <div class="px-5 py-4">
-            <form method="get" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="px-4 py-4 sm:px-5">
+            <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 
-                <div class="col-span-2 sm:col-span-4">
+                <div class="sm:col-span-2 lg:col-span-4">
                     <div class="relative">
                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm pointer-events-none">
                             <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -372,9 +354,9 @@
                     </select>
                 </div>
 
-                <div class="col-span-2 sm:col-span-4 flex justify-end pt-1">
+                <div class="sm:col-span-2 lg:col-span-4 flex justify-stretch sm:justify-end pt-1">
                     <button type="submit"
-                        class="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,#1c203d_0%,#3996d3_100%)] px-5 py-2.5 text-sm font-medium text-white shadow-badge transition-transform duration-200 hover:-translate-y-0.5">
+                        class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#1c203d_0%,#3996d3_100%)] px-5 py-2.5 text-sm font-medium text-white shadow-badge transition-transform duration-200 hover:-translate-y-0.5">
                         <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path d="M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                             <path d="M7 12h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -387,9 +369,10 @@
         </div>
     </div>
 
+    <div id="accueil-live-content" data-refresh-url="{{ request()->fullUrl() }}" data-refresh-interval="20000" class="space-y-4">
     <!-- ── TABLE DEMANDES ── -->
-    <div class="surface-card rounded-[26px] overflow-hidden">
-        <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center justify-between">
+    <div class="surface-card rounded-[20px] sm:rounded-[26px] overflow-hidden">
+        <div class="section-title-bar px-4 py-4 sm:px-5 border-b border-white/70 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-2">
                 <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M9 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
@@ -408,7 +391,7 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <table class="min-w-[760px] w-full">
                 <thead>
                     <tr class="table-head border-b border-white/10">
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Numéro</th>
@@ -422,7 +405,7 @@
                 <tbody class="divide-y divide-neutral-100">
                 @forelse($nouvelles as $demande)
                     <!-- Ligne principale -->
-                    <tr class="demand-row transition-colors duration-100">
+                    <tr class="demand-row transition-colors duration-100" data-new-demand-row data-demand-id="{{ $demande->id_demande }}">
                         <td class="px-4 py-3">
                             <span class="font-mono text-xs font-medium text-navy bg-navy-50 px-2 py-1 rounded">
                                 {{ $demande->numero_suivi }}
@@ -472,11 +455,11 @@
 
                     <!-- Ligne détail (cachée par défaut) -->
                     <tr id="detail-{{ $demande->id_demande }}" class="detail-row" style="display:none;">
-                        <td colspan="6" class="px-4 py-4 bg-[linear-gradient(180deg,#f8fbfe_0%,#f4f7fb_100%)] border-b border-neutral-100">
+                        <td colspan="6" class="px-3 py-3 sm:px-4 sm:py-4 bg-[linear-gradient(180deg,#f8fbfe_0%,#f4f7fb_100%)] border-b border-neutral-100">
                             @php
                                 $pieces = $piecesByDemand->get($demande->id_demande, collect());
                             @endphp
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div class="grid max-w-[calc(100vw_-_2rem)] grid-cols-1 gap-4 sm:max-w-none lg:grid-cols-2">
 
                                 <!-- Colonne gauche : détail demande -->
                                 <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
@@ -523,13 +506,7 @@
                                         <p class="text-xs text-neutral-400 mb-1.5">Pièces jointes</p>
                                         <div class="space-y-1.5">
                                             @foreach($pieces as $piece)
-                                            <a href="/pieces-jointes/{{ $piece->id_piece_jointe }}" target="_blank" rel="noopener"
-                                               class="flex items-center gap-2 bg-sky-50 border border-sky-100 text-sky text-xs font-medium px-3 py-2 rounded-lg hover:bg-sky-100 transition-colors duration-150">
-                                                <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                    <path d="M8.5 12.5 13 8a3 3 0 1 1 4.2 4.2l-6 6a5 5 0 1 1-7.1-7.1l6.3-6.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                </svg>
-                                                {{ $piece->nom_fichier }}
-                                            </a>
+                                            @include('workflow.partials.attachment-actions', ['piece' => $piece])
                                             @endforeach
                                         </div>
                                     </div>
@@ -563,7 +540,7 @@
                                                     <option value="{{ $service->id_service }}" data-direction-id="{{ $service->id_direction }}">{{ $service->code }} — {{ $service->libelle }}</option>
                                                 @endforeach
                                             </select>
-                                            <input name="commentaire" placeholder="Commentaire optionnel…"
+                                            <input name="commentaire" placeholder="Consigne ou urgence optionnelle…"
                                                 class="field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy placeholder-neutral-400 transition-all duration-150">
                                             <button type="submit"
                                                 class="w-full flex items-center justify-center gap-2 bg-navy hover:bg-navy-600 text-white text-sm font-medium py-2.5 rounded-lg transition-colors duration-150">
@@ -637,6 +614,8 @@
                                             </div>
                                             <button
                                                 type="submit"
+                                                data-submit-loading
+                                                data-loading-label="Envoi en cours..."
                                                 class="w-full flex items-center justify-center gap-2 bg-leaf hover:bg-green-600 text-white text-sm font-medium py-2.5 rounded-lg transition-colors duration-150"
                                             >
                                                 <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -673,14 +652,14 @@
 
         <!-- Pagination -->
         @if($nouvelles->hasPages())
-        <div class="px-5 py-4 border-t border-neutral-100 bg-white/70">
+        <div class="px-4 py-4 sm:px-5 border-t border-neutral-100 bg-white/70">
             {{ $nouvelles->links() }}
         </div>
         @endif
     </div>
 
-    <div class="surface-card rounded-[26px] overflow-hidden">
-        <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center justify-between">
+    <div class="surface-card rounded-[20px] sm:rounded-[26px] overflow-hidden">
+        <div class="section-title-bar px-4 py-4 sm:px-5 border-b border-white/70 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-2">
                 <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M5 7.5A2.5 2.5 0 0 1 7.5 5H18a2 2 0 0 1 2 2v9.5A2.5 2.5 0 0 1 17.5 19h-10A2.5 2.5 0 0 1 5 16.5v-9Z" stroke="currentColor" stroke-width="1.8"/>
@@ -696,7 +675,7 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <table class="min-w-[900px] w-full">
                 <thead>
                     <tr class="table-head border-b border-white/10">
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Numéro</th>
@@ -704,12 +683,16 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Usager</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Type</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Direction / service</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Envoi usager</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-neutral-100">
                 @forelse($affectees as $demande)
-                    <tr class="demand-row transition-colors duration-100">
+                    <tr class="demand-row transition-colors duration-100"
+                        data-delivery-id="{{ $demande->id_demande }}"
+                        data-delivery-label="{{ $demande->numero_suivi }}"
+                        data-delivery-state="{{ $demande->delivery_state ?? 'idle' }}">
                         <td class="px-4 py-3">
                             <span class="font-mono text-xs font-medium text-navy bg-navy-50 px-2 py-1 rounded">
                                 {{ $demande->numero_suivi }}
@@ -728,6 +711,12 @@
                         </td>
                         <td class="px-4 py-3 text-sm text-neutral-600">
                             {{ trim(($demande->direction ?? '').($demande->service ? ' — '.$demande->service : '')) ?: '—' }}
+                            @if(!empty($demande->commentaire_affectation_service))
+                                <span class="mt-1 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Consigne</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3">
+                            @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'badge'])
                         </td>
                         <td class="px-4 py-3">
                             <button type="button"
@@ -745,7 +734,7 @@
                     </tr>
 
                     <tr id="assigned-detail-{{ $demande->id_demande }}" class="detail-row" style="display:none;">
-                        <td colspan="6" class="px-4 py-4 bg-[linear-gradient(180deg,#fffdf7_0%,#f9fbfd_100%)] border-b border-neutral-100">
+                        <td colspan="7" class="px-3 py-3 sm:px-4 sm:py-4 bg-[linear-gradient(180deg,#fffdf7_0%,#f9fbfd_100%)] border-b border-neutral-100">
                             @php
                                 $pieces = $piecesByDemand->get($demande->id_demande, collect());
                                 $historyEntries = $historyByDemand->get($demande->id_demande, collect());
@@ -758,11 +747,12 @@
                                     'affectation_agent' => 'Affectation agent',
                                     'annulation_affectation_agent' => 'Annulation affectation agent',
                                     'reponse_redigee' => 'Réponse rédigée',
-                                    'reponse_directe_chef' => 'Réponse directe chef',
-                                    'envoi_reponse' => 'Envoi réponse',
+                                    'reponse_directe_chef' => 'Réponse directe du chef',
+                                    'envoi_reponse' => 'Envoi de la réponse',
+                                    'echec_envoi_reponse' => 'Échec d\'envoi',
                                 ];
                             @endphp
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div class="grid max-w-[calc(100vw_-_2rem)] grid-cols-1 gap-4 sm:max-w-none lg:grid-cols-2">
                                 <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
                                     <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2">
                                         <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -782,6 +772,11 @@
                                         <p class="text-xs text-neutral-400 mb-1">Message</p>
                                         <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">{{ $demande->message }}</div>
                                     </div>
+
+                                    @include('workflow.partials.assignment-comment', [
+                                        'label' => 'Consigne transmise au service',
+                                        'comment' => $demande->commentaire_affectation_service ?? '',
+                                    ])
 
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
@@ -807,20 +802,16 @@
                                         <p class="text-xs text-neutral-400 mb-1.5">Pièces jointes</p>
                                         <div class="space-y-1.5">
                                             @foreach($pieces as $piece)
-                                            <a href="/pieces-jointes/{{ $piece->id_piece_jointe }}" target="_blank" rel="noopener"
-                                               class="flex items-center gap-2 bg-sky-50 border border-sky-100 text-sky text-xs font-medium px-3 py-2 rounded-lg hover:bg-sky-100 transition-colors duration-150">
-                                                <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                    <path d="M8.5 12.5 13 8a3 3 0 1 1 4.2 4.2l-6 6a5 5 0 1 1-7.1-7.1l6.3-6.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                </svg>
-                                                {{ $piece->nom_fichier }}
-                                            </a>
+                                            @include('workflow.partials.attachment-actions', ['piece' => $piece])
                                             @endforeach
                                         </div>
                                     </div>
                                     @endif
                                 </div>
 
-                                <div>
+                                <div class="space-y-3">
+                                    @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'panel'])
+
                                     <div class="bg-white border border-neutral-200 rounded-xl p-4">
                                         <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2 mb-3">
                                             <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -858,7 +849,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-12 text-center">
+                        <td colspan="7" class="px-4 py-12 text-center">
                             <div class="flex flex-col items-center gap-3 text-neutral-400">
                                 <div class="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center">
                                     <svg class="icon-svg text-xl" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -876,14 +867,14 @@
         </div>
 
         @if($affectees->hasPages())
-        <div class="px-5 py-4 border-t border-neutral-100 bg-white/70">
+        <div class="px-4 py-4 sm:px-5 border-t border-neutral-100 bg-white/70">
             {{ $affectees->links() }}
         </div>
         @endif
     </div>
 
-    <div class="surface-card rounded-[26px] overflow-hidden">
-        <div class="section-title-bar px-5 py-4 border-b border-white/70 flex items-center justify-between">
+    <div class="surface-card rounded-[20px] sm:rounded-[26px] overflow-hidden">
+        <div class="section-title-bar px-4 py-4 sm:px-5 border-b border-white/70 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-2">
                 <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M3 4v5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -896,7 +887,7 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <table class="min-w-[980px] w-full">
                 <thead>
                     <tr class="table-head border-b border-white/10">
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Date</th>
@@ -913,17 +904,24 @@
                     $actionLabels = [
                         'affectation_service' => 'Affectation service',
                         'annulation_affectation_service' => 'Annulation affectation',
-                        'reponse_directe_accueil' => 'Réponse directe accueil',
+                        'reponse_directe_accueil' => 'Réponse directe de l\'accueil',
+                        'envoi_reponse' => 'Envoi de la réponse',
+                        'echec_envoi_reponse' => 'Échec d\'envoi',
                     ];
                 @endphp
                 @forelse($recentAccueilActions as $entry)
+                    @php
+                        $displayComment = (string) ($entry->type_action ?? '') === 'echec_envoi_reponse'
+                            ? "Echec d'envoi a l'usager. Verifiez le serveur mail puis relancez l'envoi."
+                            : trim((string) ($entry->commentaire ?? ''));
+                    @endphp
                     <tr class="demand-row transition-colors duration-100">
                         <td class="px-4 py-3 text-xs text-neutral-500 whitespace-nowrap">
                             {{ \Illuminate\Support\Carbon::parse($entry->date_action)->format('d/m/Y H:i') }}
                         </td>
                         <td class="px-4 py-3">
-                            <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full {{ $entry->type_action === 'annulation_affectation_service' ? 'bg-red-50 text-red-700 border border-red-200' : ($entry->type_action === 'reponse_directe_accueil' ? 'bg-leaf-50 text-green-700 border border-green-200' : 'bg-navy-50 text-navy border border-navy-100') }}">
-                                <span class="w-1.5 h-1.5 rounded-full {{ $entry->type_action === 'annulation_affectation_service' ? 'bg-red-500' : ($entry->type_action === 'reponse_directe_accueil' ? 'bg-leaf' : 'bg-navy') }}"></span>
+                            <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full {{ in_array($entry->type_action, ['annulation_affectation_service', 'echec_envoi_reponse'], true) ? 'bg-red-50 text-red-700 border border-red-200' : (in_array($entry->type_action, ['reponse_directe_accueil', 'envoi_reponse'], true) ? 'bg-leaf-50 text-green-700 border border-green-200' : 'bg-navy-50 text-navy border border-navy-100') }}">
+                                <span class="w-1.5 h-1.5 rounded-full {{ in_array($entry->type_action, ['annulation_affectation_service', 'echec_envoi_reponse'], true) ? 'bg-red-500' : (in_array($entry->type_action, ['reponse_directe_accueil', 'envoi_reponse'], true) ? 'bg-leaf' : 'bg-navy') }}"></span>
                                 {{ $actionLabels[$entry->type_action] ?? ucfirst(str_replace('_', ' ', (string) $entry->type_action)) }}
                             </span>
                         </td>
@@ -940,7 +938,7 @@
                             {{ trim(($entry->acteur_prenom ?? '').' '.($entry->acteur_nom ?? '')) ?: 'Système' }}
                         </td>
                         <td class="px-4 py-3 text-sm text-neutral-600">
-                            {{ $entry->commentaire ?: '—' }}
+                            {{ $displayComment !== '' ? $displayComment : '—' }}
                         </td>
                     </tr>
                 @empty
@@ -962,18 +960,58 @@
             </table>
         </div>
     </div>
+    </div>
 
 </main>
 
+<div
+    id="accueil-new-demand-toast"
+    class="pointer-events-none fixed right-4 top-24 z-50 w-[min(92vw,360px)] transition-all duration-300 ease-out"
+    style="opacity: 0; transform: translateY(8px); visibility: hidden;"
+    aria-live="polite"
+    aria-atomic="true"
+>
+    <div class="flex items-start gap-3 rounded-2xl border border-sky-100 bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur">
+        <span class="mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#3996d3_0%,#1c203d_100%)] text-white">
+            <svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-7Z" stroke="currentColor" stroke-width="1.8"/>
+                <path d="m6 9 6 4 6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </span>
+        <div>
+            <p class="text-sm font-semibold">Nouvelle demande reçue</p>
+            <p id="accueil-new-demand-toast-message" class="mt-0.5 text-xs leading-5 text-neutral-500">
+                Vous avez une nouvelle demande à traiter.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div
+    id="accueil-delivery-toast"
+    class="pointer-events-none fixed right-4 top-44 z-50 w-[min(92vw,360px)] transition-all duration-300 ease-out"
+    style="opacity: 0; transform: translateY(8px); visibility: hidden;"
+    aria-live="polite"
+    aria-atomic="true"
+>
+    <div id="accueil-delivery-toast-card" class="flex items-start gap-3 rounded-2xl border bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur">
+        <span id="accueil-delivery-toast-icon" class="mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-white"></span>
+        <div>
+            <p id="accueil-delivery-toast-title" class="text-sm font-semibold"></p>
+            <p id="accueil-delivery-toast-message" class="mt-0.5 text-xs leading-5 text-neutral-500"></p>
+        </div>
+    </div>
+</div>
+
 <!-- ═══════════════════ FOOTER ═══════════════════ -->
 <footer class="border-t border-neutral-200 bg-white mt-8">
-    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-neutral-400">
+    <div class="app-page-frame py-4 flex flex-col items-center justify-between gap-1 text-center text-xs text-neutral-400 sm:flex-row sm:text-left">
         <span>© {{ date('Y') }} Agence Nationale des Bourses du Gabon</span>
         <span class="text-neutral-400 font-medium">Constructeur d'avenir</span>
     </div>
 </footer>
 
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
 (function () {
     const eyeSvg = `
         <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -987,47 +1025,195 @@
             <path d="M6.3 9.2A16.3 16.3 0 0 0 2.8 12s3.2 5.5 9.2 5.5c1.3 0 2.5-.2 3.6-.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>`;
 
-    const countupNodes = document.querySelectorAll('[data-countup]');
-    countupNodes.forEach((node) => {
-        const target = Number(node.getAttribute('data-countup') || 0);
-        const duration = 700;
-        const startTime = performance.now();
+    const liveContent = document.getElementById('accueil-live-content');
+    const kpiContent = document.getElementById('accueil-kpi-content');
+    const newDemandToast = document.getElementById('accueil-new-demand-toast');
+    const newDemandToastMessage = document.getElementById('accueil-new-demand-toast-message');
+    const deliveryToast = document.getElementById('accueil-delivery-toast');
+    const deliveryToastCard = document.getElementById('accueil-delivery-toast-card');
+    const deliveryToastIcon = document.getElementById('accueil-delivery-toast-icon');
+    const deliveryToastTitle = document.getElementById('accueil-delivery-toast-title');
+    const deliveryToastMessage = document.getElementById('accueil-delivery-toast-message');
+    let newDemandToastTimeout = null;
+    let deliveryToastTimeout = null;
+    const deliverySuccessIcon = '<svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-7Z" stroke="currentColor" stroke-width="1.8"/><path d="m6 9 6 4 6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="m10.4 13.1 1.7 1.7 3.4-3.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const deliveryErrorIcon = '<svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 16.8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
-        const tick = (now) => {
-            const progress = Math.min((now - startTime) / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            node.textContent = Math.round(target * eased).toLocaleString('fr-FR');
-            if (progress < 1) {
-                requestAnimationFrame(tick);
+    const getNewDemandCount = (node) => Number(node?.dataset?.newDemandCount || 0);
+
+    const showNewDemandNotification = (difference = 1) => {
+        if (!newDemandToast) return;
+
+        if (newDemandToastMessage) {
+            newDemandToastMessage.textContent = difference > 1
+                ? `Vous avez ${difference} nouvelles demandes à traiter.`
+                : 'Vous avez une nouvelle demande à traiter.';
+        }
+
+        window.clearTimeout(newDemandToastTimeout);
+        newDemandToast.style.visibility = 'visible';
+        newDemandToast.style.opacity = '1';
+        newDemandToast.style.transform = 'translateY(0)';
+
+        newDemandToastTimeout = window.setTimeout(() => {
+            newDemandToast.style.opacity = '0';
+            newDemandToast.style.transform = 'translateY(8px)';
+            window.setTimeout(() => {
+                if (newDemandToast.style.opacity === '0') {
+                    newDemandToast.style.visibility = 'hidden';
+                }
+            }, 320);
+        }, 4500);
+    };
+
+    const showDeliveryNotification = (kind, title, message) => {
+        if (!deliveryToast || !deliveryToastCard || !deliveryToastIcon || !deliveryToastTitle || !deliveryToastMessage) {
+            return;
+        }
+
+        if (kind === 'success') {
+            deliveryToastCard.className = 'flex items-start gap-3 rounded-2xl border border-green-200 bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur';
+            deliveryToastIcon.className = 'mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-leaf text-white';
+            deliveryToastIcon.innerHTML = deliverySuccessIcon;
+        } else {
+            deliveryToastCard.className = 'flex items-start gap-3 rounded-2xl border border-red-200 bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur';
+            deliveryToastIcon.className = 'mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-red-500 text-white';
+            deliveryToastIcon.innerHTML = deliveryErrorIcon;
+        }
+
+        deliveryToastTitle.textContent = title;
+        deliveryToastMessage.textContent = message;
+
+        window.clearTimeout(deliveryToastTimeout);
+        deliveryToast.style.visibility = 'visible';
+        deliveryToast.style.opacity = '1';
+        deliveryToast.style.transform = 'translateY(0)';
+
+        deliveryToastTimeout = window.setTimeout(() => {
+            deliveryToast.style.opacity = '0';
+            deliveryToast.style.transform = 'translateY(8px)';
+            window.setTimeout(() => {
+                if (deliveryToast.style.opacity === '0') {
+                    deliveryToast.style.visibility = 'hidden';
+                }
+            }, 320);
+        }, 4500);
+    };
+
+    const getVisibleNewDemandIds = (root) => Array.from(root?.querySelectorAll('[data-new-demand-row][data-demand-id]') || [])
+        .map((row) => String(row.dataset.demandId || '').trim())
+        .filter(Boolean);
+
+    const countAddedVisibleNewDemands = (currentRoot, nextRoot) => {
+        const currentIds = new Set(getVisibleNewDemandIds(currentRoot));
+
+        return getVisibleNewDemandIds(nextRoot).filter((id) => !currentIds.has(id)).length;
+    };
+
+    const getDeliveryStateMap = (root) => {
+        const map = new Map();
+        (root?.querySelectorAll('[data-delivery-id][data-delivery-state]') || []).forEach((row) => {
+            map.set(String(row.dataset.deliveryId || ''), {
+                state: String(row.dataset.deliveryState || 'idle'),
+                label: String(row.dataset.deliveryLabel || '').trim(),
+            });
+        });
+
+        return map;
+    };
+
+    const summarizeDeliveryTransitions = (currentRoot, nextRoot) => {
+        const currentStates = getDeliveryStateMap(currentRoot);
+        const nextStates = getDeliveryStateMap(nextRoot);
+        const delivered = [];
+        const failed = [];
+
+        currentStates.forEach((entry, id) => {
+            if (entry.state !== 'pending') {
+                return;
             }
-        };
 
-        requestAnimationFrame(tick);
-    });
+            const nextEntry = nextStates.get(id);
+            if (!nextEntry || nextEntry.state === 'sent') {
+                delivered.push(entry.label || id);
+                return;
+            }
 
-    /* ── Filtre services selon direction ── */
-    const forms = document.querySelectorAll('.affectation-form');
-    forms.forEach((form) => {
-        const dirSel = form.querySelector('.direction-select');
-        const svcSel = form.querySelector('.service-select');
-        if (!dirSel || !svcSel) return;
-        const options = Array.from(svcSel.querySelectorAll('option[data-direction-id]'));
-        const refresh = () => {
-            const val = dirSel.value;
-            svcSel.value = '';
-            options.forEach(o => { o.hidden = val !== '' && o.dataset.directionId !== val; });
-        };
-        dirSel.addEventListener('change', refresh);
-        refresh();
-    });
+            if (nextEntry.state === 'failed') {
+                failed.push(nextEntry.label || entry.label || id);
+            }
+        });
 
-    document.addEventListener('dragover', (event) => {
-        event.preventDefault();
-    });
+        return { delivered, failed };
+    };
 
-    document.addEventListener('drop', (event) => {
-        event.preventDefault();
-    });
+    const animateCounters = (root = document) => {
+        root.querySelectorAll('[data-countup]:not([data-countup-ready])').forEach((node) => {
+            node.dataset.countupReady = '1';
+            const target = Number(node.getAttribute('data-countup') || 0);
+            const duration = 700;
+            const startTime = performance.now();
+
+            const tick = (now) => {
+                const progress = Math.min((now - startTime) / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                node.textContent = Math.round(target * eased).toLocaleString('fr-FR');
+                if (progress < 1) {
+                    requestAnimationFrame(tick);
+                }
+            };
+
+            requestAnimationFrame(tick);
+        });
+    };
+
+    const initAffectationForms = (root = document) => {
+        root.querySelectorAll('.affectation-form:not([data-affectation-ready])').forEach((form) => {
+            form.dataset.affectationReady = '1';
+            const dirSel = form.querySelector('.direction-select');
+            const svcSel = form.querySelector('.service-select');
+            if (!dirSel || !svcSel) return;
+            const options = Array.from(svcSel.querySelectorAll('option[data-direction-id]'));
+            const refresh = () => {
+                const val = dirSel.value;
+                svcSel.value = '';
+                options.forEach((option) => {
+                    option.hidden = val !== '' && option.dataset.directionId !== val;
+                });
+            };
+            dirSel.addEventListener('change', refresh);
+            refresh();
+        });
+    };
+
+    const initFormRefreshLocks = (root = document) => {
+        root.querySelectorAll('form:not([data-refresh-form-ready])').forEach((form) => {
+            form.dataset.refreshFormReady = '1';
+            form.addEventListener('input', () => {
+                form.dataset.refreshDirty = '1';
+            });
+            form.addEventListener('change', () => {
+                form.dataset.refreshDirty = '1';
+            });
+            form.addEventListener('submit', () => {
+                if (liveContent && liveContent.contains(form)) {
+                    liveContent.dataset.refreshLocked = '1';
+                }
+            });
+        });
+    };
+
+    const initGlobalDropGuard = () => {
+        if (window.accueilDropGuardReady) return;
+        window.accueilDropGuardReady = true;
+        document.addEventListener('dragover', (event) => {
+            event.preventDefault();
+        });
+
+        document.addEventListener('drop', (event) => {
+            event.preventDefault();
+        });
+    };
 
     const formatBytes = (bytes) => {
         if (!Number.isFinite(bytes) || bytes <= 0) return '';
@@ -1038,83 +1224,241 @@
         return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo`;
     };
 
-    document.querySelectorAll('.anbg-upload-widget').forEach((widget) => {
-        const input = widget.querySelector('[data-upload-input]');
-        const dropzone = widget.querySelector('[data-upload-dropzone]');
-        const list = widget.querySelector('[data-upload-list]');
-        if (!input || !dropzone || !list) return;
+    const initUploadWidgets = (root = document) => {
+        root.querySelectorAll('.anbg-upload-widget:not([data-upload-ready])').forEach((widget) => {
+            widget.dataset.uploadReady = '1';
+            const input = widget.querySelector('[data-upload-input]');
+            const dropzone = widget.querySelector('[data-upload-dropzone]');
+            const list = widget.querySelector('[data-upload-list]');
+            if (!input || !dropzone || !list) return;
 
-        const renderFiles = () => {
-            const files = Array.from(input.files || []);
-            list.innerHTML = '';
+            const renderFiles = () => {
+                const files = Array.from(input.files || []);
+                list.innerHTML = '';
 
-            if (!files.length) {
-                list.classList.add('hidden');
-                return;
-            }
+                if (!files.length) {
+                    list.classList.add('hidden');
+                    return;
+                }
 
-            list.classList.remove('hidden');
-            files.forEach((file) => {
-                const item = document.createElement('div');
-                item.className = 'anbg-file-chip';
-                item.innerHTML = `
-                    <svg class="icon-svg text-sky text-[13px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M8 3.5h5l4 4V18a2 2 0 0 1-2 2H8A2 2 0 0 1 6 18V5.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                        <path d="M13 3.5V8h4.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                    </svg>
-                    <strong>${file.name}</strong>
-                    <span class="text-neutral-500">${formatBytes(file.size)}</span>
-                `;
-                list.appendChild(item);
+                list.classList.remove('hidden');
+                files.forEach((file) => {
+                    const item = document.createElement('div');
+                    item.className = 'anbg-file-chip';
+                    item.innerHTML = `
+                        <svg class="icon-svg text-sky text-[13px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M8 3.5h5l4 4V18a2 2 0 0 1-2 2H8A2 2 0 0 1 6 18V5.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                            <path d="M13 3.5V8h4.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                        </svg>
+                        <strong>${file.name}</strong>
+                        <span class="text-neutral-500">${formatBytes(file.size)}</span>
+                    `;
+                    list.appendChild(item);
+                });
+            };
+
+            dropzone.addEventListener('click', () => input.click());
+            dropzone.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    input.click();
+                }
             });
+            input.addEventListener('change', renderFiles);
+            dropzone.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                dropzone.classList.add('is-dragover');
+            });
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('is-dragover');
+            });
+            dropzone.addEventListener('drop', (event) => {
+                event.preventDefault();
+                dropzone.classList.remove('is-dragover');
+                const files = event.dataTransfer?.files;
+                if (!files || !files.length) return;
+                const transfer = new DataTransfer();
+                Array.from(files).forEach((file) => transfer.items.add(file));
+                input.files = transfer.files;
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                renderFiles();
+            });
+        });
+    };
+
+    const initViewToggles = (root = document) => {
+        root.querySelectorAll('.view-toggle:not([data-toggle-ready])').forEach((btn) => {
+            btn.dataset.toggleReady = '1';
+            btn.addEventListener('click', () => {
+                const row = document.getElementById(btn.dataset.target);
+                if (!row) return;
+                const isOpen = row.style.display !== 'none';
+                row.style.display = isOpen ? 'none' : '';
+                btn.setAttribute('aria-expanded', String(!isOpen));
+                const iconWrap = btn.querySelector('.toggle-icon');
+                const label = Array.from(btn.querySelectorAll('span')).find((span) => !span.classList.contains('toggle-icon'));
+                if (isOpen) {
+                    row.querySelectorAll('form').forEach((form) => {
+                        delete form.dataset.refreshDirty;
+                    });
+                    if (iconWrap) iconWrap.innerHTML = eyeSvg;
+                    if (label) label.textContent = 'Voir';
+                } else {
+                    if (iconWrap) iconWrap.innerHTML = eyeOffSvg;
+                    if (label) label.textContent = 'Masquer';
+                }
+            });
+        });
+    };
+
+    const initAccueilInteractions = (root = document) => {
+        animateCounters(root);
+        initAffectationForms(root);
+        initFormRefreshLocks(root);
+        initGlobalDropGuard();
+        initUploadWidgets(root);
+        initViewToggles(root);
+        window.initAnbgSubmitLoading?.(root);
+    };
+
+    const hasFocusedControl = () => {
+        const active = document.activeElement;
+        if (!active || !liveContent || !liveContent.contains(active)) return false;
+
+        return ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName) || active.isContentEditable;
+    };
+
+    const openDetailIds = () => {
+        if (!liveContent) return [];
+
+        return Array.from(liveContent.querySelectorAll('.detail-row'))
+            .filter((row) => window.getComputedStyle(row).display !== 'none')
+            .map((row) => row.id);
+    };
+
+    const restoreOpenDetails = (ids) => {
+        ids.forEach((id) => {
+            const row = document.getElementById(id);
+            if (!row) return;
+
+            row.style.display = '';
+
+            const btn = Array.from(document.querySelectorAll('.view-toggle'))
+                .find((candidate) => candidate.dataset.target === id);
+            if (!btn) return;
+
+            btn.setAttribute('aria-expanded', 'true');
+            const iconWrap = btn.querySelector('.toggle-icon');
+            const label = Array.from(btn.querySelectorAll('span')).find((span) => !span.classList.contains('toggle-icon'));
+            if (iconWrap) iconWrap.innerHTML = eyeOffSvg;
+            if (label) label.textContent = 'Masquer';
+        });
+    };
+
+    const hasDirtyForm = () => {
+        if (!liveContent) return false;
+
+        return Array.from(liveContent.querySelectorAll('form')).some((form) => form.dataset.refreshDirty === '1');
+    };
+
+    const shouldSkipRefresh = (isRefreshing) => {
+        if (!liveContent || isRefreshing || document.hidden || liveContent.dataset.refreshLocked === '1') {
+            return true;
+        }
+
+        return hasFocusedControl() || hasDirtyForm();
+    };
+
+    const initAccueilAutoRefresh = () => {
+        if (!liveContent || liveContent.dataset.autoRefreshReady === '1') return;
+        liveContent.dataset.autoRefreshReady = '1';
+
+        let isRefreshing = false;
+        const interval = Math.max(Number(liveContent.dataset.refreshInterval || 20000), 10000);
+
+        const refreshTables = async () => {
+            if (shouldSkipRefresh(isRefreshing)) return;
+            isRefreshing = true;
+
+            try {
+                const url = new URL(liveContent.dataset.refreshUrl || window.location.href, window.location.origin);
+                url.searchParams.set('_accueil_refresh', Date.now().toString());
+
+                const response = await fetch(url.toString(), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-Accueil-Refresh': 'tables',
+                    },
+                    cache: 'no-store',
+                });
+
+                if (!response.ok) return;
+
+                const html = await response.text();
+                const nextDocument = new DOMParser().parseFromString(html, 'text/html');
+                const nextKpiContent = nextDocument.getElementById('accueil-kpi-content');
+                const nextContent = nextDocument.getElementById('accueil-live-content');
+                let newDemandDifference = nextContent ? countAddedVisibleNewDemands(liveContent, nextContent) : 0;
+                const deliveryTransitions = nextContent ? summarizeDeliveryTransitions(liveContent, nextContent) : { delivered: [], failed: [] };
+
+                if (nextKpiContent && kpiContent) {
+                    const currentNewDemandCount = getNewDemandCount(kpiContent);
+                    const nextNewDemandCount = getNewDemandCount(nextKpiContent);
+                    newDemandDifference = Math.max(newDemandDifference, nextNewDemandCount - currentNewDemandCount);
+                    kpiContent.innerHTML = nextKpiContent.innerHTML;
+                    kpiContent.dataset.newDemandCount = String(nextNewDemandCount);
+                    animateCounters(kpiContent);
+                }
+
+                if (!nextContent) return;
+
+                const openedDetails = openDetailIds();
+
+                liveContent.innerHTML = nextContent.innerHTML;
+                initAccueilInteractions(liveContent);
+                restoreOpenDetails(openedDetails);
+
+                if (newDemandDifference > 0) {
+                    showNewDemandNotification(newDemandDifference);
+                }
+
+                if (deliveryTransitions.delivered.length > 0) {
+                    const firstLabel = deliveryTransitions.delivered[0];
+                    showDeliveryNotification(
+                        'success',
+                        deliveryTransitions.delivered.length > 1 ? "Réponses envoyées" : 'Réponse envoyée',
+                        deliveryTransitions.delivered.length > 1
+                            ? `${deliveryTransitions.delivered.length} réponses ont été confirmées par le système.`
+                            : `La demande ${firstLabel} a bien été envoyée à l'usager.`
+                    );
+                }
+
+                if (deliveryTransitions.failed.length > 0) {
+                    const firstLabel = deliveryTransitions.failed[0];
+                    showDeliveryNotification(
+                        'error',
+                        "Échec d'envoi",
+                        deliveryTransitions.failed.length > 1
+                            ? `${deliveryTransitions.failed.length} envois ont échoué. Une relance est possible.`
+                            : `L'envoi pour la demande ${firstLabel} a échoué. Vous pouvez relancer la réponse.`
+                    );
+                }
+            } catch (error) {
+                console.warn('Rafraîchissement accueil interrompu.', error);
+            } finally {
+                isRefreshing = false;
+            }
         };
 
-        dropzone.addEventListener('click', () => input.click());
-        dropzone.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                input.click();
-            }
+        window.setInterval(refreshTables, interval);
+        window.addEventListener('focus', refreshTables);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) refreshTables();
         });
-        input.addEventListener('change', renderFiles);
-        dropzone.addEventListener('dragover', (event) => {
-            event.preventDefault();
-            dropzone.classList.add('is-dragover');
-        });
-        dropzone.addEventListener('dragleave', () => {
-            dropzone.classList.remove('is-dragover');
-        });
-        dropzone.addEventListener('drop', (event) => {
-            event.preventDefault();
-            dropzone.classList.remove('is-dragover');
-            const files = event.dataTransfer?.files;
-            if (!files || !files.length) return;
-            const transfer = new DataTransfer();
-            Array.from(files).forEach((file) => transfer.items.add(file));
-            input.files = transfer.files;
-            renderFiles();
-        });
-    });
+    };
 
-    /* ── Toggle détail ── */
-    document.querySelectorAll('.view-toggle').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const row = document.getElementById(btn.dataset.target);
-            if (!row) return;
-            const isOpen = row.style.display !== 'none';
-            row.style.display = isOpen ? 'none' : '';
-            btn.setAttribute('aria-expanded', String(!isOpen));
-            const iconWrap  = btn.querySelector('.toggle-icon');
-            const label = btn.querySelectorAll('span')[1];
-            if (isOpen) {
-                if (iconWrap) iconWrap.innerHTML = eyeSvg;
-                label.textContent = 'Voir';
-            } else {
-                if (iconWrap) iconWrap.innerHTML = eyeOffSvg;
-                label.textContent = 'Masquer';
-            }
-        });
-    });
+    initAccueilInteractions(document);
+    initAccueilAutoRefresh();
 })();
 </script>
 </body>
