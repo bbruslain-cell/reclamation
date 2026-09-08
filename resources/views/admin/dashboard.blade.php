@@ -69,7 +69,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
     (() => {
         const counters = Array.from(document.querySelectorAll('[data-countup]'));
         if (counters.length === 0) {

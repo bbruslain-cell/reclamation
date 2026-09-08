@@ -220,7 +220,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <title>{{ $dashboardNavLabel }} - ANBG</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -293,14 +293,14 @@
             border-radius: 9999px;
             box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9);
         }
-        .export-pdf {
-            background: linear-gradient(180deg, rgba(255, 241, 239, 0.96), rgba(255, 232, 228, 0.98));
-            border: 1px solid rgba(180, 35, 24, 0.18);
-            color: #9f1f16;
+        .export-word {
+            background: linear-gradient(180deg, rgba(238, 246, 255, 0.98), rgba(222, 238, 252, 0.98));
+            border: 1px solid rgba(24, 90, 189, 0.2);
+            color: #185abd;
         }
-        .export-pdf:hover {
-            background: linear-gradient(180deg, rgba(254, 220, 215, 0.98), rgba(255, 232, 228, 1));
-            border-color: rgba(180, 35, 24, 0.34);
+        .export-word:hover {
+            background: linear-gradient(180deg, rgba(218, 235, 252, 1), rgba(205, 227, 248, 1));
+            border-color: rgba(24, 90, 189, 0.38);
         }
         .field:focus {
             outline: none;
@@ -449,9 +449,9 @@
                         <h2 class="mt-2 text-base font-semibold text-navy">Demandes par Direction</h2>
                     </div>
                     @if ($canExportPilotage)
-                        <a href="{{ url('/pilotage/export/direction-demand-donut/pdf') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="export-pdf inline-flex w-fit items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors">
+                        <a href="{{ url('/pilotage/export/direction-demand-donut/docx') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="export-word inline-flex w-fit items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors">
                             <svg class="icon-svg h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
-                            <span>PDF</span>
+                            <span>Word</span>
                         </a>
                     @endif
                 </div>
@@ -482,9 +482,9 @@
                     </div>
                     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
                         @if ($canExportPilotage)
-                            <a href="{{ url('/pilotage/export/direction-sla-performance/pdf') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="export-pdf inline-flex w-fit items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors">
+                            <a href="{{ url('/pilotage/export/direction-sla-performance/docx') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="export-word inline-flex w-fit items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors">
                                 <svg class="icon-svg h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
-                                <span>PDF</span>
+                                <span>Word</span>
                             </a>
                         @endif
                         <div class="w-fit rounded-2xl bg-white/90 px-4 py-2 text-right shadow-soft">
@@ -510,9 +510,9 @@
                     </div>
                     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
                         @if ($canExportPilotage)
-                            <a href="{{ url('/pilotage/export/reclamation-evolution/pdf') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="export-pdf inline-flex w-fit items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors">
+                            <a href="{{ url('/pilotage/export/reclamation-evolution/docx') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="export-word inline-flex w-fit items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors">
                                 <svg class="icon-svg h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
-                                <span>PDF</span>
+                                <span>Word</span>
                             </a>
                         @endif
                         <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -562,9 +562,9 @@
                     </div>
                     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
                         @if ($canExportPilotage)
-                            <a href="{{ url('/pilotage/export/service-sla-performance/pdf') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="export-pdf inline-flex w-fit items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors">
+                            <a href="{{ url('/pilotage/export/service-sla-performance/docx') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="export-word inline-flex w-fit items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors">
                                 <svg class="icon-svg h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
-                                <span>PDF</span>
+                                <span>Word</span>
                             </a>
                         @endif
                         <div class="w-fit rounded-2xl bg-white/90 px-4 py-2 text-right shadow-soft">
@@ -590,9 +590,9 @@
                     </div>
                     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
                         @if ($canExportPilotage)
-                            <a href="{{ url('/pilotage/export/country-demand-ranking/pdf') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="export-pdf inline-flex w-fit items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors">
+                            <a href="{{ url('/pilotage/export/country-demand-ranking/docx') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="export-word inline-flex w-fit items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors">
                                 <svg class="icon-svg h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
-                                <span>PDF</span>
+                                <span>Word</span>
                             </a>
                         @endif
                         <div class="w-fit rounded-2xl bg-white/90 px-4 py-2 text-right shadow-soft">
@@ -618,9 +618,9 @@
                     </div>
                     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
                         @if ($canExportPilotage)
-                            <a href="{{ url('/pilotage/export/establishment-demand-ranking/pdf') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="export-pdf inline-flex w-fit items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors">
+                            <a href="{{ url('/pilotage/export/establishment-demand-ranking/docx') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="export-word inline-flex w-fit items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors">
                                 <svg class="icon-svg h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
-                                <span>PDF</span>
+                                <span>Word</span>
                             </a>
                         @endif
                         <div class="w-fit rounded-2xl bg-white/90 px-4 py-2 text-right shadow-soft">
@@ -640,7 +640,7 @@
         </section>
     </main>
 
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         (function () {
             const directionDemandRows = @json($directionDonutRows->values()->all());
             const directionSlaRows = @json($directionSlaRows->values()->all());

@@ -14,8 +14,13 @@ class DatabaseSeeder extends Seeder
             AccessControlSeeder::class,
             OrganizationSeeder::class,
             SlaSeeder::class,
-            DemoDemandSeeder::class,
-            DemoTraceabilitySeeder::class,
         ]);
+
+        if (! app()->environment('production')) {
+            $this->call([
+                DemoDemandSeeder::class,
+                DemoTraceabilitySeeder::class,
+            ]);
+        }
     }
 }

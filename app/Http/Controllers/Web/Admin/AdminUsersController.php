@@ -7,12 +7,12 @@ use App\Models\Role;
 use App\Models\Service;
 use App\Models\Utilisateur;
 use App\Services\RoleSyncService;
+use App\Services\SessionSecurityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -21,7 +21,8 @@ class AdminUsersController extends BaseAdminController
 {
     public function __construct(
         \App\Services\AccessControlService $access,
-        private readonly RoleSyncService $roles
+        private readonly RoleSyncService $roles,
+        private readonly SessionSecurityService $sessions
     ) {
         parent::__construct($access);
     }
@@ -120,7 +121,7 @@ class AdminUsersController extends BaseAdminController
             $requiresService = array_intersect($roleCodes, ['accueil', 'chef_service', 'agent']) !== [];
             $emailRule = Rule::unique('utilisateurs', 'email');
 
-            if (!empty($payload['user_id'])) {
+            if (! empty($payload['user_id'])) {
                 $emailRule = $emailRule->ignore((int) $payload['user_id'], 'id_utilisateur');
             }
 
@@ -136,12 +137,12 @@ class AdminUsersController extends BaseAdminController
 
             $email = strtolower(trim($payload['email']));
             $plainPassword = $payload['mot_de_passe'] ?: null;
-            if (empty($payload['user_id']) && !$plainPassword) {
+            if (empty($payload['user_id']) && ! $plainPassword) {
                 $plainPassword = $this->generateReadablePassword();
             }
 
             DB::transaction(function () use ($payload, $email, $plainPassword): void {
-                $userId = !empty($payload['user_id'])
+                $userId = ! empty($payload['user_id'])
                     ? $this->updateExistingUser((int) $payload['user_id'], $payload, $email, $plainPassword)
                     : $this->createNewUser($email, $payload, $plainPassword);
 
@@ -156,33 +157,39 @@ class AdminUsersController extends BaseAdminController
                 );
             });
 
-            if (!$payload['user_id'] && $plainPassword) {
+            if (! $payload['user_id'] && $plainPassword) {
                 session()->flash('generated_password', $plainPassword);
-            } elseif (!empty($payload['mot_de_passe'])) {
+            } elseif (! empty($payload['mot_de_passe'])) {
                 session()->flash('generated_password', $plainPassword);
             }
         }, 'users',
-        empty($request->input('user_id')) ? 'CREATION_UTILISATEUR' : 'MODIFICATION_UTILISATEUR',
-        empty($request->input('user_id'))
-            ? "Création de l'utilisateur {$request->input('email')}"
-            : "Mise à jour de l'utilisateur {$request->input('email')}"
+            empty($request->input('user_id')) ? 'CREATION_UTILISATEUR' : 'MODIFICATION_UTILISATEUR',
+            empty($request->input('user_id'))
+                ? "Création de l'utilisateur {$request->input('email')}"
+                : "Mise à jour de l'utilisateur {$request->input('email')}"
         );
     }
 
     public function resetUserPassword(Request $request, int $id): RedirectResponse
     {
         return $this->executeAdminAction($request, function () use ($id): void {
-            $user = DB::table('utilisateurs')->where('id_utilisateur', $id)->first();
-            if (!$user) {
-                throw ValidationException::withMessages(['user' => 'Utilisateur introuvable.']);
-            }
+            $newPassword = DB::transaction(function () use ($id): string {
+                $user = DB::table('utilisateurs')->where('id_utilisateur', $id)->first();
+                if (! $user) {
+                    throw ValidationException::withMessages(['user' => 'Utilisateur introuvable.']);
+                }
 
-            $newPassword = $this->generateReadablePassword();
-            DB::table('utilisateurs')->where('id_utilisateur', $id)->update([
-                'password_hash' => Hash::make($newPassword),
-                'changement_mdp_requis' => true,
-                'updated_at' => now(),
-            ]);
+                $newPassword = $this->generateReadablePassword();
+                DB::table('utilisateurs')->where('id_utilisateur', $id)->update([
+                    'password_hash' => Hash::make($newPassword),
+                    'changement_mdp_requis' => true,
+                    'updated_at' => now(),
+                ]);
+
+                $this->sessions->revokeForUser($id);
+
+                return $newPassword;
+            });
 
             session()->flash('generated_password', $newPassword);
         }, 'users', 'RESET_MDP', "Réinitialisation du mot de passe pour U-{$id}");
@@ -196,10 +203,16 @@ class AdminUsersController extends BaseAdminController
                 throw ValidationException::withMessages(['user' => 'Utilisateur introuvable.']);
             }
 
-            DB::table('utilisateurs')->where('id_utilisateur', $id)->update([
-                'actif' => !$current,
-                'updated_at' => now(),
-            ]);
+            DB::transaction(function () use ($id, $current): void {
+                DB::table('utilisateurs')->where('id_utilisateur', $id)->update([
+                    'actif' => ! $current,
+                    'updated_at' => now(),
+                ]);
+
+                if ((bool) $current) {
+                    $this->sessions->revokeForUser($id);
+                }
+            });
         }, 'users', 'TOGGLE_STATUT', "Changement de statut (actif/inactif) pour U-{$id}");
     }
 
@@ -208,7 +221,7 @@ class AdminUsersController extends BaseAdminController
         return $this->executeAdminAction($request, function () use ($id): void {
             DB::transaction(function () use ($id): void {
                 $user = DB::table('utilisateurs')->where('id_utilisateur', $id)->first();
-                if (!$user) {
+                if (! $user) {
                     throw ValidationException::withMessages(['user' => 'Utilisateur introuvable.']);
                 }
 
@@ -238,6 +251,7 @@ class AdminUsersController extends BaseAdminController
                     \Illuminate\Support\Facades\Storage::disk('public')->delete($user->avatar_path);
                 }
 
+                $this->sessions->revokeForUser($id);
                 DB::table('utilisateurs')->where('id_utilisateur', $id)->delete();
             });
         }, 'users', 'SUPPRESSION_UTILISATEUR', "Suppression définitive de l'utilisateur U-{$id}");
@@ -260,6 +274,10 @@ class AdminUsersController extends BaseAdminController
 
         DB::table('utilisateurs')->where('id_utilisateur', $userId)->update($update);
 
+        if ($plainPassword !== null) {
+            $this->sessions->revokeForUser($userId);
+        }
+
         return $userId;
     }
 
@@ -281,7 +299,7 @@ class AdminUsersController extends BaseAdminController
     private function normalizeRoleIds(array $payload): array
     {
         $roleIds = $payload['id_roles'] ?? [];
-        if ($roleIds === [] && !empty($payload['id_role'])) {
+        if ($roleIds === [] && ! empty($payload['id_role'])) {
             $roleIds = [$payload['id_role']];
         }
 
@@ -312,7 +330,7 @@ class AdminUsersController extends BaseAdminController
 
     private function forceAccueilService(array $payload, array $roleCodes): array
     {
-        if (!in_array('accueil', $roleCodes, true)) {
+        if (! in_array('accueil', $roleCodes, true)) {
             return $payload;
         }
 

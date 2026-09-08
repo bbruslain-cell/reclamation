@@ -979,7 +979,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
 (function () {
     const eyeSvg = `
         <svg class="icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">

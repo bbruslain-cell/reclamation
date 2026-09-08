@@ -74,7 +74,7 @@ class AuthAndPublicFlowTest extends TestCase
             ->assertOk()
             ->assertSee('Je souhaite connaitre la date du prochain paiement.');
         $this->get('/pilotage')->assertForbidden();
-        $this->getJson('/api/overview')->assertUnauthorized();
+        $this->getJson('/api/overview')->assertForbidden();
     }
 
     public function test_public_submission_creates_demand_and_attachment(): void

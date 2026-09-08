@@ -175,7 +175,7 @@
                                         Réinitialiser
                                     </button>
                                 </form>
-                                <form method="post" action="/admin/utilisateurs/{{ $user->id_utilisateur }}/delete" onsubmit="return confirm('Supprimer cet utilisateur ?')">
+                                <form method="post" action="/admin/utilisateurs/{{ $user->id_utilisateur }}/delete" data-confirm="Supprimer cet utilisateur ?">
                                     @csrf
                                     <button type="submit" class="admin-inline-action rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-50">
                                         <i class="fas fa-trash-can text-[11px]"></i>
@@ -307,7 +307,13 @@
 @endsection
 
 @push('scripts')
-<script>
+<script
+    nonce="{{ $cspNonce ?? '' }}"
+    src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"
+    integrity="sha384-6pS1WSZJY7wOk6qQTa9C9U2W1/qzqL7iYoMil7qn9KFeN5fZDAwIExgCd7U5AH+X"
+    crossorigin="anonymous"
+></script>
+<script nonce="{{ $cspNonce ?? '' }}">
     const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
 
     createApp({

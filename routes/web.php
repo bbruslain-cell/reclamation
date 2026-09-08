@@ -29,6 +29,7 @@ Route::get('/', fn () => redirect('/reclamations/nouvelle'));
 // Formulaire public de réclamation (rate-limited)
 Route::middleware('throttle:20,1')->group(function () {
     Route::get('/reclamations/nouvelle', [PublicDemandController::class, 'create']);
+    Route::get('/reclamations', fn () => redirect('/reclamations/nouvelle'));
     Route::post('/reclamations', [PublicDemandController::class, 'store']);
 });
 
@@ -73,7 +74,7 @@ Route::middleware('agent.auth')->group(function () {
 
     // Chef de direction
     Route::get('/chef-direction/inbox', [DirectionInboxController::class, 'index']);
-    Route::redirect('/direction/inbox', '/chef-direction/inbox');
+    Route::get('/direction/inbox', fn () => redirect('/chef-direction/inbox'));
     Route::put('/chef-direction/demandes/{id}/rediger', [DirectionInboxController::class, 'rediger']);
     Route::put('/direction/demandes/{id}/rediger', [DirectionInboxController::class, 'rediger']);
 

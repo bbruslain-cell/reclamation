@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Services\AccessControlService;
+use App\Services\SessionSecurityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,17 +16,31 @@ use Illuminate\View\View;
 class AuthController extends Controller
 {
     private const MAX_LOGIN_ATTEMPTS = 5;
+
     private const LOCK_MINUTES = 15;
 
-    public function __construct(private readonly AccessControlService $access)
-    {
-    }
+    public function __construct(
+        private readonly AccessControlService $access,
+        private readonly SessionSecurityService $sessions
+    ) {}
 
     public function showLogin(Request $request): View|RedirectResponse
     {
         $actor = $this->access->resolveActor($request);
-        if ($actor) {
+        $guard = Auth::guard('web');
+        $sessionAuthenticated = $request->hasSession()
+            && $request->session()->has($guard->getName());
+
+        if (
+            $actor
+            && $actor->actif
+            && (! $sessionAuthenticated || $this->sessions->currentSessionMatches($request, $actor))
+        ) {
             return redirect('/espace');
+        }
+
+        if ($sessionAuthenticated) {
+            $this->sessions->logoutCurrent($request);
         }
 
         return view('auth.login');
@@ -44,7 +59,7 @@ class AuthController extends Controller
         ]);
 
         $actor = $this->access->findActorByEmail($payload['email']);
-        if (!$actor || !$actor->actif) {
+        if (! $actor || ! $actor->actif) {
             $this->recordAuthAudit(
                 userId: $actor?->id_utilisateur ? (int) $actor->id_utilisateur : null,
                 actionType: 'AUTH_LOGIN_FAILED',
@@ -70,7 +85,7 @@ class AuthController extends Controller
             ]);
         }
 
-        if (!Hash::check($payload['password'], $actor->password_hash)) {
+        if (! Hash::check($payload['password'], $actor->password_hash)) {
             $attempts = ((int) ($actor->tentatives_echouees ?? 0)) + 1;
 
             $this->recordAuthAudit(
@@ -107,9 +122,7 @@ class AuthController extends Controller
             ]);
         }
 
-        $request->session()->regenerate();
-        Auth::guard('web')->login($actor);
-        $request->session()->put('agent_id', (int) $actor->id_utilisateur);
+        $this->sessions->login($request, $actor);
 
         $actor->forceFill([
             'derniere_connexion' => now(),
@@ -141,10 +154,7 @@ class AuthController extends Controller
             );
         }
 
-        Auth::guard('web')->logout();
-        $request->session()->forget('agent_id');
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $this->sessions->logoutCurrent($request);
 
         return redirect('/login');
     }

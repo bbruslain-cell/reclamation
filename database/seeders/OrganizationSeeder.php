@@ -47,7 +47,7 @@ class OrganizationSeeder extends Seeder
 
         foreach ($legacyServiceMap as $mapping) {
             $directionId = DB::table('directions')->where('code', $mapping['direction'])->value('id_direction');
-            if (!$directionId || DB::table('services')->where('code', $mapping['new'])->exists()) {
+            if (! $directionId || DB::table('services')->where('code', $mapping['new'])->exists()) {
                 continue;
             }
 
@@ -82,7 +82,7 @@ class OrganizationSeeder extends Seeder
 
         foreach ($services as $service) {
             $directionId = DB::table('directions')->where('code', $service['direction'])->value('id_direction');
-            if (!$directionId) {
+            if (! $directionId) {
                 continue;
             }
 
@@ -99,12 +99,25 @@ class OrganizationSeeder extends Seeder
             );
         }
 
-        $adminEmail = (string) env('INITIAL_ADMIN_EMAIL', 'admin@anbg.ga');
-        $adminUserId = DB::table('utilisateurs')->where('email', $adminEmail)->value('id_utilisateur');
-        $initialAdminPassword = trim((string) env('INITIAL_ADMIN_PASSWORD', ''));
+        $adminEmail = strtolower(trim((string) config('deployment.initial_admin.email', 'admin@anbg.ga')));
+        if (! filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+            throw new \RuntimeException('INITIAL_ADMIN_EMAIL must be a valid email address.');
+        }
 
-        if (!$adminUserId && $initialAdminPassword !== '') {
-            if ($initialAdminPassword === 'Admin@123456' || strlen($initialAdminPassword) < 12) {
+        $adminUserId = DB::table('utilisateurs')->where('email', $adminEmail)->value('id_utilisateur');
+        $initialAdminPassword = trim((string) config('deployment.initial_admin.password', ''));
+
+        if (! $adminUserId && $initialAdminPassword === '' && app()->environment('production')) {
+            throw new \RuntimeException(
+                'INITIAL_ADMIN_PASSWORD is required when creating the first production administrator.'
+            );
+        }
+
+        if (! $adminUserId && $initialAdminPassword !== '') {
+            if (
+                in_array($initialAdminPassword, ['Admin@123456', 'ChangeMe@123'], true)
+                || strlen($initialAdminPassword) < 12
+            ) {
                 throw new \RuntimeException('INITIAL_ADMIN_PASSWORD must be unique and at least 12 characters long.');
             }
 
@@ -118,19 +131,22 @@ class OrganizationSeeder extends Seeder
                 'updated_at' => now(),
                 'created_at' => now(),
             ], 'id_utilisateur');
-        } elseif ($adminUserId) {
-            DB::table('utilisateurs')->where('id_utilisateur', $adminUserId)->update([
-                'nom' => 'Super',
-                'prenom' => 'Admin',
-                'actif' => true,
-                'changement_mdp_requis' => true,
-                'updated_at' => now(),
-            ]);
         }
 
         $adminRoleId = DB::table('roles')->where('code', 'admin')->value('id_role');
         if ($adminRoleId && $adminUserId) {
-            $this->syncUserRoles((int) $adminUserId, [(int) $adminRoleId]);
+            $this->grantUserRole((int) $adminUserId, (int) $adminRoleId);
+        }
+
+        if ($adminUserId && app()->environment('testing')) {
+            DB::table('utilisateurs')->where('id_utilisateur', $adminUserId)->update([
+                'changement_mdp_requis' => false,
+                'updated_at' => now(),
+            ]);
+        }
+
+        if (app()->environment('production')) {
+            return;
         }
 
         $accounts = [
@@ -340,5 +356,26 @@ class OrganizationSeeder extends Seeder
                 'model_id' => $userId,
             ]);
         }
+    }
+
+    private function grantUserRole(int $userId, int $roleId): void
+    {
+        DB::table('utilisateur_role')->updateOrInsert(
+            ['id_utilisateur' => $userId, 'id_role' => $roleId],
+            ['id_utilisateur' => $userId, 'id_role' => $roleId]
+        );
+
+        DB::table('model_has_roles')->updateOrInsert(
+            [
+                'id_role' => $roleId,
+                'model_type' => Utilisateur::class,
+                'model_id' => $userId,
+            ],
+            [
+                'id_role' => $roleId,
+                'model_type' => Utilisateur::class,
+                'model_id' => $userId,
+            ]
+        );
     }
 }

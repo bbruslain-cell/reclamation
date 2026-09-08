@@ -435,7 +435,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
     (function () {
 
         /* ── Toggle mot de passe ─────────────────────── */

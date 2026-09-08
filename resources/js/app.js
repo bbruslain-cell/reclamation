@@ -1,5 +1,138 @@
 import './bootstrap';
 
+const GLOBAL_LOADING_TIMEOUT = 65000;
+
+let globalLoadingBar = null;
+let globalLoadingTimeout = null;
+
+const ensureGlobalLoadingBar = () => {
+    if (globalLoadingBar?.isConnected) {
+        return globalLoadingBar;
+    }
+
+    globalLoadingBar = document.createElement('div');
+    globalLoadingBar.className = 'anbg-page-loading';
+    globalLoadingBar.setAttribute('role', 'progressbar');
+    globalLoadingBar.setAttribute('aria-label', 'Chargement en cours');
+    globalLoadingBar.setAttribute('aria-hidden', 'true');
+    globalLoadingBar.innerHTML = '<span class="anbg-page-loading-bar" aria-hidden="true"></span>';
+    document.body.appendChild(globalLoadingBar);
+
+    return globalLoadingBar;
+};
+
+const stopGlobalLoading = () => {
+    if (globalLoadingTimeout) {
+        window.clearTimeout(globalLoadingTimeout);
+        globalLoadingTimeout = null;
+    }
+
+    if (!globalLoadingBar) {
+        return;
+    }
+
+    globalLoadingBar.classList.remove('is-active');
+    globalLoadingBar.setAttribute('aria-hidden', 'true');
+    document.documentElement.removeAttribute('aria-busy');
+};
+
+const startGlobalLoading = () => {
+    const loadingBar = ensureGlobalLoadingBar();
+
+    if (globalLoadingTimeout) {
+        window.clearTimeout(globalLoadingTimeout);
+    }
+
+    loadingBar.setAttribute('aria-hidden', 'false');
+    loadingBar.classList.remove('is-active');
+    void loadingBar.offsetWidth;
+    loadingBar.classList.add('is-active');
+    document.documentElement.setAttribute('aria-busy', 'true');
+
+    globalLoadingTimeout = window.setTimeout(stopGlobalLoading, GLOBAL_LOADING_TIMEOUT);
+};
+
+const isPageNavigation = (event, link) => {
+    if (
+        event.defaultPrevented
+        || event.button !== 0
+        || event.metaKey
+        || event.ctrlKey
+        || event.shiftKey
+        || event.altKey
+        || link.hasAttribute('download')
+        || link.dataset.noLoading !== undefined
+    ) {
+        return false;
+    }
+
+    const target = (link.getAttribute('target') || '').toLowerCase();
+    if (target && target !== '_self') {
+        return false;
+    }
+
+    const href = link.getAttribute('href');
+    if (!href || href.startsWith('#') || /^(javascript:|mailto:|tel:)/i.test(href)) {
+        return false;
+    }
+
+    const destination = new URL(link.href, window.location.href);
+    const current = new URL(window.location.href);
+
+    return destination.protocol === 'http:' || destination.protocol === 'https:'
+        ? destination.origin !== current.origin
+            || destination.pathname !== current.pathname
+            || destination.search !== current.search
+        : false;
+};
+
+const initAnbgGlobalLoading = () => {
+    if (window.anbgGlobalLoadingReady) {
+        return;
+    }
+
+    window.anbgGlobalLoadingReady = true;
+    ensureGlobalLoadingBar();
+
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement) || event.defaultPrevented || form.dataset.noLoading !== undefined) {
+            return;
+        }
+
+        startGlobalLoading();
+    });
+
+    document.addEventListener('click', (event) => {
+        const link = event.target.closest('a[href]');
+        if (link && isPageNavigation(event, link)) {
+            startGlobalLoading();
+        }
+    });
+
+    window.addEventListener('beforeunload', startGlobalLoading);
+    window.addEventListener('pageshow', stopGlobalLoading);
+};
+
+const initAnbgConfirmations = () => {
+    if (window.anbgConfirmationsReady) {
+        return;
+    }
+
+    window.anbgConfirmationsReady = true;
+
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement) || !form.dataset.confirm) {
+            return;
+        }
+
+        if (!window.confirm(form.dataset.confirm)) {
+            event.preventDefault();
+        }
+    }, true);
+};
+
 const resetSubmitButton = (button) => {
     button.disabled = false;
     button.removeAttribute('aria-busy');
@@ -171,13 +304,19 @@ const initAnbgAttachmentPreview = () => {
 
 window.initAnbgSubmitLoading = initAnbgSubmitLoading;
 window.initAnbgAttachmentPreview = initAnbgAttachmentPreview;
+window.startAnbgLoading = startGlobalLoading;
+window.stopAnbgLoading = stopGlobalLoading;
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
+        initAnbgConfirmations();
         initAnbgSubmitLoading(document);
         initAnbgAttachmentPreview();
+        initAnbgGlobalLoading();
     });
 } else {
+    initAnbgConfirmations();
     initAnbgSubmitLoading(document);
     initAnbgAttachmentPreview();
+    initAnbgGlobalLoading();
 }

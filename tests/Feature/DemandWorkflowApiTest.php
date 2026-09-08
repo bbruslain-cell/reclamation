@@ -308,6 +308,7 @@ class DemandWorkflowApiTest extends TestCase
         Mail::assertSent(DemandAssignmentNotificationMail::class, function (DemandAssignmentNotificationMail $mail): bool {
             return $mail->hasTo('agent.ds@anbg.ga')
                 && $mail->eventCode === 'agent_assigned'
+                && str_ends_with($mail->loginUrl, '/login')
                 && $mail->actorName === 'Scolarite Chef'
                 && $mail->comment === 'Prise en charge prioritaire.';
         });

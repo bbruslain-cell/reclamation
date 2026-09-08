@@ -641,7 +641,7 @@
 
 @push('scripts')
 {{-- Public-demand behavior lives in resources/js/public-demand.js. --}}
-<script type="application/json" id="public-demand-state">
+<script nonce="{{ $cspNonce ?? '' }}" type="application/json" id="public-demand-state">
 @json($publicDemandState)
 </script>
 @endpush

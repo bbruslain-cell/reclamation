@@ -33,13 +33,6 @@ class AccessControlService
             return $authUser;
         }
 
-        if ($request->hasSession()) {
-            $sessionId = (int) $request->session()->get('agent_id', 0);
-            if ($sessionId > 0) {
-                return Utilisateur::query()->find($sessionId);
-            }
-        }
-
         return null;
     }
 
@@ -47,7 +40,7 @@ class AccessControlService
     {
         $actor = $this->resolveActor($request);
 
-        if (!$actor || !$actor->actif) {
+        if (! $actor || ! $actor->actif) {
             throw new AuthorizationException('Utilisateur introuvable ou inactif.');
         }
 
@@ -61,7 +54,7 @@ class AccessControlService
 
     public function roleCodes(int $userId): array
     {
-        if (!Utilisateur::query()->where('id_utilisateur', $userId)->exists()) {
+        if (! Utilisateur::query()->where('id_utilisateur', $userId)->exists()) {
             return [];
         }
 
@@ -111,7 +104,7 @@ class AccessControlService
             ->pluck('id_direction')
             ->toArray();
 
-        if (!empty($directionIds)) {
+        if (! empty($directionIds)) {
             $directionServiceIds = DB::table('services')
                 ->whereIn('id_direction', $directionIds)
                 ->pluck('id_service')
@@ -126,7 +119,7 @@ class AccessControlService
     public function hasPermission(int $userId, string $permissionCode): bool
     {
         $user = Utilisateur::query()->find($userId);
-        if (!$user || !$user->actif) {
+        if (! $user || ! $user->actif) {
             return false;
         }
 
@@ -160,7 +153,7 @@ class AccessControlService
 
     public function assertPermission(int $userId, string $permissionCode): void
     {
-        if (!$this->hasPermission($userId, $permissionCode)) {
+        if (! $this->hasPermission($userId, $permissionCode)) {
             throw new AuthorizationException("Permission requise: {$permissionCode}");
         }
     }
@@ -172,7 +165,7 @@ class AccessControlService
         }
 
         $demand = DB::table('demandes')->where('id_demande', $demandId)->first();
-        if (!$demand) {
+        if (! $demand) {
             return false;
         }
 
@@ -181,15 +174,15 @@ class AccessControlService
         }
 
         $isAgentOnly = $this->hasPermission($userId, 'demande.reply.send')
-            && !$this->hasPermission($userId, 'demande.assign')
-            && !$this->hasPermission($userId, 'demande.assign.agent')
-            && !$this->hasPermission($userId, 'demande.view.all');
+            && ! $this->hasPermission($userId, 'demande.assign')
+            && ! $this->hasPermission($userId, 'demande.assign.agent')
+            && ! $this->hasPermission($userId, 'demande.view.all');
         if ($isAgentOnly) {
             return false;
         }
 
         $serviceId = $demand->id_service_courant;
-        if (!$serviceId) {
+        if (! $serviceId) {
             return false;
         }
 
@@ -221,7 +214,7 @@ class AccessControlService
 
     public function assertDemandAccess(int $userId, int $demandId): void
     {
-        if (!$this->canAccessDemand($userId, $demandId)) {
+        if (! $this->canAccessDemand($userId, $demandId)) {
             throw new AuthorizationException('Acces refuse sur cette demande.');
         }
     }

@@ -139,7 +139,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
     (() => {
         const searchInput = document.getElementById('service-filter');
         const directionSelect = document.getElementById('service-direction-filter');

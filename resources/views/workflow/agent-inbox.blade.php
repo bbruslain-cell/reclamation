@@ -423,7 +423,7 @@
         </div>
     </div>
 
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
 (function () {
     const eyeSvg = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5C5.6 5 2 12 2 12s3.6 7 10 7 10-7 10-7-3.6-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg>';
     const eyeOffSvg = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m3.3 2 18.7 18.7-1.4 1.4-4.1-4.1A11.7 11.7 0 0 1 12 19C5.6 19 2 12 2 12a19 19 0 0 1 4.4-5.3L1.9 3.4 3.3 2Zm6.1 6.1A4 4 0 0 0 12 16c.7 0 1.4-.2 2-.5L9.4 8.1ZM12 5c6.4 0 10 7 10 7a18.9 18.9 0 0 1-4.1 5.1l-2.2-2.2A4 4 0 0 0 9.1 8.3L7.5 6.7A10.8 10.8 0 0 1 12 5Z"/></svg>';

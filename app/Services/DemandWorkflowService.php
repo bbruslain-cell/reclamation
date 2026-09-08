@@ -874,7 +874,7 @@ class DemandWorkflowService
             'actor_name' => $this->userDisplayName($actorId),
             'service_label' => $serviceId ? $this->serviceLabel($serviceId) : null,
             'comment' => $comment !== null && trim($comment) !== '' ? trim($comment) : null,
-            'login_url' => url('/espace'),
+            'login_url' => url('/login'),
         ];
     }
 

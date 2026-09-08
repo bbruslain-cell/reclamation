@@ -1268,7 +1268,7 @@
             <span class="font-medium">Constructeur d avenir</span>
         </footer>
     </main>
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         (function () {
             const periodSelect = document.getElementById('periode');
             const dateFrom = document.getElementById('date_from');

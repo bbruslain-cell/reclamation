@@ -221,7 +221,7 @@
                                     </div>
                                 </form>
 
-                                <form method="post" action="/admin/jours-feries/{{ $jf->id_sla_jour_ferie }}" onsubmit="return confirm('Supprimer ce jour férié ?')" class="lg:justify-self-end">
+                                <form method="post" action="/admin/jours-feries/{{ $jf->id_sla_jour_ferie }}" data-confirm="Supprimer ce jour férié ?" class="lg:justify-self-end">
                                     @csrf
                                     @method('delete')
                                     <button type="submit" class="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50">

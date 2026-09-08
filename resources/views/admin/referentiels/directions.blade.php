@@ -110,7 +110,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
     (() => {
         const input = document.getElementById('direction-filter');
         if (!input) return;

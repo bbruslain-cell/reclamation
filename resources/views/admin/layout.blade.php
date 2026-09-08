@@ -6,7 +6,6 @@
     <title>ANBG - Administration - @yield('title', 'Accueil')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -119,7 +118,7 @@
 </head>
 
 <body class="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(57,150,211,0.10),_transparent_28%),linear-gradient(180deg,_#f5f9fc_0%,_#eef3f8_100%)] font-sans text-navy">
-<div id="sidebar-overlay" class="fixed inset-0 z-30 hidden bg-slate-900/30 opacity-0 lg:hidden" onclick="closeSidebar()"></div>
+<div id="sidebar-overlay" class="fixed inset-0 z-30 hidden bg-slate-900/30 opacity-0 lg:hidden"></div>
 
 <aside id="sidebar" class="fixed left-0 top-0 z-40 flex h-full w-72 -translate-x-full flex-col border-r border-white/10 bg-navy lg:translate-x-0">
     <div class="border-b border-white/10 px-6 py-5">
@@ -183,7 +182,7 @@
     <header class="sticky top-0 z-20 border-b border-sky-100 bg-white/88 backdrop-blur">
         <div class="flex min-h-[68px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
             <div class="flex items-center gap-3">
-                <button onclick="openSidebar()" class="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sky lg:hidden">
+                <button id="sidebar-open" type="button" class="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sky lg:hidden">
                     <i class="fas fa-bars text-sm"></i>
                 </button>
                 <div>
@@ -206,8 +205,8 @@
 
                 <form method="post" action="/admin/avatar" enctype="multipart/form-data" id="avatar-form" class="flex items-center gap-3">
                     @csrf
-                    <input type="file" name="avatar" id="avatar-input" accept="image/*" class="hidden" onchange="document.getElementById('avatar-form').submit()">
-                    <button type="button" onclick="document.getElementById('avatar-input').click()"
+                    <input type="file" name="avatar" id="avatar-input" accept="image/*" class="hidden">
+                    <button id="avatar-select" type="button"
                         class="h-10 w-10 overflow-hidden rounded-full border border-sky-100 bg-sky-50 transition-colors hover:border-sky">
                         @if($hasAvatar)
                             <img src="{{ $avatarUrl }}" alt="Avatar" class="h-full w-full object-cover">
@@ -265,7 +264,7 @@
     </main>
 </div>
 
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
     function openSidebar() {
         document.getElementById('sidebar').classList.add('translate-x-0');
         document.getElementById('sidebar-overlay').classList.remove('hidden');
@@ -277,6 +276,15 @@
         document.getElementById('sidebar-overlay').classList.remove('opacity-100');
         setTimeout(() => document.getElementById('sidebar-overlay').classList.add('hidden'), 250);
     }
+
+    document.getElementById('sidebar-overlay')?.addEventListener('click', closeSidebar);
+    document.getElementById('sidebar-open')?.addEventListener('click', openSidebar);
+    document.getElementById('avatar-select')?.addEventListener('click', () => {
+        document.getElementById('avatar-input')?.click();
+    });
+    document.getElementById('avatar-input')?.addEventListener('change', () => {
+        document.getElementById('avatar-form')?.requestSubmit();
+    });
 </script>
 
 @stack('scripts')

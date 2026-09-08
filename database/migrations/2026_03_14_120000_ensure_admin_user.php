@@ -8,14 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $adminEmail = (string) env('INITIAL_ADMIN_EMAIL', 'admin@anbg.ga');
+        $adminEmail = strtolower(trim((string) config('deployment.initial_admin.email', 'admin@anbg.ga')));
+        if (! filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+            throw new RuntimeException('INITIAL_ADMIN_EMAIL must be a valid email address.');
+        }
+
         $adminUserId = DB::table('utilisateurs')->where('email', $adminEmail)->value('id_utilisateur');
 
-        if (!$adminUserId) {
-            $initialPassword = trim((string) env('INITIAL_ADMIN_PASSWORD', ''));
+        if (! $adminUserId) {
+            $initialPassword = trim((string) config('deployment.initial_admin.password', ''));
 
             if ($initialPassword !== '') {
-                if ($initialPassword === 'Admin@123456' || strlen($initialPassword) < 12) {
+                if (
+                    in_array($initialPassword, ['Admin@123456', 'ChangeMe@123'], true)
+                    || strlen($initialPassword) < 12
+                ) {
                     throw new RuntimeException('INITIAL_ADMIN_PASSWORD must be unique and at least 12 characters long.');
                 }
 
@@ -31,15 +38,6 @@ return new class extends Migration
                     'created_at' => now(),
                 ], 'id_utilisateur');
             }
-        } else {
-            DB::table('utilisateurs')->where('id_utilisateur', $adminUserId)->update([
-                'nom' => 'Super',
-                'prenom' => 'Admin',
-                'id_service' => null,
-                'actif' => true,
-                'changement_mdp_requis' => true,
-                'updated_at' => now(),
-            ]);
         }
 
         $adminRoleId = DB::table('roles')->where('code', 'admin')->value('id_role');
