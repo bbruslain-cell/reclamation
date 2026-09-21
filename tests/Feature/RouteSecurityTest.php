@@ -97,6 +97,14 @@ class RouteSecurityTest extends TestCase
         $this->assertStringNotContainsString("'unsafe-eval'", $scriptSources);
     }
 
+    public function test_login_form_uses_a_relative_action_and_contains_a_csrf_token(): void
+    {
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee('action="/login"', false)
+            ->assertSee('name="_token"', false);
+    }
+
     public function test_public_vue_form_gets_only_the_runtime_compiler_csp_exception(): void
     {
         $request = Request::create('/reclamations/nouvelle', 'GET');

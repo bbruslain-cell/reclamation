@@ -330,7 +330,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('login') }}" autocomplete="on" id="login-form">
+            <form method="POST" action="{{ route('login', absolute: false) }}" autocomplete="on" id="login-form">
                 @csrf
 
                 <div class="field-group">

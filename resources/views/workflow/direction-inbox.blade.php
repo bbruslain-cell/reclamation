@@ -202,29 +202,9 @@
                         Cette vue donne un suivi global des services rattachés à votre direction : volumes, conformité, retards et lecture détaillée des dossiers sans modifier les réponses usager.
                     </p>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    <span class="hero-chip inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs">
-                        <svg class="icon-svg text-[#f8e932]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M4 20V5l7-2v17H4Zm9 0v-8h7v8h-7ZM6 7h2v2H6V7Zm0 4h2v2H6v-2Zm0 4h2v2H6v-2Z" fill="currentColor"/>
-                            <path d="M14 7h5v3h-5z" fill="currentColor"/>
-                        </svg>
-                        {{ number_format((int) ($serviceSummary['services_actifs'] ?? 0), 0, ',', ' ') }} services actifs
-                    </span>
-                    <span class="hero-chip inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs">
-                        <svg class="icon-svg text-[#8fc043]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M9 3h6l1 2h3v16H5V5h3l1-2Zm-1 7h8V8H8v2Zm0 4h8v-2H8v2Zm0 4h8v-2H8v2Z" fill="currentColor"/>
-                        </svg>
-                        {{ number_format((int) $demandes->total(), 0, ',', ' ') }} transactions suivies
-                    </span>
-                    <span class="hero-chip inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs">
-                        <svg class="icon-svg text-[#3996d3]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5h-2v6l5 3 1-1.7-4-2.3V7Z" fill="currentColor"/>
-                        </svg>
-                        {{ $filtersActifs->isNotEmpty() ? $filtersActifs->implode('-') : 'Vue générale sans filtre' }}
-                    </span>
-                </div>
+               
             </div>
-            
+
         </div>
     </section>
 

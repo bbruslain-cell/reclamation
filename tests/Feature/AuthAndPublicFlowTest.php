@@ -3,12 +3,15 @@
 namespace Tests\Feature;
 
 use App\Mail\PublicDemandAcknowledgementMail;
+use Illuminate\Contracts\Filesystem\Factory as FilesystemFactory;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Mockery;
 use Tests\TestCase;
 
 class AuthAndPublicFlowTest extends TestCase
@@ -106,6 +109,39 @@ class AuthAndPublicFlowTest extends TestCase
         ]);
         Storage::disk('local')->assertExists((string) DB::table('pieces_jointes')->value('chemin_fichier'));
         Storage::disk('public')->assertMissing((string) DB::table('pieces_jointes')->value('chemin_fichier'));
+    }
+
+    public function test_public_submission_reports_attachment_storage_failure_without_creating_a_partial_demand(): void
+    {
+        $this->seed();
+
+        $disk = Mockery::mock(Filesystem::class);
+        $disk->shouldReceive('putFileAs')
+            ->once()
+            ->andThrow(new \RuntimeException('Storage unavailable'));
+
+        $filesystem = Mockery::mock(FilesystemFactory::class);
+        $filesystem->shouldReceive('disk')->with('local')->once()->andReturn($disk);
+        $this->app->instance(FilesystemFactory::class, $filesystem);
+
+        $response = $this->from('/reclamations/nouvelle')->post('/reclamations', [
+            'nom' => 'Doe',
+            'prenom' => 'Jane',
+            'email' => 'storage.failure@example.com',
+            'statut_usager' => 'Parent / Tuteur',
+            'pays' => 'GABON',
+            'etablissement' => '',
+            'objet' => 'Objet erreur stockage',
+            'message' => 'Message de test suffisamment long.',
+            'consentement' => 'on',
+            'piece_jointe' => UploadedFile::fake()->create('piece.pdf', 100, 'application/pdf'),
+        ]);
+
+        $response
+            ->assertRedirect('/reclamations/nouvelle')
+            ->assertSessionHasErrors('piece_jointe');
+        $this->assertDatabaseMissing('usagers', ['email' => 'storage.failure@example.com']);
+        $this->assertDatabaseCount('demandes', 5);
     }
 
     public function test_public_submission_sends_acknowledgement_email_with_tracking_number(): void

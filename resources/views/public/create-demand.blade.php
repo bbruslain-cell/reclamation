@@ -150,7 +150,7 @@
                         <div class="text-sky-300 text-[9px] sm:text-xs font-light tracking-wider uppercase mt-0.5 sm:mt-0">
                             Plateforme Réclamation
                         </div>
-                    </div> 
+                    </div>
                 </a>
             </div>
             <!-- Réseaux sociaux -->
@@ -176,12 +176,7 @@
     <section class="bg-navy-500 border-b border-navy-600 pb-10 pt-8">
         <div class="public-page-frame">
             <div class="flex items-start gap-4">
-                <div class="mt-1 w-10 h-10 rounded-full bg-sky-400/20 flex items-center justify-center flex-shrink-0 opacity-0 animate-[fade-in-up_0.6s_ease-out_forwards]">
-                    <svg class="icon-svg text-sky-300 text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z" stroke="currentColor" stroke-width="1.8"/>
-                        <path d="M4 13h4l1.5 2h5L16 13h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
+
                 <div>
                     <h1 class="font-medium text-white text-xl sm:text-2xl leading-snug mb-1 tracking-wide opacity-0 animate-fade-in-up">
                         Bienvenue sur la Plateforme Réclamation de l'ANBG.
@@ -250,7 +245,7 @@
                 <!-- SECTION 1 : Identité -->
                 <div class="px-6 py-6">
                     <div class="flex items-center gap-2 mb-5">
-                        <div class="w-6 h-6 rounded-full bg-navy-500 flex items-center justify-center text-white text-xs flex-shrink-0">1</div>
+                        <div class="w-6 h-6 rounded-full bg-navy-500 flex items-center justify-center text-white text-xs ">1</div>
                         <h3 class="font-medium text-neutral-700 text-xs uppercase tracking-widest">Vos informations</h3>
                     </div>
 
@@ -612,11 +607,7 @@
                             <svg v-if="submitting" class="icon-svg animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                 <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
                             </svg>
-                            <!-- Icône normale -->
-                            <svg v-else class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <path d="M4 11.5 19 5l-4.8 14-3.1-5.1L4 11.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                                <path d="M10.8 13.8 19 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
+
                             <span v-text="submitting ? 'Envoi en cours…' : 'Soumettre ma demande'"></span>
                         </button>
                     </div>
