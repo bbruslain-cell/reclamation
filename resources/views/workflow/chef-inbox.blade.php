@@ -173,7 +173,7 @@
 
         {{-- Toasts --}}
         @if(session('success'))
-        <div class="flex items-start gap-3 bg-leaf-50 border border-leaf/30 text-green-800 px-4 py-3 rounded-xl text-sm shadow-card">
+        <div data-auto-dismiss-flash class="flex items-start gap-3 bg-leaf-50 border border-leaf/30 text-green-800 px-4 py-3 rounded-xl text-sm shadow-card transition-all duration-300 ease-out">
             <i class="fas fa-circle-check text-leaf mt-0.5 flex-shrink-0"></i>
             <span>{{ session('success') }}</span>
         </div>

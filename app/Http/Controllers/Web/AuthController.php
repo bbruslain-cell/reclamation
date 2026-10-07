@@ -136,11 +136,17 @@ class AuthController extends Controller
             comment: 'Connexion reussie'
         );
 
+        $welcomeMessage = sprintf(
+            'Bienvenue %s %s, vous êtes connecté.',
+            $actor->prenom,
+            $actor->nom
+        );
+
         if ((bool) ($actor->changement_mdp_requis ?? false)) {
-            return redirect('/mot-de-passe/nouveau');
+            return redirect('/mot-de-passe/nouveau')->with('success', $welcomeMessage);
         }
 
-        return redirect()->intended('/espace');
+        return redirect()->intended('/espace')->with('success', $welcomeMessage);
     }
 
     public function logout(Request $request): RedirectResponse

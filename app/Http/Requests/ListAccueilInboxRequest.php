@@ -21,7 +21,7 @@ class ListAccueilInboxRequest extends FormRequest
             'search' => ['nullable', 'string', 'max:255', new SafePublicText()],
             'sort_by' => ['nullable', 'string', 'max:50'],
             'sort_dir' => ['nullable', 'in:asc,desc'],
-            'type_code' => ['nullable', 'string', 'max:80'],
+            'alert_status' => ['nullable', 'in:vert,orange,rouge'],
             'direction_id' => ['nullable', 'integer', 'exists:directions,id_direction'],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date'],
@@ -43,9 +43,9 @@ class ListAccueilInboxRequest extends FormRequest
         return (string) ($this->validated('sort_dir') ?? 'desc');
     }
 
-    public function typeCode(): string
+    public function alertStatus(): string
     {
-        return (string) ($this->validated('type_code') ?? '');
+        return (string) ($this->validated('alert_status') ?? '');
     }
 
     public function directionId(): int

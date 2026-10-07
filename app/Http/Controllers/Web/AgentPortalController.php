@@ -34,6 +34,8 @@ class AgentPortalController extends Controller
         }
 
         if ($defaultSpace !== null) {
+            $request->session()->keep(['success']);
+
             return redirect($defaultSpace['href']);
         }
 

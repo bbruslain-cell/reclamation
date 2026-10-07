@@ -40,7 +40,7 @@ class AccueilInboxController extends Controller
         $search = $request->searchTerm();
         $sortBy = $request->sortBy();
         $sortDir = $request->sortDirection();
-        $typeCode = $request->typeCode();
+        $alertStatus = $request->alertStatus();
         $directionId = $request->directionId();
         $dateFrom = $request->dateFrom();
         $dateTo = $request->dateTo();
@@ -61,8 +61,8 @@ class AccueilInboxController extends Controller
                     ->orWhere('u.prenom', 'like', $pattern);
             });
         }
-        if ($typeCode !== '') {
-            $baseQuery->where('td.code', $typeCode);
+        if ($alertStatus !== '') {
+            $baseQuery->where('d.alerte_accueil', $alertStatus);
         }
         if ($directionId > 0) {
             $baseQuery->where('s.id_direction', $directionId);
@@ -123,7 +123,7 @@ class AccueilInboxController extends Controller
 
         $nouvelles = $this->applySort(clone $listQuery, $sortBy, $sortDir)
             ->where('st.code', 'nouvelle')
-            ->paginate(10, ['*'], 'nouvelles_page')
+            ->paginate(20, ['*'], 'nouvelles_page')
             ->withQueryString();
         $nouvelles->setCollection(
             $nouvelles->getCollection()->map(
@@ -142,7 +142,7 @@ class AccueilInboxController extends Controller
                     });
                 }
             })
-            ->paginate(10, ['*'], 'affectees_page')
+            ->paginate(20, ['*'], 'affectees_page')
             ->withQueryString();
         $affectees->setCollection(
             $affectees->getCollection()->map(
@@ -238,15 +238,10 @@ class AccueilInboxController extends Controller
                 ->where('actif', true)
                 ->orderBy('code')
                 ->get(['id_direction', 'code', 'libelle']),
-            'types' => DB::table('parametres')
-                ->where('famille', 'type_demande')
-                ->where('actif', true)
-                ->orderBy('ordre_affichage')
-                ->get(['code', 'libelle']),
             'search' => $search,
             'sortBy' => $sortBy,
             'sortDir' => $sortDir,
-            'typeCode' => $typeCode,
+            'alertStatus' => $alertStatus,
             'directionId' => $directionId > 0 ? $directionId : null,
             'dateFrom' => $dateFrom,
             'dateTo' => $dateTo,

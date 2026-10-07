@@ -237,7 +237,7 @@
     <main class="py-6">
         <div class="app-page-frame space-y-5">
             @if(session('success'))
-            <div class="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 shadow-soft">
+            <div data-auto-dismiss-flash class="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 shadow-soft transition-all duration-300 ease-out">
                 {{ session('success') }}
             </div>
             @endif

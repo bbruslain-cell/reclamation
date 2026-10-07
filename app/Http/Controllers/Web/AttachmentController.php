@@ -71,7 +71,6 @@ class AttachmentController extends Controller
         $headers = [
             'Content-Type' => $this->safeMimeType($filename, (string) ($piece->type_mime ?? '')),
             'X-Content-Type-Options' => 'nosniff',
-            'Content-Security-Policy' => "default-src 'none'; sandbox",
         ];
 
         if ($request->boolean('preview')) {

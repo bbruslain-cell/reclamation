@@ -80,6 +80,18 @@ class AuthAndPublicFlowTest extends TestCase
         $this->getJson('/api/overview')->assertForbidden();
     }
 
+    public function test_successful_login_flashes_a_personalized_welcome_message(): void
+    {
+        $this->seed();
+
+        $this->post('/login', [
+            'email' => 'accueil@anbg.ga',
+            'password' => 'ChangeMe@123',
+        ])
+            ->assertRedirect('/mot-de-passe/nouveau')
+            ->assertSessionHas('success', 'Bienvenue Accueil Service, vous êtes connecté.');
+    }
+
     public function test_public_submission_creates_demand_and_attachment(): void
     {
         $this->seed();
@@ -452,7 +464,13 @@ class AuthAndPublicFlowTest extends TestCase
         $previewResponse
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf')
-            ->assertHeader('x-content-type-options', 'nosniff');
+            ->assertHeader('x-content-type-options', 'nosniff')
+            ->assertHeader('x-frame-options', 'SAMEORIGIN');
+
+        $this->assertStringContainsString(
+            "frame-ancestors 'self'",
+            (string) $previewResponse->headers->get('content-security-policy')
+        );
 
         $this->assertStringContainsString(
             'inline;',

@@ -108,12 +108,10 @@
     <section class="bg-navy border-b border-white/10 pb-8 pt-6">
         <div class="app-page-frame">
             <div class="flex items-start gap-4">
-                <div class="w-10 h-10 rounded-full bg-sky/20 flex items-center justify-center flex-shrink-0 mt-1">
-                    <svg class="icon-svg text-sky-300 text-sm" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3a8 8 0 0 0-8 8v5a3 3 0 0 0 3 3h2v-7H6v-1a6 6 0 1 1 12 0v1h-3v7h2a3 3 0 0 0 3-3v-5a8 8 0 0 0-8-8Z"/></svg>
-                </div>
+                
                 <div>
                     <h1 class="text-white text-xl font-medium leading-snug mb-1">Traitement des agents du service</h1>
-                   
+
                     <div class="mt-3 flex flex-wrap gap-2">
                         <span class="inline-flex items-center gap-1.5 bg-sky/15 border border-sky/25 text-sky-100 text-xs font-medium px-3 py-1 rounded-full">
                             <svg class="icon-svg text-sky text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5h-2v6l5 3 1-1.7-4-2.3V7Z"/></svg> Fenêtre partagée 16h
@@ -135,7 +133,7 @@
 
         {{-- Toasts --}}
         @if(session('success'))
-        <div class="flex items-start gap-3 bg-leaf-50 border border-leaf/30 text-green-800 px-4 py-3 rounded-xl text-sm shadow-card">
+        <div data-auto-dismiss-flash class="flex items-start gap-3 bg-leaf-50 border border-leaf/30 text-green-800 px-4 py-3 rounded-xl text-sm shadow-card transition-all duration-300 ease-out">
             <svg class="icon-svg text-leaf mt-0.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm-1.2 14.2-4-4 1.4-1.4 2.6 2.6 5-5 1.4 1.4Z"/></svg>
             <span>{{ session('success') }}</span>
         </div>
@@ -329,7 +327,7 @@
                                             <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m16.6 3 4.4 4.4-10 10L6 19l1.6-5 9-11ZM5 21h14v-2H5v2Z"/></svg>Rédiger la réponse
                                         </h4>
 
-                                       
+
                                         @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'panel'])
 
                                         @if(($demande->delivery_state ?? 'idle') !== 'pending')

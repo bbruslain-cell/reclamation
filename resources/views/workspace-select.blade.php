@@ -71,6 +71,16 @@
         </header>
 
         <main class="app-page-frame py-8">
+            @if(session('success'))
+                <div data-auto-dismiss-flash role="status" class="mb-5 flex items-center gap-3 rounded-xl border border-leaf/30 bg-leaf-50 px-4 py-3 text-sm text-green-800 shadow-sm transition-all duration-300 ease-out">
+                    <svg class="icon-svg flex-shrink-0 text-leaf" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/>
+                        <path d="m8.5 12 2.3 2.3L15.5 9.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>{{ session('success') }}</span>
+                </div>
+            @endif
+
             <section class="rounded-3xl bg-navy text-white shadow-card overflow-hidden">
                 <div class="px-6 py-8 sm:px-8">
                     <h1 class="mt-2 text-2xl sm:text-3xl font-medium">Espaces disponibles pour votre compte.</h1>

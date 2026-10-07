@@ -16,6 +16,26 @@
             --anbg-sun: #f8e932;
         }
 
+        .filter-control:hover {
+            border-color: var(--anbg-leaf) !important;
+            background-color: #f3f8e9 !important;
+            box-shadow: 0 0 0 3px rgba(143, 192, 67, 0.16);
+        }
+        .filter-control:focus {
+            border-color: var(--anbg-leaf) !important;
+            background-color: #fff !important;
+            box-shadow: 0 0 0 3px rgba(143, 192, 67, 0.22);
+            outline: none;
+        }
+        .filter-apply-button:hover,
+        .filter-reset-button:hover {
+            background: var(--anbg-leaf);
+            border-color: var(--anbg-leaf);
+            color: #1c203d;
+            box-shadow: 0 10px 20px rgba(79, 125, 43, 0.24);
+            transform: translateY(-1px);
+        }
+
         body {
             background:
                 radial-gradient(circle at top left, rgba(57, 150, 211, 0.14), transparent 10%),
@@ -135,7 +155,7 @@
 
     <!-- Toasts -->
     @if(session('success'))
-    <div class="flex items-start gap-3 bg-leaf-50 border border-leaf/30 text-green-800 px-4 py-3 rounded-xl text-sm shadow-card">
+    <div data-auto-dismiss-flash class="flex items-start gap-3 bg-leaf-50 border border-leaf/30 text-green-800 px-4 py-3 rounded-xl text-sm shadow-card transition-all duration-300 ease-out">
         <svg class="icon-svg text-leaf mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/>
             <path d="m8.5 12 2.3 2.3L15.5 9.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -180,7 +200,12 @@
             'total_en_retard' => (int) ($summaryStats->total_en_retard ?? 0),
         ];
         $filtersActifs = collect([
-            $typeCode !== '' ? 'Type filtré' : null,
+            match ($alertStatus) {
+                'vert' => 'Dans les délais',
+                'orange' => 'À risque',
+                'rouge' => 'En retard',
+                default => null,
+            },
             !empty($directionId) ? 'Direction ciblée' : null,
             $dateFrom !== '' || $dateTo !== '' ? 'Période personnalisée' : null,
             $search !== '' ? 'Recherche active' : null,
@@ -312,22 +337,22 @@
                         <input
                             name="search" value="{{ $search }}"
                             placeholder="Recherche : numéro, objet, nom usager…"
-                            class="field w-full pl-9 pr-4 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy placeholder-neutral-400 transition-all duration-150"
+                            class="filter-control field w-full pl-9 pr-4 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy placeholder-neutral-400 transition-all duration-150"
                         >
                     </div>
                 </div>
 
                 <div>
-                    <select name="type_code" class="field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy appearance-none transition-all duration-150">
-                        <option value="">Tous les types</option>
-                        @foreach($types as $type)
-                            <option value="{{ $type->code }}" {{ $typeCode === $type->code ? 'selected' : '' }}>{{ $type->libelle }}</option>
-                        @endforeach
+                    <select name="alert_status" aria-label="Statut de délai" class="filter-control field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy appearance-none transition-all duration-150">
+                        <option value="">Tous les statuts de délai</option>
+                        <option value="vert" {{ $alertStatus === 'vert' ? 'selected' : '' }}>Dans les délais</option>
+                        <option value="orange" {{ $alertStatus === 'orange' ? 'selected' : '' }}>À risque</option>
+                        <option value="rouge" {{ $alertStatus === 'rouge' ? 'selected' : '' }}>En retard</option>
                     </select>
                 </div>
 
                 <div>
-                    <select name="direction_id" class="field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy appearance-none transition-all duration-150">
+                    <select name="direction_id" class="filter-control field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy appearance-none transition-all duration-150">
                         <option value="">Toutes les directions</option>
                         @foreach($directions as $direction)
                             <option value="{{ $direction->id_direction }}" {{ (int)$directionId === (int)$direction->id_direction ? 'selected' : '' }}>
@@ -339,24 +364,32 @@
 
                 <div>
                     <input type="date" name="date_from" value="{{ $dateFrom }}"
-                        class="field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy transition-all duration-150">
+                        class="filter-control field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy transition-all duration-150">
                 </div>
                 <div>
                     <input type="date" name="date_to" value="{{ $dateTo }}"
-                        class="field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy transition-all duration-150">
+                        class="filter-control field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy transition-all duration-150">
                 </div>
 
                 
                 <div>
-                    <select name="sort_dir" class="field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy appearance-none transition-all duration-150">
+                    <select name="sort_dir" class="filter-control field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy appearance-none transition-all duration-150">
                         <option value="desc" {{ $sortDir==='desc'?'selected':'' }}>↓ Descendant</option>
                         <option value="asc"  {{ $sortDir==='asc'?'selected':'' }}>↑ Ascendant</option>
                     </select>
                 </div>
 
-                <div class="sm:col-span-2 lg:col-span-4 flex justify-stretch sm:justify-end pt-1">
+                <div class="sm:col-span-2 lg:col-span-4 flex flex-col justify-stretch gap-2 pt-1 sm:flex-row sm:justify-end">
+                    <a href="/accueil/inbox"
+                        class="filter-reset-button inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#8fc043] bg-white px-5 py-2.5 text-sm font-medium text-[#4f7d2b] shadow-sm transition-all duration-150 sm:w-auto">
+                        <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M19 8.5V5m0 0h-3.5M19 5l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M18.2 12a6.2 6.2 0 1 1-2.1-4.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Réinitialiser
+                    </a>
                     <button type="submit"
-                        class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#1c203d_0%,#3996d3_100%)] px-5 py-2.5 text-sm font-medium text-white shadow-badge transition-transform duration-200 hover:-translate-y-0.5">
+                        class="filter-apply-button inline-flex w-full items-center justify-center gap-2 rounded-xl border border-transparent bg-[linear-gradient(135deg,#1c203d_0%,#3996d3_100%)] px-5 py-2.5 text-sm font-medium text-white shadow-badge transition-all duration-150 sm:w-auto">
                         <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path d="M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                             <path d="M7 12h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -652,7 +685,8 @@
 
         <!-- Pagination -->
         @if($nouvelles->hasPages())
-        <div class="px-4 py-4 sm:px-5 border-t border-neutral-100 bg-white/70">
+        <div class="space-y-3 px-4 py-4 sm:px-5 border-t border-neutral-100 bg-white/70">
+            @include('workflow.partials.page-jump', ['paginator' => $nouvelles, 'pageName' => 'nouvelles_page'])
             {{ $nouvelles->links() }}
         </div>
         @endif
@@ -867,7 +901,8 @@
         </div>
 
         @if($affectees->hasPages())
-        <div class="px-4 py-4 sm:px-5 border-t border-neutral-100 bg-white/70">
+        <div class="space-y-3 px-4 py-4 sm:px-5 border-t border-neutral-100 bg-white/70">
+            @include('workflow.partials.page-jump', ['paginator' => $affectees, 'pageName' => 'affectees_page'])
             {{ $affectees->links() }}
         </div>
         @endif

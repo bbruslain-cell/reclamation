@@ -302,6 +302,40 @@ const initAnbgAttachmentPreview = () => {
     });
 };
 
+const initAnbgPageJump = () => {
+    if (window.anbgPageJumpReady) {
+        return;
+    }
+
+    window.anbgPageJumpReady = true;
+
+    document.addEventListener('change', (event) => {
+        const input = event.target.closest('[data-page-jump-input]');
+        if (!input || !input.validity.valid || input.value === '') {
+            return;
+        }
+
+        input.closest('[data-page-jump-form]')?.requestSubmit();
+    });
+};
+
+const initAnbgAutoDismissFlashes = () => {
+    document.querySelectorAll('[data-auto-dismiss-flash]').forEach((flash) => {
+        if (flash.dataset.autoDismissReady === 'true') {
+            return;
+        }
+
+        flash.dataset.autoDismissReady = 'true';
+        window.setTimeout(() => {
+            flash.style.opacity = '0';
+            flash.style.transform = 'translateY(-8px)';
+            flash.style.pointerEvents = 'none';
+
+            window.setTimeout(() => flash.remove(), 320);
+        }, 4500);
+    });
+};
+
 window.initAnbgSubmitLoading = initAnbgSubmitLoading;
 window.initAnbgAttachmentPreview = initAnbgAttachmentPreview;
 window.startAnbgLoading = startGlobalLoading;
@@ -312,11 +346,15 @@ if (document.readyState === 'loading') {
         initAnbgConfirmations();
         initAnbgSubmitLoading(document);
         initAnbgAttachmentPreview();
+        initAnbgPageJump();
+        initAnbgAutoDismissFlashes();
         initAnbgGlobalLoading();
     });
 } else {
     initAnbgConfirmations();
     initAnbgSubmitLoading(document);
     initAnbgAttachmentPreview();
+    initAnbgPageJump();
+    initAnbgAutoDismissFlashes();
     initAnbgGlobalLoading();
 }

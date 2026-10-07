@@ -17,6 +17,8 @@ class SecurityHeaders
 
         $response = $next($request);
 
+        $isAttachmentPreview = $request->is('pieces-jointes/*') && $request->boolean('preview');
+
         $scriptSources = ["'self'", "'nonce-{$nonce}'"];
         if ($request->is('pilotage*')) {
             $scriptSources[] = 'https://cdn.jsdelivr.net';
@@ -32,7 +34,7 @@ class SecurityHeaders
         if (function_exists('header_remove')) {
             header_remove('X-Powered-By');
         }
-        $response->headers->set('X-Frame-Options', 'DENY');
+        $response->headers->set('X-Frame-Options', $isAttachmentPreview ? 'SAMEORIGIN' : 'DENY');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('X-XSS-Protection', '0');
@@ -41,8 +43,8 @@ class SecurityHeaders
             "default-src 'self'",
             "base-uri 'self'",
             "object-src 'none'",
-            "frame-ancestors 'none'",
-            "frame-src 'none'",
+            $isAttachmentPreview ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
+            "frame-src 'self'",
             "form-action 'self'",
             "img-src 'self' data: blob:",
             "font-src 'self' https://fonts.gstatic.com data:",

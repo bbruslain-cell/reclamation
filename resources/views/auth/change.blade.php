@@ -29,7 +29,7 @@
             <div class="msg msg-err">{{ session('error') }}</div>
         @endif
         @if(session('success'))
-            <div class="msg msg-ok">{{ session('success') }}</div>
+            <div data-auto-dismiss-flash class="msg msg-ok transition-all duration-300 ease-out">{{ session('success') }}</div>
         @endif
 
         <form method="post" action="/mot-de-passe/nouveau">
