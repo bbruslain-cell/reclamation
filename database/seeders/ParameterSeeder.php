@@ -10,25 +10,25 @@ class ParameterSeeder extends Seeder
     public function run(): void
     {
         $rows = [
-            ['famille' => 'type_demande', 'code' => 'reclamation', 'libelle' => 'Reclamation', 'ordre_affichage' => 1],
+            ['famille' => 'type_demande', 'code' => 'reclamation', 'libelle' => 'Réclamation', 'ordre_affichage' => 1],
 
-            ['famille' => 'statut_demande', 'code' => 'nouvelle', 'libelle' => 'Recu', 'ordre_affichage' => 1],
-            ['famille' => 'statut_demande', 'code' => 'affectee_service', 'libelle' => 'Affectee au service', 'ordre_affichage' => 2],
-            ['famille' => 'statut_demande', 'code' => 'affectee_agent', 'libelle' => 'Affectee a un agent', 'ordre_affichage' => 3],
-            ['famille' => 'statut_demande', 'code' => 'reponse_prete', 'libelle' => 'Reponse redigee', 'ordre_affichage' => 4],
-            ['famille' => 'statut_demande', 'code' => 'cloturee', 'libelle' => 'Cloturee', 'ordre_affichage' => 5],
+            ['famille' => 'statut_demande', 'code' => 'nouvelle', 'libelle' => 'Reçu', 'ordre_affichage' => 1],
+            ['famille' => 'statut_demande', 'code' => 'affectee_service', 'libelle' => 'Affectée au service', 'ordre_affichage' => 2],
+            ['famille' => 'statut_demande', 'code' => 'affectee_agent', 'libelle' => 'Affectée à un agent', 'ordre_affichage' => 3],
+            ['famille' => 'statut_demande', 'code' => 'reponse_prete', 'libelle' => 'Réponse rédigée', 'ordre_affichage' => 4],
+            ['famille' => 'statut_demande', 'code' => 'cloturee', 'libelle' => 'Clôturée', 'ordre_affichage' => 5],
 
             ['famille' => 'type_reponse', 'code' => 'directe', 'libelle' => 'Directe', 'ordre_affichage' => 1],
             ['famille' => 'type_reponse', 'code' => 'via_direction', 'libelle' => 'Via direction', 'ordre_affichage' => 2],
             ['famille' => 'type_reponse', 'code' => 'finale', 'libelle' => 'Finale', 'ordre_affichage' => 3],
 
-            ['famille' => 'type_notif', 'code' => 'accuse_reception', 'libelle' => 'Accuse de reception', 'ordre_affichage' => 1],
+            ['famille' => 'type_notif', 'code' => 'accuse_reception', 'libelle' => 'Accusé de réception', 'ordre_affichage' => 1],
             ['famille' => 'type_notif', 'code' => 'alerte_sla', 'libelle' => 'Alerte SLA', 'ordre_affichage' => 2],
-            ['famille' => 'type_notif', 'code' => 'reponse_envoyee', 'libelle' => 'Reponse envoyee', 'ordre_affichage' => 3],
+            ['famille' => 'type_notif', 'code' => 'reponse_envoyee', 'libelle' => 'Réponse envoyée', 'ordre_affichage' => 3],
             ['famille' => 'type_notif', 'code' => 'interne', 'libelle' => 'Interne', 'ordre_affichage' => 4],
 
             ['famille' => 'statut_notif', 'code' => 'en_attente', 'libelle' => 'En attente', 'ordre_affichage' => 1],
-            ['famille' => 'statut_notif', 'code' => 'succes', 'libelle' => 'Succes', 'ordre_affichage' => 2],
+            ['famille' => 'statut_notif', 'code' => 'succes', 'libelle' => 'Succès', 'ordre_affichage' => 2],
             ['famille' => 'statut_notif', 'code' => 'echec', 'libelle' => 'Echec', 'ordre_affichage' => 3],
 
             ['famille' => 'format_export', 'code' => 'excel', 'libelle' => 'Excel', 'ordre_affichage' => 1],
@@ -39,28 +39,28 @@ class ParameterSeeder extends Seeder
                 'code' => 'default',
                 'libelle' => 'Seuils SLA par defaut',
                 'ordre_affichage' => 1,
-                'metadata_json' => json_encode(['vert' => 12, 'orange' => 18, 'rouge' => 24]),
+                'metadata_json' => json_encode(['warning' => 12, 'deadline' => 24]),
             ],
             [
                 'famille' => 'seuil_alerte',
                 'code' => 'accueil',
                 'libelle' => 'Seuils accueil',
                 'ordre_affichage' => 2,
-                'metadata_json' => json_encode(['vert' => 12, 'orange' => 18, 'rouge' => 24]),
+                'metadata_json' => json_encode(['warning' => 4, 'deadline' => 8]),
             ],
             [
                 'famille' => 'seuil_alerte',
                 'code' => 'chef',
                 'libelle' => 'Seuils chef de service',
                 'ordre_affichage' => 3,
-                'metadata_json' => json_encode(['vert' => 24, 'orange' => 36, 'rouge' => 48]),
+                'metadata_json' => json_encode(['warning' => 8, 'deadline' => 16]),
             ],
             [
                 'famille' => 'seuil_alerte',
                 'code' => 'agent',
                 'libelle' => 'Seuils agent',
                 'ordre_affichage' => 4,
-                'metadata_json' => json_encode(['vert' => 24, 'orange' => 36, 'rouge' => 48]),
+                'metadata_json' => json_encode(['warning' => 8, 'deadline' => 16]),
             ],
         ];
 

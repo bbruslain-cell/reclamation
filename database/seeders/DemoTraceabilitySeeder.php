@@ -179,7 +179,7 @@ class DemoTraceabilitySeeder extends Seeder
 
         $this->seedSoumission($demand, $oldStatusId);
 
-        $assignmentDate = $demand->date_affectation_accueil ?: $demand->date_affectation;
+        $assignmentDate = $demand->date_affectation_accueil;
         if (!$assignmentDate) {
             return;
         }

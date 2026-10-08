@@ -7,11 +7,10 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
 
-class DemandResponseMail extends Mailable implements ShouldQueue
+class DemandResponseMail extends Mailable
 {
     use Queueable;
     use SerializesModels;
@@ -31,14 +30,14 @@ class DemandResponseMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Reponse a votre demande '.$this->trackingNumber
+            subject: 'ANBG - Réponse à votre réclamation '.$this->trackingNumber
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.demand-response',
+            text: 'emails.demand-response-text',
             with: [
                 'trackingNumber' => $this->trackingNumber,
                 'subjectLabel' => $this->subjectLabel,

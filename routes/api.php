@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\DemandWorkflowController;
 use App\Http\Controllers\Api\OverviewController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['agent.auth', 'throttle:60,1'])->group(function (): void {
+Route::middleware(['web', 'agent.auth', 'throttle:60,1'])->group(function (): void {
     Route::get('/overview', [OverviewController::class, 'index']);
 
     Route::get('/demandes', [DemandWorkflowController::class, 'index']);

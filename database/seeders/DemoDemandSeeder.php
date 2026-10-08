@@ -96,7 +96,6 @@ class DemoDemandSeeder extends Seeder
                 'message' => 'Je depose un recours suite a la deliberation de la commission.',
                 'id_agent_accueil' => $accueilId,
                 'date_soumission' => $now->copy()->subHours(30),
-                'date_affectation' => $now->copy()->subHours(26),
                 'date_affectation_accueil' => $now->copy()->subHours(26),
                 'alerte_accueil' => 'orange',
                 'delai_alerte' => 'a_risque',
@@ -113,7 +112,6 @@ class DemoDemandSeeder extends Seeder
                 'message' => 'Mes frais de scolarite ne sont pas encore regles.',
                 'id_agent_accueil' => $accueilId,
                 'date_soumission' => $now->copy()->subHours(53),
-                'date_affectation' => $now->copy()->subHours(48),
                 'date_affectation_accueil' => $now->copy()->subHours(48),
                 'date_affectation_agent' => $now->copy()->subHours(30),
                 'alerte_accueil' => 'rouge',
@@ -133,7 +131,6 @@ class DemoDemandSeeder extends Seeder
                 'message' => 'Je ne parviens plus a acceder a mon compte eBourse malgre plusieurs tentatives.',
                 'id_agent_accueil' => $accueilId,
                 'date_soumission' => $now->copy()->subDays(4),
-                'date_affectation' => $now->copy()->subDays(4)->addHours(2),
                 'date_affectation_accueil' => $now->copy()->subDays(4)->addHours(2),
                 'date_affectation_agent' => $now->copy()->subDays(3)->addHours(1),
                 'date_reponse_direction' => $now->copy()->subDays(3)->addHours(3),
@@ -158,7 +155,6 @@ class DemoDemandSeeder extends Seeder
                 'categorie' => 'Demande de modification d attestation d attribution de bourse ou maintien',
                 'message' => 'Je souhaite comprendre pourquoi mon dossier a ete marque incomplet et comment regulariser.',
                 'date_soumission' => $now->copy()->subDays(2)->subHours(5),
-                'date_affectation' => $now->copy()->subDays(2)->subHours(3),
                 'date_affectation_accueil' => $now->copy()->subDays(2)->subHours(3),
                 'date_reponse_direction' => $now->copy()->subDays(2)->addHour(),
                 'date_envoi_usager' => $now->copy()->subDays(2)->addHours(2),
@@ -180,6 +176,59 @@ class DemoDemandSeeder extends Seeder
                     'created_at' => $now,
                 ])
             );
+        }
+
+        $this->syncTrackingGenerators();
+    }
+
+    private function syncTrackingGenerators(): void
+    {
+        $maxByYear = [];
+        $maxValue = 0;
+
+        foreach (DB::table('demandes')->pluck('numero_suivi') as $trackingNumber) {
+            if (!is_string($trackingNumber) || !preg_match('/^ANBG-(\d{4})-(\d+)$/', $trackingNumber, $matches)) {
+                continue;
+            }
+
+            $year = (int) $matches[1];
+            $value = (int) $matches[2];
+            $maxByYear[$year] = max($maxByYear[$year] ?? 0, $value);
+            $maxValue = max($maxValue, $value);
+        }
+
+        foreach ($maxByYear as $year => $value) {
+            $counter = DB::table('demandes_numero_compteurs')->where('annee', $year)->first();
+
+            if (!$counter) {
+                DB::table('demandes_numero_compteurs')->insert([
+                    'annee' => $year,
+                    'valeur' => $value,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                continue;
+            }
+
+            if ((int) $counter->valeur < $value) {
+                DB::table('demandes_numero_compteurs')
+                    ->where('annee', $year)
+                    ->update([
+                        'valeur' => $value,
+                        'updated_at' => now(),
+                    ]);
+            }
+        }
+
+        if (DB::getDriverName() !== 'pgsql' || $maxValue <= 0) {
+            return;
+        }
+
+        DB::statement('CREATE SEQUENCE IF NOT EXISTS demandes_numero_seq START 1');
+
+        $current = DB::selectOne('SELECT last_value FROM demandes_numero_seq');
+        if ((int) ($current->last_value ?? 0) < $maxValue) {
+            DB::selectOne("SELECT setval('demandes_numero_seq', ?, true)", [$maxValue]);
         }
     }
 }

@@ -19,7 +19,7 @@ class BusinessSlaRulesTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_full_working_day_counts_as_twenty_four_business_hours_and_global_limits_are_strict(): void
+    public function test_full_working_day_counts_as_eight_worked_hours_and_twenty_four_business_hours(): void
     {
         $this->seed();
 
@@ -30,12 +30,13 @@ class BusinessSlaRulesTest extends TestCase
         $end = Carbon::create(2026, 3, 23, 15, 30, 0, 'Africa/Libreville');
 
         $this->assertSame(8.0, $service->calculateElapsedWorkedHours($start, $end, $configId));
-        $this->assertSame(24.0, $service->calculateElapsedHours($start, $end, $configId));
+        $this->assertSame(8.0, $service->calculateElapsedHours($start, $end, $configId));
+        $this->assertSame(24.0, $service->calculateElapsedBusinessHours($start, $end, $configId));
 
-        $this->assertSame('dans_les_delais', $service->classifyAlert(48.0, 72));
-        $this->assertSame('a_risque', $service->classifyAlert(48.01, 72));
-        $this->assertSame('a_risque', $service->classifyAlert(72.0, 72));
-        $this->assertSame('en_retard', $service->classifyAlert(72.01, 72));
+        $this->assertSame('dans_les_delais', $service->classifyAlert(11.99, 24));
+        $this->assertSame('a_risque', $service->classifyAlert(12.0, 24));
+        $this->assertSame('a_risque', $service->classifyAlert(24.0, 24));
+        $this->assertSame('en_retard', $service->classifyAlert(24.01, 24));
     }
 
     public function test_accueil_can_be_overdue_while_global_demand_remains_within_delay(): void
@@ -57,11 +58,11 @@ class BusinessSlaRulesTest extends TestCase
         $this->assertSame('dans_les_delais', $alerts['delai_alerte']);
     }
 
-    public function test_global_demand_becomes_a_risque_after_forty_eight_business_hours_without_late_service_stage(): void
+    public function test_global_demand_becomes_a_risque_once_half_of_the_twenty_four_worked_hours_is_consumed(): void
     {
         $this->seed();
 
-        Carbon::setTestNow(Carbon::create(2026, 3, 25, 7, 31, 0, 'Africa/Libreville'));
+        Carbon::setTestNow(Carbon::create(2026, 3, 24, 13, 31, 0, 'Africa/Libreville'));
 
         $serviceId = (int) DB::table('services')->where('code', 'CS_SENB')->value('id_service');
 
@@ -69,8 +70,7 @@ class BusinessSlaRulesTest extends TestCase
             'numero_suivi' => 'TEST-SLA-GLOBAL-002',
             'id_service_courant' => $serviceId,
             'date_soumission' => Carbon::create(2026, 3, 23, 7, 30, 0, 'Africa/Libreville'),
-            'date_affectation' => Carbon::create(2026, 3, 23, 8, 0, 0, 'Africa/Libreville'),
-            'date_affectation_accueil' => Carbon::create(2026, 3, 23, 8, 0, 0, 'Africa/Libreville'),
+            'date_affectation_accueil' => Carbon::create(2026, 3, 23, 9, 30, 0, 'Africa/Libreville'),
         ]);
 
         $alerts = app(StepAlertService::class)->refreshDemandAlerts($demandId);
@@ -81,7 +81,7 @@ class BusinessSlaRulesTest extends TestCase
         $this->assertSame('a_risque', $alerts['delai_alerte']);
     }
 
-    public function test_global_demand_becomes_en_retard_only_after_more_than_seventy_two_business_hours(): void
+    public function test_global_demand_becomes_en_retard_only_after_more_than_twenty_four_worked_hours(): void
     {
         $this->seed();
 
@@ -93,8 +93,7 @@ class BusinessSlaRulesTest extends TestCase
             'numero_suivi' => 'TEST-SLA-GLOBAL-003',
             'id_service_courant' => $serviceId,
             'date_soumission' => Carbon::create(2026, 3, 23, 7, 30, 0, 'Africa/Libreville'),
-            'date_affectation' => Carbon::create(2026, 3, 23, 8, 0, 0, 'Africa/Libreville'),
-            'date_affectation_accueil' => Carbon::create(2026, 3, 23, 8, 0, 0, 'Africa/Libreville'),
+            'date_affectation_accueil' => Carbon::create(2026, 3, 23, 9, 30, 0, 'Africa/Libreville'),
         ]);
 
         $alerts = app(StepAlertService::class)->refreshDemandAlerts($demandId);
@@ -102,6 +101,30 @@ class BusinessSlaRulesTest extends TestCase
         $this->assertSame('rouge', $alerts['alerte_chef']);
         $this->assertNull($alerts['alerte_agent']);
         $this->assertSame('en_retard', $alerts['delai_alerte']);
+    }
+
+    public function test_agent_inherits_service_lateness_when_the_shared_window_is_already_red(): void
+    {
+        $this->seed();
+
+        Carbon::setTestNow(Carbon::create(2026, 3, 25, 8, 31, 0, 'Africa/Libreville'));
+
+        $serviceId = (int) DB::table('services')->where('code', 'CS_FC')->value('id_service');
+
+        $demandId = $this->createDemand([
+            'numero_suivi' => 'TEST-SLA-AGENT-004',
+            'id_service_courant' => $serviceId,
+            'date_soumission' => Carbon::create(2026, 3, 23, 7, 30, 0, 'Africa/Libreville'),
+            'date_affectation_accueil' => Carbon::create(2026, 3, 23, 8, 0, 0, 'Africa/Libreville'),
+            'date_affectation_agent' => Carbon::create(2026, 3, 25, 8, 0, 0, 'Africa/Libreville'),
+        ]);
+
+        $alerts = app(StepAlertService::class)->refreshDemandAlerts($demandId);
+
+        $this->assertSame('vert', $alerts['alerte_accueil']);
+        $this->assertSame('rouge', $alerts['alerte_chef']);
+        $this->assertSame('rouge', $alerts['alerte_agent']);
+        $this->assertSame('a_risque', $alerts['delai_alerte']);
     }
 
     private function createDemand(array $overrides = []): int

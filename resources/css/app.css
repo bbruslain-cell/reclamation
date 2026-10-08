@@ -128,6 +128,15 @@
         box-shadow: 0 1px 3px rgb(28 32 61 / 0.05), 0 4px 16px rgb(28 32 61 / 0.07);
     }
 
+    .app-page-frame {
+        width: 100%;
+        max-width: none;
+        margin-left: 0;
+        margin-right: 0;
+        padding-left: clamp(1rem, 2.6vw, 3.5rem);
+        padding-right: clamp(1rem, 2.6vw, 3.5rem);
+    }
+
     .section-title-bar {
         background: linear-gradient(90deg, rgb(28 32 61 / 0.06), rgb(57 150 211 / 0.04) 50%, rgb(143 192 67 / 0.06));
     }
@@ -162,6 +171,78 @@
         height: 1em;
         vertical-align: middle;
         flex-shrink: 0;
+    }
+
+    @keyframes anbg-submit-spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @keyframes anbg-page-loading-slide {
+        0% {
+            transform: translateX(-115%) scaleX(0.55);
+        }
+
+        55% {
+            transform: translateX(85%) scaleX(0.9);
+        }
+
+        100% {
+            transform: translateX(260%) scaleX(0.55);
+        }
+    }
+
+    .anbg-page-loading {
+        position: fixed;
+        z-index: 2147483647;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 4px;
+        overflow: hidden;
+        pointer-events: none;
+        opacity: 0;
+        background: rgb(28 32 61 / 0.1);
+        transition: opacity 0.15s ease;
+    }
+
+    .anbg-page-loading.is-active {
+        opacity: 1;
+    }
+
+    .anbg-page-loading-bar {
+        display: block;
+        width: 42%;
+        height: 100%;
+        transform-origin: left center;
+        background: linear-gradient(90deg, #3996d3 0 68%, #8fc043 68% 86%, #f9b13c 86% 100%);
+        box-shadow: 0 1px 5px rgb(57 150 211 / 0.45);
+        animation: anbg-page-loading-slide 1.15s ease-in-out infinite;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .anbg-page-loading-bar {
+            width: 70%;
+            animation-duration: 2.4s;
+        }
+    }
+
+    .anbg-submit-spinner {
+        display: inline-block;
+        width: 1em;
+        height: 1em;
+        border: 2px solid rgb(255 255 255 / 0.38);
+        border-top-color: #ffffff;
+        border-radius: 9999px;
+        animation: anbg-submit-spin 0.75s linear infinite;
+        flex-shrink: 0;
+    }
+
+    button[data-submit-loading][aria-busy="true"] {
+        opacity: 0.68;
+        cursor: not-allowed;
+        transform: none;
     }
 
     .table-readability thead th {
@@ -255,5 +336,166 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         font-weight: 600;
+    }
+
+    .anbg-attachment-preview {
+        position: fixed;
+        inset: 0;
+        z-index: 120;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .anbg-attachment-preview.hidden {
+        display: none;
+    }
+
+    .anbg-attachment-preview-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgb(28 32 61 / 0.68);
+        backdrop-filter: blur(3px);
+    }
+
+    .anbg-attachment-preview-dialog {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        width: min(96vw, 1080px);
+        height: min(88vh, 760px);
+        overflow: hidden;
+        border: 1px solid rgb(255 255 255 / 0.7);
+        border-radius: 1.5rem;
+        background: #ffffff;
+        box-shadow: 0 28px 90px rgb(28 32 61 / 0.35);
+    }
+
+    .anbg-attachment-preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #e9ecef;
+        background: linear-gradient(90deg, #f8f9fa 0%, #ffffff 100%);
+    }
+
+    .anbg-attachment-preview-title-wrap {
+        min-width: 0;
+    }
+
+    .anbg-attachment-preview-eyebrow {
+        margin: 0;
+        color: #6c757d;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .anbg-attachment-preview-title {
+        margin: 0.2rem 0 0;
+        overflow: hidden;
+        color: #1c203d;
+        font-size: 0.95rem;
+        font-weight: 700;
+        line-height: 1.35;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .anbg-attachment-preview-actions {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .anbg-attachment-preview-download,
+    .anbg-attachment-preview-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #dee2e6;
+        border-radius: 9999px;
+        background: #ffffff;
+        color: #495057;
+        font-size: 0.75rem;
+        font-weight: 700;
+        line-height: 1;
+        transition:
+            border-color 0.16s ease,
+            color 0.16s ease,
+            background-color 0.16s ease;
+    }
+
+    .anbg-attachment-preview-download {
+        min-height: 2.25rem;
+        padding: 0 0.85rem;
+        text-decoration: none;
+    }
+
+    .anbg-attachment-preview-close {
+        width: 2.25rem;
+        height: 2.25rem;
+        cursor: pointer;
+    }
+
+    .anbg-attachment-preview-download:hover,
+    .anbg-attachment-preview-close:hover {
+        border-color: rgb(57 150 211 / 0.45);
+        background: #eaf4fb;
+        color: #1c203d;
+    }
+
+    .anbg-attachment-preview-close span {
+        font-size: 1.35rem;
+        line-height: 1;
+        transform: translateY(-1px);
+    }
+
+    .anbg-attachment-preview-content {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        align-items: center;
+        justify-content: center;
+        background: #f1f3f5;
+    }
+
+    .anbg-attachment-preview-frame,
+    .anbg-attachment-preview-image {
+        width: 100%;
+        height: 100%;
+        border: 0;
+    }
+
+    .anbg-attachment-preview-image {
+        object-fit: contain;
+        padding: 1rem;
+    }
+
+    @media (max-width: 640px) {
+        .anbg-attachment-preview {
+            padding: 0.5rem;
+        }
+
+        .anbg-attachment-preview-dialog {
+            width: 100%;
+            height: 92vh;
+            border-radius: 1rem;
+        }
+
+        .anbg-attachment-preview-header {
+            align-items: flex-start;
+            padding: 0.85rem;
+        }
+
+        .anbg-attachment-preview-download {
+            display: none;
+        }
     }
 }

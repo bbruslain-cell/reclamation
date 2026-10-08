@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ListDirectionInboxRequest;
 use App\Models\Demande;
 use App\Services\AccessControlService;
 use App\Services\StepAlertService;
@@ -21,7 +22,7 @@ class DirectionInboxController extends Controller
     ) {
     }
 
-    public function index(Request $request): View
+    public function index(ListDirectionInboxRequest $request): View
     {
         $actor = $this->access->requireActor($request);
         $this->assertChefDirectionAccess((int) $actor->id_utilisateur);
@@ -37,14 +38,14 @@ class DirectionInboxController extends Controller
             ->leftJoin('usagers as u', 'u.id_usager', '=', 'd.id_usager')
             ->whereIn('d.id_service_courant', !empty($allowedServiceIds) ? $allowedServiceIds : [-1]);
 
-        if ($request->filled('statut_code')) {
-            $requestedStatus = (string) $request->string('statut_code');
-            if (in_array($requestedStatus, $allowedStatusCodes, true)) {
-                $baseQuery->where('st.code', $requestedStatus);
-            }
+        $requestedStatus = $request->statusCode();
+        if ($requestedStatus !== '' && in_array($requestedStatus, $allowedStatusCodes, true)) {
+            $baseQuery->where('st.code', $requestedStatus);
         }
-        if ($request->filled('search')) {
-            $search = '%'.$request->string('search').'%';
+
+        $searchTerm = $request->searchTerm();
+        if ($searchTerm !== '') {
+            $search = '%'.$searchTerm.'%';
             $baseQuery->where(function ($q) use ($search) {
                 $q->where('d.numero_suivi', 'like', $search)
                     ->orWhere('d.objet', 'like', $search)
@@ -152,21 +153,21 @@ class DirectionInboxController extends Controller
         return view('workflow.direction-inbox', [
             'actor' => $actor,
             'demandes' => $demandes,
-            'search' => (string) $request->string('search', ''),
+            'search' => $searchTerm,
             'piecesByDemand' => $piecesByDemand,
             'servicePerformance' => $servicePerformance,
             'serviceSummary' => [
                 'services_actifs' => $servicePerformance->count(),
                 'service_plus_charge' => $serviceMostLoaded
-                    ? trim(($serviceMostLoaded['service_code'] !== '' ? $serviceMostLoaded['service_code'].' - ' : '').$serviceMostLoaded['service'])
+                    ? $this->serviceCodeLabel($serviceMostLoaded)
                     : '-',
                 'demandes_plus_charge' => (int) ($serviceMostLoaded['total_demandes'] ?? 0),
                 'service_plus_retard' => $serviceMostLate && (int) $serviceMostLate['total_en_retard'] > 0
-                    ? trim(($serviceMostLate['service_code'] !== '' ? $serviceMostLate['service_code'].' - ' : '').$serviceMostLate['service'])
+                    ? $this->serviceCodeLabel($serviceMostLate)
                     : '-',
                 'retards_max' => (int) ($serviceMostLate['total_en_retard'] ?? 0),
                 'meilleur_service' => $serviceMostCompliant
-                    ? trim(($serviceMostCompliant['service_code'] !== '' ? $serviceMostCompliant['service_code'].' - ' : '').$serviceMostCompliant['service'])
+                    ? $this->serviceCodeLabel($serviceMostCompliant)
                     : '-',
                 'meilleur_taux' => (float) ($serviceMostCompliant['taux_conformite'] ?? 0),
             ],
@@ -177,6 +178,17 @@ class DirectionInboxController extends Controller
                 ->get(['code', 'libelle']),
             'canPilotage' => Gate::forUser($actor)->allows('dashboard.view'),
         ]);
+    }
+
+    private function serviceCodeLabel(array $service): string
+    {
+        $code = trim((string) ($service['service_code'] ?? ''));
+
+        if ($code !== '') {
+            return $code;
+        }
+
+        return trim((string) ($service['service'] ?? '')) ?: '-';
     }
 
     public function rediger(Request $request, int $id): RedirectResponse
@@ -192,7 +204,7 @@ class DirectionInboxController extends Controller
 
             Gate::forUser($actor)->authorize('view', $demand);
 
-            throw new AuthorizationException('Le chef de direction dispose d un acces en consultation uniquement.');
+            throw new AuthorizationException("Le chef de direction dispose d'un accès en consultation uniquement.");
         } catch (AuthorizationException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
@@ -206,8 +218,7 @@ class DirectionInboxController extends Controller
             return;
         }
 
-        throw new AuthorizationException('Acces reserve au chef de direction.');
+        throw new AuthorizationException("Accès reservé au chef de direction.");
     }
 }
-
 

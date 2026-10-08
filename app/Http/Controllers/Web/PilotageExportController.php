@@ -6,10 +6,12 @@ use App\Exports\PilotageTableExport;
 use App\Http\Controllers\Api\OverviewController as ApiOverviewController;
 use App\Http\Controllers\Controller;
 use App\Services\AccessControlService;
+use App\Services\PilotageChartWordReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Gate;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -17,18 +19,51 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PilotageExportController extends Controller
 {
-    public function download(Request $request, AccessControlService $access, string $section, string $format): Response|BinaryFileResponse
-    {
-        abort_unless(in_array($format, ['pdf', 'xlsx'], true), 404);
+    public function download(
+        Request $request,
+        AccessControlService $access,
+        PilotageChartWordReportService $wordReports,
+        string $section,
+        string $format,
+    ): Response|BinaryFileResponse {
+        abort_unless(in_array($format, ['pdf', 'xlsx', 'docx'], true), 404);
 
         $actor = $access->resolveActor($request);
-        if (!$actor) {
+        if (! $actor) {
             abort(401);
         }
 
         Gate::forUser($actor)->authorize('dashboard.export');
 
+        if ($section === 'ciq-tracking') {
+            $request->merge([
+                'tracking_all' => true,
+                'tracking_limit' => 5000,
+            ]);
+        }
+
         $overviewData = app(ApiOverviewController::class)->index($request, $access)->getData(true);
+
+        if ($wordReports->supports($section)) {
+            abort_unless($format === 'docx', 404);
+
+            $report = $wordReports->generate($section, $overviewData, $actor);
+            try {
+                $this->traceExport($actor, $format, $report['filename'], $section, $request);
+
+                return response()->download($report['path'], $report['filename'], [
+                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'X-Content-Type-Options' => 'nosniff',
+                ])->deleteFileAfterSend(true);
+            } catch (\Throwable $exception) {
+                File::delete($report['path']);
+
+                throw $exception;
+            }
+        }
+
+        abort_unless(in_array($format, ['pdf', 'xlsx'], true), 404);
+
         $payload = $this->buildPayload($section, $overviewData);
         $extension = $format === 'xlsx' ? 'xlsx' : 'pdf';
         $downloadName = $payload['filename'].'.'.$extension;
@@ -63,18 +98,27 @@ class PilotageExportController extends Controller
 
     private function traceExport(object $actor, string $format, string $downloadName, string $section, Request $request): void
     {
-        $formatCode = $format === 'xlsx' ? 'excel' : $format;
+        $formatCode = match ($format) {
+            'xlsx' => 'excel',
+            'docx' => 'word',
+            default => $format,
+        };
         $formatId = DB::table('parametres')
             ->where('famille', 'format_export')
             ->where('code', $formatCode)
             ->value('id_parametre');
 
-        if (!$formatId) {
+        if (! $formatId) {
             $formatId = DB::table('parametres')->insertGetId([
                 'famille' => 'format_export',
                 'code' => $formatCode,
                 'libelle' => strtoupper($formatCode),
-                'ordre_affichage' => $formatCode === 'excel' ? 1 : 2,
+                'ordre_affichage' => match ($formatCode) {
+                    'excel' => 1,
+                    'pdf' => 2,
+                    'word' => 3,
+                    default => 99,
+                },
                 'actif' => true,
                 'date_debut_validite' => now()->toDateString(),
                 'metadata_json' => null,
@@ -221,7 +265,7 @@ class PilotageExportController extends Controller
                     "Nombre traité",
                     "Taux d'exécution (%)",
                     "Nombre traité dans les délais",
-                    "Taux de conformité (72h) (%)",
+                    "Taux de conformité (24h) (%)",
                     '(A + B) / 2',
                 ],
                 'rows' => $rows,
@@ -268,7 +312,7 @@ class PilotageExportController extends Controller
                     "Nbre de mails traités",
                     "Taux d'exécution (%) (A)",
                     "Nbre de mails traités dans les délais",
-                    "Taux de conformité (72h) (%) (B)",
+                    "Taux de conformité (24h) (%) (B)",
                 ],
                 'rows' => $rows,
                 'footer' => [

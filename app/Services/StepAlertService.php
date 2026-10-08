@@ -28,6 +28,7 @@ class StepAlertService
                 'alerte_chef' => $alerts['alerte_chef'],
                 'alerte_agent' => $alerts['alerte_agent'],
                 'delai_alerte' => $alerts['delai_alerte'],
+                'heures_ouvrees_cloture' => $this->computeClosureWorkedHours($demand),
                 'updated_at' => now(),
             ]);
 
@@ -36,35 +37,12 @@ class StepAlertService
 
     public function refreshOpenDemandAlerts(?array $serviceScopeIds = null): void
     {
-        $query = DB::table('demandes')
-            ->whereNull('date_cloture');
+        $this->refreshDemandSet(onlyOpen: true, serviceScopeIds: $serviceScopeIds);
+    }
 
-        if ($serviceScopeIds !== null) {
-            $query->whereIn('id_service_courant', !empty($serviceScopeIds) ? $serviceScopeIds : [-1]);
-        }
-
-        $rows = $query->get([
-            'id_demande',
-            'id_config_sla',
-            'date_soumission',
-            'date_affectation_accueil',
-            'date_affectation_agent',
-            'date_envoi_usager',
-            'date_cloture',
-        ]);
-
-        foreach ($rows as $row) {
-            $alerts = $this->computeAlertsForDemand($row);
-            DB::table('demandes')
-                ->where('id_demande', $row->id_demande)
-                ->update([
-                    'alerte_accueil' => $alerts['alerte_accueil'],
-                    'alerte_chef' => $alerts['alerte_chef'],
-                    'alerte_agent' => $alerts['alerte_agent'],
-                    'delai_alerte' => $alerts['delai_alerte'],
-                    'updated_at' => now(),
-                ]);
-        }
+    public function refreshAllDemandAlerts(?array $serviceScopeIds = null): void
+    {
+        $this->refreshDemandSet(onlyOpen: false, serviceScopeIds: $serviceScopeIds);
     }
 
     public function computeAlertsForDemand(object $demand): array
@@ -75,7 +53,7 @@ class StepAlertService
 
         $alerteAccueil = $this->computeStepAlert(
             'accueil',
-            $demand->date_soumission,
+            $demand->date_soumission ?? null,
             $demand->date_affectation_accueil ?? null,
             $configId
         );
@@ -118,6 +96,7 @@ class StepAlertService
             if (!$alert || !isset($order[$alert])) {
                 continue;
             }
+
             if ($order[$alert] > $max) {
                 $max = $order[$alert];
                 $selected = $alert;
@@ -137,13 +116,36 @@ class StepAlertService
         };
     }
 
+    public function thresholdsForStep(string $stepCode): array
+    {
+        $defaultsByStep = [
+            'accueil' => ['warning' => 4, 'deadline' => 8],
+            'chef' => ['warning' => 8, 'deadline' => 16],
+            'agent' => ['warning' => 8, 'deadline' => 16],
+            'default' => ['warning' => 12, 'deadline' => 24],
+        ];
+
+        return $this->thresholds($stepCode, $defaultsByStep[$stepCode] ?? $defaultsByStep['default']);
+    }
+
+    public function globalThresholds(int $configId): array
+    {
+        $deadline = $this->globalMaxHours($configId);
+        $defaults = [
+            'warning' => round($deadline / 2, 2),
+            'deadline' => $deadline,
+        ];
+
+        return $this->thresholds('default', $defaults);
+    }
+
     private function computeStepAlert(string $stepCode, ?string $startAt, ?string $endAt, int $configId): ?string
     {
         if (!$startAt) {
             return null;
         }
 
-        $thresholds = $this->thresholds($stepCode);
+        $thresholds = $this->thresholdsForStep($stepCode);
         $start = Carbon::parse($startAt);
         $end = $endAt ? Carbon::parse($endAt) : now();
 
@@ -166,32 +168,82 @@ class StepAlertService
             return null;
         }
 
+        $thresholds = $this->globalThresholds($configId);
         $start = Carbon::parse($startAt);
         $end = $endAt ? Carbon::parse($endAt) : now();
-
         $elapsed = $this->slaService->calculateElapsedHours($start, $end, $configId);
-        $maxHours = $this->globalMaxHours($configId);
 
-        return $this->slaService->classifyAlert($elapsed, $maxHours);
+        return $this->slaService->classifyAlert(
+            $elapsed,
+            (int) $thresholds['deadline'],
+            (float) $thresholds['warning']
+        );
     }
 
-    private function thresholds(string $stepCode): array
+    private function refreshDemandSet(bool $onlyOpen, ?array $serviceScopeIds = null): void
     {
-        // Seuils validesés : vert <24h ouvrées, orange 24h-72h, rouge >72h ouvrées
-        $defaultsByStep = [
-            'accueil' => ['warning' => 24, 'deadline' => 72],
-            'chef'    => ['warning' => 24, 'deadline' => 72],
-            'agent'   => ['warning' => 24, 'deadline' => 72],
-            'default' => ['warning' => 24, 'deadline' => 72],
-        ];
-        $defaults = $defaultsByStep[$stepCode] ?? $defaultsByStep['default'];
+        $query = DB::table('demandes');
 
+        if ($onlyOpen) {
+            $query->whereNull('date_cloture');
+        }
+
+        if ($serviceScopeIds !== null) {
+            $query->whereIn('id_service_courant', !empty($serviceScopeIds) ? $serviceScopeIds : [-1]);
+        }
+
+        $rows = $query->get([
+            'id_demande',
+            'id_config_sla',
+            'date_soumission',
+            'date_affectation_accueil',
+            'date_affectation_agent',
+            'date_envoi_usager',
+            'date_cloture',
+        ]);
+
+        foreach ($rows as $row) {
+            $alerts = $this->computeAlertsForDemand($row);
+            DB::table('demandes')
+                ->where('id_demande', $row->id_demande)
+                ->update([
+                    'alerte_accueil' => $alerts['alerte_accueil'],
+                    'alerte_chef' => $alerts['alerte_chef'],
+                    'alerte_agent' => $alerts['alerte_agent'],
+                    'delai_alerte' => $alerts['delai_alerte'],
+                    'heures_ouvrees_cloture' => $this->computeClosureWorkedHours($row),
+                    'updated_at' => now(),
+                ]);
+        }
+    }
+
+    private function computeClosureWorkedHours(object $demand): ?float
+    {
+        if (
+            !$demand->date_soumission
+            || !$demand->id_config_sla
+            || (!$demand->date_envoi_usager && !$demand->date_cloture)
+        ) {
+            return null;
+        }
+
+        $endAt = $demand->date_envoi_usager ?? $demand->date_cloture;
+
+        return $this->slaService->calculateElapsedHours(
+            Carbon::parse($demand->date_soumission),
+            Carbon::parse($endAt),
+            (int) $demand->id_config_sla
+        );
+    }
+
+    private function thresholds(string $stepCode, array $defaults): array
+    {
         $row = DB::table('parametres')
             ->where('famille', 'seuil_alerte')
             ->where('code', $stepCode)
             ->value('metadata_json');
 
-        if (!$row) {
+        if (!$row && $stepCode !== 'default') {
             $row = DB::table('parametres')
                 ->where('famille', 'seuil_alerte')
                 ->where('code', 'default')
@@ -207,17 +259,19 @@ class StepAlertService
             return $defaults;
         }
 
+        $warning = isset($payload['warning'])
+            ? (float) $payload['warning']
+            : (isset($payload['orange'])
+                ? (float) $payload['orange']
+                : (isset($payload['vert']) ? (float) $payload['vert'] : (float) $defaults['warning']));
+
+        $deadline = isset($payload['deadline'])
+            ? (float) $payload['deadline']
+            : (isset($payload['rouge']) ? (float) $payload['rouge'] : (float) $defaults['deadline']);
+
         return [
-            'warning'  => isset($payload['warning'])
-                ? (int) $payload['warning']
-                : (isset($payload['vert']) ? (int) $payload['vert'] : $defaults['warning']),
-            'deadline' => isset($payload['deadline'])
-                ? (int) $payload['deadline']
-                : (
-                    isset($payload['rouge'])
-                        ? (int) $payload['rouge']
-                        : (isset($payload['orange']) ? (int) $payload['orange'] : $defaults['deadline'])
-                ),
+            'warning' => max(0.0, min($warning, $deadline)),
+            'deadline' => max(1.0, $deadline),
         ];
     }
 
@@ -227,6 +281,6 @@ class StepAlertService
             ->where('id_config_sla', $configId)
             ->value('delai_max_heures');
 
-        return max(1, (int) ($value ?: 72));
+        return max(1, (int) ($value ?: 24));
     }
 }

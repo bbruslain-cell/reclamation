@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Services\AccessControlService;
+use App\Services\SessionSecurityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,9 +15,10 @@ use Illuminate\View\View;
 
 class PasswordController extends Controller
 {
-    public function __construct(private readonly AccessControlService $access)
-    {
-    }
+    public function __construct(
+        private readonly AccessControlService $access,
+        private readonly SessionSecurityService $sessions
+    ) {}
 
     public function showChange(Request $request): View
     {
@@ -34,30 +36,41 @@ class PasswordController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        if (!Hash::check($payload['ancien_mdp'], $actor->password_hash)) {
+        if (! Hash::check($payload['ancien_mdp'], $actor->password_hash)) {
             throw ValidationException::withMessages([
                 'ancien_mdp' => 'Ancien mot de passe incorrect.',
             ]);
         }
 
-        DB::table('utilisateurs')
-            ->where('id_utilisateur', $actor->id_utilisateur)
-            ->update([
-                'password_hash' => Hash::make($payload['password']),
-                'changement_mdp_requis' => false,
-                'updated_at' => now(),
-            ]);
+        $currentSessionId = $request->session()->getId();
+        $sessionVersion = DB::transaction(function () use ($actor, $payload, $currentSessionId): int {
+            DB::table('utilisateurs')
+                ->where('id_utilisateur', $actor->id_utilisateur)
+                ->update([
+                    'password_hash' => Hash::make($payload['password']),
+                    'changement_mdp_requis' => false,
+                    'updated_at' => now(),
+                ]);
 
-        $freshActor = DB::table('utilisateurs')
-            ->where('id_utilisateur', $actor->id_utilisateur)
-            ->first();
+            return $this->sessions->revokeForUser(
+                (int) $actor->id_utilisateur,
+                $currentSessionId
+            );
+        });
 
-        if ($freshActor) {
-            $authActor = \App\Models\Utilisateur::query()->find($actor->id_utilisateur);
-            if ($authActor) {
-                Auth::guard('web')->setUser($authActor);
-            }
-        }
+        $authActor = \App\Models\Utilisateur::query()->findOrFail($actor->id_utilisateur);
+        Auth::guard('web')->setUser($authActor);
+        $this->sessions->synchronizeCurrentSession($request, $sessionVersion, regenerate: true);
+
+        DB::table('historique_actions')->insert([
+            'id_demande' => null,
+            'id_utilisateur' => (int) $actor->id_utilisateur,
+            'type_action' => 'AUTH_PASSWORD_CHANGED',
+            'commentaire' => 'Mot de passe modifie et autres sessions revoquees',
+            'date_action' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         return redirect('/espace')->with('success', 'Mot de passe mis à jour.');
     }
