@@ -238,6 +238,59 @@ class DemandWorkflowApiTest extends TestCase
         $this->assertNotNull($row->date_affectation_agent);
     }
 
+    public function test_chef_service_scope_ignores_direction_perimeter_for_assigned_demands(): void
+    {
+        $this->seed();
+
+        $chefRoleId = (int) DB::table('roles')->where('code', 'chef_service')->value('id_role');
+        $ownServiceId = (int) DB::table('services')->where('code', 'CS_AJARH')->value('id_service');
+        $dafDirectionId = (int) DB::table('directions')->where('code', 'DAF')->value('id_direction');
+        $dafDemandId = (int) DB::table('demandes')->where('numero_suivi', 'ANBG-2026-0003')->value('id_demande');
+        $dafAgentId = (int) DB::table('utilisateurs')->where('email', 'agent.daf@anbg.ga')->value('id_utilisateur');
+
+        $chefId = (int) DB::table('utilisateurs')->insertGetId([
+            'email' => 'chef.ajarh.scope-test@anbg.ga',
+            'nom' => 'Chef',
+            'prenom' => 'AJARH',
+            'password_hash' => bcrypt('ChangeMe@124'),
+            'id_service' => $ownServiceId,
+            'actif' => true,
+            'changement_mdp_requis' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], 'id_utilisateur');
+
+        DB::table('utilisateur_role')->insert([
+            'id_utilisateur' => $chefId,
+            'id_role' => $chefRoleId,
+        ]);
+        DB::table('perimetre_service')->insert([
+            'id_utilisateur' => $chefId,
+            'id_service' => $ownServiceId,
+        ]);
+        DB::table('perimetre_direction')->insert([
+            'id_utilisateur' => $chefId,
+            'id_direction' => $dafDirectionId,
+        ]);
+
+        $this->withHeader('X-User-Id', (string) $chefId)
+            ->getJson('/api/demandes')
+            ->assertOk()
+            ->assertJsonMissing(['numero_suivi' => 'ANBG-2026-0003']);
+
+        $this->withHeader('X-User-Id', (string) $chefId)
+            ->get('/chef/inbox')
+            ->assertOk()
+            ->assertDontSee('ANBG-2026-0003')
+            ->assertDontSee('Reclamation frais de scolarite');
+
+        $this->withHeader('X-User-Id', (string) $chefId)
+            ->putJson("/api/demandes/{$dafDemandId}/affecter-agent", [
+                'id_agent' => $dafAgentId,
+            ])
+            ->assertForbidden();
+    }
+
     public function test_service_assignment_sends_mail_to_service_chief(): void
     {
         $this->seed();

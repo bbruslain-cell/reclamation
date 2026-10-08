@@ -88,15 +88,11 @@ class AccessControlService
 
     public function scopedServiceIds(int $userId): array
     {
-        $serviceScope = DB::table('perimetre_service')
-            ->where('id_utilisateur', $userId)
-            ->pluck('id_service')
-            ->map(static fn ($value) => (int) $value)
-            ->toArray();
+        $serviceScope = $this->serviceScopedServiceIds($userId);
+        $roles = $this->roleCodes($userId);
 
-        $ownService = DB::table('utilisateurs')->where('id_utilisateur', $userId)->value('id_service');
-        if ($ownService) {
-            $serviceScope[] = (int) $ownService;
+        if (in_array('chef_service', $roles, true) && ! in_array('chef_direction', $roles, true)) {
+            return $serviceScope;
         }
 
         $directionIds = DB::table('perimetre_direction')
@@ -111,6 +107,22 @@ class AccessControlService
                 ->map(static fn ($value) => (int) $value)
                 ->toArray();
             $serviceScope = array_merge($serviceScope, $directionServiceIds);
+        }
+
+        return array_values(array_unique($serviceScope));
+    }
+
+    public function serviceScopedServiceIds(int $userId): array
+    {
+        $serviceScope = DB::table('perimetre_service')
+            ->where('id_utilisateur', $userId)
+            ->pluck('id_service')
+            ->map(static fn ($value) => (int) $value)
+            ->toArray();
+
+        $ownService = DB::table('utilisateurs')->where('id_utilisateur', $userId)->value('id_service');
+        if ($ownService) {
+            $serviceScope[] = (int) $ownService;
         }
 
         return array_values(array_unique($serviceScope));
@@ -186,20 +198,13 @@ class AccessControlService
             return false;
         }
 
-        $hasServiceScope = DB::table('perimetre_service')
-            ->where('id_utilisateur', $userId)
-            ->where('id_service', $serviceId)
-            ->exists();
-
-        if ($hasServiceScope) {
+        if (in_array((int) $serviceId, $this->serviceScopedServiceIds($userId), true)) {
             return true;
         }
 
-        $userServiceId = DB::table('utilisateurs')
-            ->where('id_utilisateur', $userId)
-            ->value('id_service');
-        if ((int) $userServiceId === (int) $serviceId) {
-            return true;
+        $roles = $this->roleCodes($userId);
+        if (in_array('chef_service', $roles, true) && ! in_array('chef_direction', $roles, true)) {
+            return false;
         }
 
         $demandDirectionId = DB::table('services')

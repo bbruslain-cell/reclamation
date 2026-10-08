@@ -139,7 +139,7 @@
             <!-- Logo + Nom -->
             <div class="flex items-center gap-3">
                 <!-- Cartouche blanc logo  -->
-                <a href="https://www.anbg-ga.com/" class="flex items-center gap-2 sm:gap-3 group">
+                <a  class="flex items-center gap-2 sm:gap-3 group">
                     <div class="bg-white rounded-md px-1.5 py-1 sm:px-2 flex items-center justify-center transition-transform group-hover:scale-105">
                         <img src="{{ asset('Logo_anbg.png') }}" alt="ANBG" class="h-8 sm:h-10 w-auto object-contain block">
                     </div>

@@ -11,7 +11,7 @@ use App\Http\Controllers\Web\AgentInboxController;
 use App\Http\Controllers\Web\AgentPortalController;
 use App\Http\Controllers\Web\AttachmentController;
 use App\Http\Controllers\Web\AuthController;
-use App\Http\Controllers\Web\ChefInboxController;
+use App\Http\Controllers\Web\ScopedChefInboxController;
 use App\Http\Controllers\Web\DemandDeliveryController;
 use App\Http\Controllers\Web\DirectionInboxController;
 use App\Http\Controllers\Web\PasswordController;
@@ -63,10 +63,10 @@ Route::middleware('agent.auth')->group(function () {
     Route::put('/accueil/demandes/{id}/annuler-affectation', [AccueilInboxController::class, 'annulerAffectation']);
 
     // Chef de service
-    Route::get('/chef/inbox', [ChefInboxController::class, 'index']);
-    Route::put('/chef/demandes/{id}/affecter-agent', [ChefInboxController::class, 'affecterAgent']);
-    Route::put('/chef/demandes/{id}/reponse-directe', [ChefInboxController::class, 'reponseDirecte']);
-    Route::put('/chef/demandes/{id}/annuler-affectation-agent', [ChefInboxController::class, 'annulerAffectationAgent']);
+    Route::get('/chef/inbox', [ScopedChefInboxController::class, 'index']);
+    Route::put('/chef/demandes/{id}/affecter-agent', [ScopedChefInboxController::class, 'affecterAgent']);
+    Route::put('/chef/demandes/{id}/reponse-directe', [ScopedChefInboxController::class, 'reponseDirecte']);
+    Route::put('/chef/demandes/{id}/annuler-affectation-agent', [ScopedChefInboxController::class, 'annulerAffectationAgent']);
 
     // Agent
     Route::get('/agent/inbox', [AgentInboxController::class, 'index']);
