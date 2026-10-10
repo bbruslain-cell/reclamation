@@ -561,7 +561,7 @@ class OverviewController extends Controller
             ]);
 
         $trackingPage = max(1, (int) $request->input('tracking_page', 1));
-        $trackingPerPage = min(100, max(10, (int) $request->input('tracking_per_page', 25)));
+        $trackingPerPage = min(100, max(10, (int) $request->input('tracking_per_page', 50)));
         $trackingAll = $request->boolean('tracking_all', false);
         $trackingDemandId = max(0, (int) $request->input('tracking_demand_id', 0));
 

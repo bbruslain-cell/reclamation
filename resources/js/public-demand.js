@@ -25,6 +25,8 @@ if (appRoot && stateNode) {
         .toLowerCase()
         .trim();
     const normalizeSearch = (value) => normalizeStatus(value).replace(/[^a-z0-9]+/g, ' ').trim();
+    const maxAttachmentSize = 3.5 * 1024 * 1024;
+    const allowedAttachmentTypes = ['application/pdf', 'image/jpeg', 'image/png'];
 
     createApp({
         data() {
@@ -58,6 +60,7 @@ if (appRoot && stateNode) {
                 categories: [],
                 establishmentQuery: asString(old.etablissement),
                 showEstablishmentOptions: false,
+                attachmentBlocked: false,
                 submitting: false,
             };
         },
@@ -169,6 +172,12 @@ if (appRoot && stateNode) {
                     return;
                 }
 
+                const input = document.getElementById('piece_jointe');
+                if (this.attachmentBlocked || !this.validateAttachmentInput(input)) {
+                    event.preventDefault();
+                    return;
+                }
+
                 if (this.submitting) {
                     event.preventDefault();
                     return;
@@ -178,6 +187,43 @@ if (appRoot && stateNode) {
                 window.setTimeout(() => {
                     this.submitting = false;
                 }, 8000);
+            },
+            attachmentTooLargeMessage(file) {
+                return `Fichier trop lourd (${(file.size / 1024 / 1024).toFixed(1)} Mo). Maximum autorisé : 3,5 Mo.`;
+            },
+            clearAttachmentInput(input) {
+                if (input) {
+                    input.value = '';
+                }
+
+                const list = document.getElementById('file-list');
+                if (list) {
+                    list.textContent = '';
+                }
+            },
+            validateAttachmentInput(input) {
+                const file = input?.files?.[0] || null;
+                if (!file) {
+                    return true;
+                }
+
+                if (file.size > maxAttachmentSize) {
+                    this.errors.piece_jointe = this.attachmentTooLargeMessage(file);
+                    this.attachmentBlocked = true;
+                    this.clearAttachmentInput(input);
+                    return false;
+                }
+
+                if (!allowedAttachmentTypes.includes(file.type)) {
+                    this.errors.piece_jointe = 'Format non accepté. Utilisez des formats PDF, JPG ou PNG.';
+                    this.attachmentBlocked = true;
+                    this.clearAttachmentInput(input);
+                    return false;
+                }
+
+                this.errors.piece_jointe = null;
+                this.attachmentBlocked = false;
+                return true;
             },
             setupDropzone() {
                 document.addEventListener('dragover', (event) => event.preventDefault());
@@ -189,9 +235,6 @@ if (appRoot && stateNode) {
                 if (!dropzone || !input || !list) {
                     return;
                 }
-
-                const maxSize = 3.5 * 1024 * 1024;
-                const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
 
                 const refreshList = () => {
                     list.textContent = '';
@@ -226,17 +269,22 @@ if (appRoot && stateNode) {
 
                     const file = files[0];
 
-                    if (file.size > maxSize) {
-                        this.errors.piece_jointe = `Fichier trop lourd (${(file.size / 1024 / 1024).toFixed(1)} Mo). Maximum autorisé : 3,5 Mo.`;
+                    if (file.size > maxAttachmentSize) {
+                        this.errors.piece_jointe = this.attachmentTooLargeMessage(file);
+                        this.attachmentBlocked = true;
+                        this.clearAttachmentInput(input);
                         return;
                     }
 
-                    if (!allowedTypes.includes(file.type)) {
+                    if (!allowedAttachmentTypes.includes(file.type)) {
                         this.errors.piece_jointe = 'Format non accepté. Utilisez des formats PDF, JPG ou PNG.';
+                        this.attachmentBlocked = true;
+                        this.clearAttachmentInput(input);
                         return;
                     }
 
                     this.errors.piece_jointe = null;
+                    this.attachmentBlocked = false;
                     const dataTransfer = new DataTransfer();
                     dataTransfer.items.add(file);
                     input.files = dataTransfer.files;

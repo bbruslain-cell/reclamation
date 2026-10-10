@@ -52,6 +52,14 @@ const startGlobalLoading = () => {
     globalLoadingTimeout = window.setTimeout(stopGlobalLoading, GLOBAL_LOADING_TIMEOUT);
 };
 
+const isDownloadLikeUrl = (url) => {
+    const pathname = url.pathname.toLowerCase();
+
+    return pathname.startsWith('/pilotage/export/')
+        || pathname.startsWith('/pieces-jointes/')
+        || /\.(csv|docx|pdf|xlsx?|zip)$/i.test(pathname);
+};
+
 const isPageNavigation = (event, link) => {
     if (
         event.defaultPrevented
@@ -79,6 +87,10 @@ const isPageNavigation = (event, link) => {
     const destination = new URL(link.href, window.location.href);
     const current = new URL(window.location.href);
 
+    if (isDownloadLikeUrl(destination)) {
+        return false;
+    }
+
     return destination.protocol === 'http:' || destination.protocol === 'https:'
         ? destination.origin !== current.origin
             || destination.pathname !== current.pathname
@@ -93,6 +105,8 @@ const initAnbgGlobalLoading = () => {
 
     window.anbgGlobalLoadingReady = true;
     ensureGlobalLoadingBar();
+    window.startAnbgGlobalLoading = startGlobalLoading;
+    window.stopAnbgGlobalLoading = stopGlobalLoading;
 
     document.addEventListener('submit', (event) => {
         const form = event.target;
@@ -105,6 +119,15 @@ const initAnbgGlobalLoading = () => {
 
     document.addEventListener('click', (event) => {
         const link = event.target.closest('a[href]');
+        if (link) {
+            const destination = new URL(link.href, window.location.href);
+            if (isDownloadLikeUrl(destination)) {
+                window.setTimeout(stopGlobalLoading, 1200);
+                window.setTimeout(stopGlobalLoading, 4000);
+                return;
+            }
+        }
+
         if (link && isPageNavigation(event, link)) {
             startGlobalLoading();
         }

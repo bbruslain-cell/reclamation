@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StorePublicDemandRequest;
 use App\Mail\PublicDemandAcknowledgementMail;
 use App\Services\PublicDemandService;
+use App\Support\StorePublicDemandWithAttachmentFeedbackRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -42,15 +42,15 @@ class PublicDemandController extends Controller
 
         return view('public.create-demand', [
             'types' => $types,
-            'usagerStatuses' => StorePublicDemandRequest::usagerStatuses(),
-            'countries' => StorePublicDemandRequest::countries(),
+            'usagerStatuses' => StorePublicDemandWithAttachmentFeedbackRequest::usagerStatuses(),
+            'countries' => StorePublicDemandWithAttachmentFeedbackRequest::countries(),
             'establishments' => $establishments,
-            'categoriesByType' => StorePublicDemandRequest::categoriesByType(),
-            'acceptedEmailTldPattern' => StorePublicDemandRequest::acceptedEmailTldPattern(),
+            'categoriesByType' => StorePublicDemandWithAttachmentFeedbackRequest::categoriesByType(),
+            'acceptedEmailTldPattern' => StorePublicDemandWithAttachmentFeedbackRequest::acceptedEmailTldPattern(),
         ]);
     }
 
-    public function store(StorePublicDemandRequest $request): RedirectResponse
+    public function store(StorePublicDemandWithAttachmentFeedbackRequest $request): RedirectResponse
     {
         $file = $request->file('piece_jointe');
         $payload = $request->payload();

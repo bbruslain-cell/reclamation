@@ -42,7 +42,7 @@ class DemandWorkflowApiTest extends TestCase
             'introLine' => "Une demande vous a ete affectee par l'accueil.",
             'instructionLine' => "Merci de vous connecter a l'application pour la traiter.",
             'actorName' => 'Accueil Service',
-            'serviceLabel' => 'CS_SENB - Etudiants Boursiers',
+            'serviceLabel' => 'SENB - Etudiants Boursiers',
             'comment' => "Dossier d'etudiant a verifier.",
             'loginUrl' => 'https://reclamations.anbg.ga/espace',
         ])->render();

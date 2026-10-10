@@ -7,7 +7,7 @@ use App\Http\Controllers\Web\Concerns\InteractsWithDeliveryStatus;
 use App\Http\Requests\AssignServiceRequest;
 use App\Http\Requests\CancelAssignmentRequest;
 use App\Http\Requests\ListAccueilInboxRequest;
-use App\Http\Requests\SendWorkflowResponseRequest;
+use App\Support\SendWorkflowResponseWithAttachmentsRequest;
 use App\Models\Demande;
 use App\Services\AccessControlService;
 use App\Services\DemandWorkflowService;
@@ -123,7 +123,7 @@ class AccueilInboxController extends Controller
 
         $nouvelles = $this->applySort(clone $listQuery, $sortBy, $sortDir)
             ->where('st.code', 'nouvelle')
-            ->paginate(20, ['*'], 'nouvelles_page')
+            ->paginate(50, ['*'], 'nouvelles_page')
             ->withQueryString();
         $nouvelles->setCollection(
             $nouvelles->getCollection()->map(
@@ -142,7 +142,7 @@ class AccueilInboxController extends Controller
                     });
                 }
             })
-            ->paginate(20, ['*'], 'affectees_page')
+            ->paginate(50, ['*'], 'affectees_page')
             ->withQueryString();
         $affectees->setCollection(
             $affectees->getCollection()->map(
@@ -288,7 +288,7 @@ class AccueilInboxController extends Controller
         }
     }
 
-    public function reponseDirecteAccueil(SendWorkflowResponseRequest $request, int $id): RedirectResponse
+    public function reponseDirecteAccueil(SendWorkflowResponseWithAttachmentsRequest $request, int $id): RedirectResponse
     {
         try {
             $actor = $this->access->requireActor($request);

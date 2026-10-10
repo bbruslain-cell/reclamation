@@ -11,6 +11,8 @@
     $canExportPilotage = (bool) ($canExportPilotage ?? false);
     $directionOptions = collect($catalogues['directions'] ?? [])->values();
     $serviceOptions = collect($catalogues['services'] ?? [])->values();
+    $returnWorkspaceHref = null;
+    $returnWorkspaceLabel = null;
 
     $formatPercent = fn ($value) => number_format((float) ($value ?? 0), 1, ',', ' ').' %';
 
@@ -60,7 +62,7 @@
         ? trim(trim(((string) ($currentDirection['code'] ?? '')).' - '.((string) ($currentDirection['libelle'] ?? ''))), ' -')
         : null;
     $currentServiceLabel = $currentService
-        ? trim(trim(((string) ($currentService['code'] ?? '')).' - '.((string) ($currentService['libelle'] ?? ''))), ' -')
+        ? \App\Support\ServiceCodeFormatter::label($currentService['code'] ?? '', $currentService['libelle'] ?? '')
         : null;
     $dashboardNavLabel = 'Dashboard CIQ';
     $dashboardPageEyebrow = 'Contrôle interne et qualité';
@@ -68,6 +70,8 @@
     $dashboardPageSubtitle = 'Vue dédiée aux graphiques décisionnels : volumes reçus, performance des directions, évolution et services.';
 
     if (in_array('chef_direction', $roleCodes, true)) {
+        $returnWorkspaceHref = '/chef-direction/inbox';
+        $returnWorkspaceLabel = 'Espace direction';
         $dashboardNavLabel = 'Dashboard direction';
         $dashboardPageEyebrow = 'Pilotage de direction';
         $dashboardPageTitle = $currentDirectionLabel
@@ -77,6 +81,8 @@
             ? 'Vue graphique dédiée à la '.$currentDirectionLabel.', limitée aux services de votre périmètre.'
             : 'Vue graphique dédiée à votre direction, limitée aux services de votre périmètre.';
     } elseif (in_array('chef_service', $roleCodes, true)) {
+        $returnWorkspaceHref = '/chef/inbox';
+        $returnWorkspaceLabel = 'Espace service';
         $dashboardNavLabel = 'Dashboard service';
         $dashboardPageEyebrow = 'Pilotage de service';
         $dashboardPageTitle = $currentServiceLabel
@@ -150,7 +156,7 @@
             $taux = (float) data_get($row, 'taux_reponse_dans_delais', 0);
 
             return [
-                'service' => trim((string) data_get($row, 'service_code', data_get($row, 'service', '-'))) ?: '-',
+                'service' => \App\Support\ServiceCodeFormatter::display(trim((string) data_get($row, 'service_code', data_get($row, 'service', '-')))) ?: '-',
                 'service_libelle' => trim((string) data_get($row, 'service', '-')) ?: '-',
                 'direction' => trim((string) data_get($row, 'direction', '-')) ?: '-',
                 'total_cloturees' => (int) data_get($row, 'total_cloturees', 0),
@@ -331,36 +337,21 @@
                 <span class="hidden sm:block text-white font-medium tracking-wider uppercase">{{ $dashboardNavLabel }}</span>
             </div>
             <div class="flex items-center gap-3">
+                @if($returnWorkspaceHref)
+                <a href="{{ $returnWorkspaceHref }}" class="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150" aria-label="Retourner vers {{ strtolower($returnWorkspaceLabel) }}">
+                    <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M10.5 5.5 4 12l6.5 6.5 1.4-1.4-4.1-4.1H20v-2H7.8l4.1-4.1-1.4-1.4Z" fill="currentColor"/>
+                    </svg>
+                    <span class="hidden sm:inline">{{ $returnWorkspaceLabel }}</span>
+                </a>
+                @endif
                 <a href="{{ url('/pilotage') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150">
                     <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <path d="M4 19h16v2H2V4h2v15Zm2.7-4.3 3.5-3.5 2.6 2.6 4.5-5.3 1.5 1.3-5.9 7-2.7-2.7-2.1 2.1-1.4-1.5Z" fill="currentColor"/>
                     </svg>
                     <span>Pilotage</span>
                 </a>
-                <a href="/espace" class="hidden sm:inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150">
-                    <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z" fill="currentColor"/>
-                    </svg>
-                    <span>Mon espace</span>
-                </a>
-                <div class="hidden sm:flex items-center gap-2 bg-white/10 border border-white/15 rounded-lg px-3 py-1.5">
-                    <div class="w-6 h-6 rounded-full bg-sky/30 flex items-center justify-center flex-shrink-0">
-                        <svg class="icon-svg text-sky-100 text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="2"/>
-                            <path d="M6 18c1.4-2.8 4-4.2 6-4.2s4.6 1.4 6 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                    </div>
-                    <span class="text-white text-xs font-medium">{{ $actorName !== '' ? $actorName : 'Utilisateur ANBG' }}</span>
-                </div>
-                <form method="post" action="/logout">
-                    @csrf
-                    <button type="submit" class="flex items-center gap-1.5 bg-white/10 hover:bg-red-500/20 border border-white/15 hover:border-red-400/40 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150">
-                        <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2H5V5h5V3Zm9.7 9-4.2-4.2-1.4 1.4 1.8 1.8H9v2h6.9l-1.8 1.8 1.4 1.4 4.2-4.2Z" fill="currentColor"/>
-                        </svg>
-                        <span class="hidden sm:inline">Déconnexion</span>
-                    </button>
-                </form>
+                @include('partials.user-profile-menu', ['actor' => $actor])
             </div>
         </div>
     </header>
@@ -396,15 +387,7 @@
     </section>
 
     <main class="app-page-frame py-6 space-y-6">
-        @if(session('success'))
-            <div data-auto-dismiss-flash role="status" class="flex items-center gap-3 rounded-xl border border-leaf/30 bg-leaf-50 px-4 py-3 text-sm text-green-800 shadow-sm transition-all duration-300 ease-out">
-                <svg class="icon-svg flex-shrink-0 text-leaf" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/>
-                    <path d="m8.5 12 2.3 2.3L15.5 9.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <span>{{ session('success') }}</span>
-            </div>
-        @endif
+        @include('partials.success-flash')
 
         <section class="chart-card rounded-3xl p-5">
             <form method="get" class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6 xl:items-end">
@@ -438,7 +421,7 @@
                     <select id="service_id" name="service_id" class="field w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy">
                         <option value="">Tous les services</option>
                         @foreach(($catalogues['services'] ?? []) as $service)
-                            <option value="{{ $service['id_service'] }}" @selected($selectedServiceId === (string) $service['id_service'])>{{ $service['direction_code'] }} - {{ $service['code'] }}</option>
+                            <option value="{{ $service['id_service'] }}" @selected($selectedServiceId === (string) $service['id_service'])>{{ $service['direction_code'] }} - {{ \App\Support\ServiceCodeFormatter::display($service['code'] ?? '') }}</option>
                         @endforeach
                     </select>
                 </div>

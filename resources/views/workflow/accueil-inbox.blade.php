@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="fr">
 <head>
     <meta charset="utf-8">
@@ -123,29 +123,9 @@
             </div>
         </div>
 
-        <!-- Agent info + déconnexion -->
+        <!-- Profil utilisateur -->
         <div class="flex items-center gap-3">
-            <div class="hidden sm:flex items-center gap-2 bg-white/10 border border-white/15 rounded-lg px-3 py-1.5">
-                <div class="w-6 h-6 rounded-full bg-sky/30 flex items-center justify-center flex-shrink-0">
-                    <svg class="icon-svg text-sky-100 text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="2"/>
-                        <path d="M6 18c1.4-2.8 4-4.2 6-4.2s4.6 1.4 6 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                </div>
-                <span class="text-white text-xs font-medium">{{ $actor->prenom }} {{ $actor->nom }}</span>
-            </div>
-            <form method="post" action="/logout">
-                @csrf
-                <button type="submit"
-                    class="flex items-center gap-1.5 bg-white/10 hover:bg-red-500/20 border border-white/15 hover:border-red-400/40 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150">
-                    <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M10 6H7.5A2.5 2.5 0 0 0 5 8.5v7A2.5 2.5 0 0 0 7.5 18H10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M13 8l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M9 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                    <span class="hidden sm:inline">Déconnexion</span>
-                </button>
-            </form>
+            @include('partials.user-profile-menu', ['actor' => $actor])
         </div>
     </div>
 </header>
@@ -154,15 +134,7 @@
 <main class="app-page-frame py-4 sm:py-6 space-y-5">
 
     <!-- Toasts -->
-    @if(session('success'))
-    <div data-auto-dismiss-flash class="flex items-start gap-3 bg-leaf-50 border border-leaf/30 text-green-800 px-4 py-3 rounded-xl text-sm shadow-card transition-all duration-300 ease-out">
-        <svg class="icon-svg text-leaf mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/>
-            <path d="m8.5 12 2.3 2.3L15.5 9.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span>{{ session('success') }}</span>
-    </div>
-    @endif
+    @include('partials.success-flash')
     @if(session('error'))
     <div class="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm shadow-card">
         <svg class="icon-svg text-red-500 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -215,7 +187,7 @@
     <section class="hero-shell rounded-[22px] sm:rounded-[28px] px-4 py-5 sm:px-8 sm:py-7 text-white shadow-card">
         <div class="relative z-10 grid gap-6 lg:grid-cols-[1.45fr_0.85fr] lg:items-end">
             <div class="space-y-4">
-                
+
                 <div class="space-y-6">
                     <h1 class="text-xl font-bold leading-tight sm:text-[2rem]">Pilotage opérationnel des demandes</h1>
                     <p class="max-w-3xl text-sm leading-6 text-white/78 sm:text-[15px]">
@@ -248,7 +220,7 @@
                 </div>
             </div>
 
-            
+
         </div>
     </section>
 
@@ -371,7 +343,7 @@
                         class="filter-control field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy transition-all duration-150">
                 </div>
 
-                
+
                 <div>
                     <select name="sort_dir" class="filter-control field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy appearance-none transition-all duration-150">
                         <option value="desc" {{ $sortDir==='desc'?'selected':'' }}>↓ Descendant</option>
@@ -492,7 +464,7 @@
                             @php
                                 $pieces = $piecesByDemand->get($demande->id_demande, collect());
                             @endphp
-                            <div class="grid max-w-[calc(100vw_-_2rem)] grid-cols-1 gap-4 sm:max-w-none lg:grid-cols-2">
+                            <div class="grid max-w-[calc(100vw_-_2rem)] grid-cols-1 gap-4 sm:max-w-none lg:grid-cols-[minmax(0,2fr)_minmax(280px,0.55fr)]">
 
                                 <!-- Colonne gauche : détail demande -->
                                 <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
@@ -512,7 +484,7 @@
 
                                     <div>
                                         <p class="text-xs text-neutral-400 mb-1">Message</p>
-                                        <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">{{ $demande->message }}</div>
+                                        <div data-message-scroll class="min-h-[10rem] bg-neutral-50 border border-neutral-200 rounded-lg p-4 text-[15px] text-neutral-700 leading-7 whitespace-pre-wrap max-h-64 overflow-y-auto">{{ $demande->message }}</div>
                                     </div>
 
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -570,7 +542,7 @@
                                             <select name="id_service" class="service-select field w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-navy appearance-none transition-all duration-150" required>
                                                 <option value="">— Choisir un service —</option>
                                                 @foreach($services as $service)
-                                                    <option value="{{ $service->id_service }}" data-direction-id="{{ $service->id_direction }}">{{ $service->code }} — {{ $service->libelle }}</option>
+                                                    <option value="{{ $service->id_service }}" data-direction-id="{{ $service->id_direction }}">{{ \App\Support\ServiceCodeFormatter::display($service->code) }} — {{ $service->libelle }}</option>
                                                 @endforeach
                                             </select>
                                             <input name="commentaire" placeholder="Consigne ou urgence optionnelle…"
@@ -639,6 +611,8 @@
                                                             <span class="rounded-lg bg-neutral-100 px-2.5 py-1 text-neutral-500 font-medium">PDF</span>
                                                             <span class="rounded-lg bg-neutral-100 px-2.5 py-1 text-neutral-500 font-medium">JPG</span>
                                                             <span class="rounded-lg bg-neutral-100 px-2.5 py-1 text-neutral-500 font-medium">PNG</span>
+                                                            <span class="rounded-lg bg-neutral-100 px-2.5 py-1 text-neutral-500 font-medium">Word</span>
+                                                            <span class="rounded-lg bg-neutral-100 px-2.5 py-1 text-neutral-500 font-medium">Excel</span>
                                                             <span class="rounded-lg bg-neutral-100 px-2.5 py-1 text-neutral-500 font-medium">Max 4 Mo</span>
                                                         </div>
                                                     </div>
@@ -786,7 +760,7 @@
                                     'echec_envoi_reponse' => 'Échec d\'envoi',
                                 ];
                             @endphp
-                            <div class="grid max-w-[calc(100vw_-_2rem)] grid-cols-1 gap-4 sm:max-w-none lg:grid-cols-2">
+                            <div class="grid max-w-[calc(100vw_-_2rem)] grid-cols-1 gap-4 sm:max-w-none lg:grid-cols-[minmax(0,2fr)_minmax(280px,0.55fr)]">
                                 <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
                                     <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2">
                                         <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -804,7 +778,7 @@
 
                                     <div>
                                         <p class="text-xs text-neutral-400 mb-1">Message</p>
-                                        <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">{{ $demande->message }}</div>
+                                        <div data-message-scroll class="min-h-[10rem] bg-neutral-50 border border-neutral-200 rounded-lg p-4 text-[15px] text-neutral-700 leading-7 whitespace-pre-wrap max-h-64 overflow-y-auto">{{ $demande->message }}</div>
                                     </div>
 
                                     @include('workflow.partials.assignment-comment', [
@@ -860,7 +834,7 @@
                                             </div>
                                             <div class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5">
                                                 <p class="text-xs text-neutral-400">Service</p>
-                                                <p class="mt-1 text-sm font-medium text-navy">{{ trim(($demande->service_code ?? '').($demande->service ? ' — '.$demande->service : '')) ?: '—' }}</p>
+                                                <p class="mt-1 text-sm font-medium text-navy">{{ \App\Support\ServiceCodeFormatter::label($demande->service_code ?? '', $demande->service ?? '') ?: '—' }}</p>
                                             </div>
                                         </div>
                                         <form method="post" action="/accueil/demandes/{{ $demande->id_demande }}/annuler-affectation" class="mt-3 space-y-2.5">
@@ -930,7 +904,7 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Numéro</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Usager</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Service</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Agent accueil</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Agent</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Commentaire</th>
                     </tr>
                 </thead>
@@ -968,7 +942,7 @@
                         <td class="px-4 py-3 text-sm text-navy font-medium">
                             {{ trim(($entry->usager_prenom ?? '').' '.($entry->usager_nom ?? '')) ?: '—' }}
                         </td>
-                        <td class="px-4 py-3 text-sm text-neutral-600 whitespace-nowrap">{{ $entry->service_code ?? '—' }}</td>
+                        <td class="px-4 py-3 text-sm text-neutral-600 whitespace-nowrap">{{ \App\Support\ServiceCodeFormatter::display($entry->service_code ?? '') ?: '—' }}</td>
                         <td class="px-4 py-3 text-sm text-neutral-600">
                             {{ trim(($entry->acteur_prenom ?? '').' '.($entry->acteur_nom ?? '')) ?: 'Système' }}
                         </td>
@@ -1390,6 +1364,31 @@
         });
     };
 
+    const captureMessageScrollPositions = () => {
+        if (!liveContent) return new Map();
+
+        const positions = new Map();
+        liveContent.querySelectorAll('[data-message-scroll]').forEach((node, index) => {
+            const row = node.closest('.detail-row');
+            const key = row?.id ? `${row.id}:${index}` : `message:${index}`;
+            positions.set(key, node.scrollTop);
+        });
+
+        return positions;
+    };
+
+    const restoreMessageScrollPositions = (positions) => {
+        if (!liveContent || !positions?.size) return;
+
+        liveContent.querySelectorAll('[data-message-scroll]').forEach((node, index) => {
+            const row = node.closest('.detail-row');
+            const key = row?.id ? `${row.id}:${index}` : `message:${index}`;
+            if (positions.has(key)) {
+                node.scrollTop = positions.get(key);
+            }
+        });
+    };
+
     const hasDirtyForm = () => {
         if (!liveContent) return false;
 
@@ -1448,10 +1447,12 @@
                 if (!nextContent) return;
 
                 const openedDetails = openDetailIds();
+                const messageScrollPositions = captureMessageScrollPositions();
 
                 liveContent.innerHTML = nextContent.innerHTML;
                 initAccueilInteractions(liveContent);
                 restoreOpenDetails(openedDetails);
+                restoreMessageScrollPositions(messageScrollPositions);
 
                 if (newDemandDifference > 0) {
                     showNewDemandNotification(newDemandDifference);

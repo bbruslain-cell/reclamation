@@ -28,9 +28,7 @@
         @if(session('error'))
             <div class="msg msg-err">{{ session('error') }}</div>
         @endif
-        @if(session('success'))
-            <div data-auto-dismiss-flash class="msg msg-ok transition-all duration-300 ease-out">{{ session('success') }}</div>
-        @endif
+        @include('partials.success-flash')
 
         <form method="post" action="/mot-de-passe/nouveau">
             @csrf

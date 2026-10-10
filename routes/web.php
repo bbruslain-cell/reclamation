@@ -7,16 +7,18 @@ use App\Http\Controllers\Web\Admin\AdminParamsController;
 use App\Http\Controllers\Web\Admin\AdminReferentielController;
 use App\Http\Controllers\Web\Admin\AdminRolesController;
 use App\Http\Controllers\Web\Admin\AdminUsersController;
-use App\Http\Controllers\Web\AgentInboxController;
+use App\Http\Controllers\Web\Admin\ScopedAdminUsersController;
 use App\Http\Controllers\Web\AgentPortalController;
 use App\Http\Controllers\Web\AttachmentController;
 use App\Http\Controllers\Web\AuthController;
+use App\Http\Controllers\Web\ScopedAgentInboxController;
 use App\Http\Controllers\Web\ScopedChefInboxController;
 use App\Http\Controllers\Web\DemandDeliveryController;
 use App\Http\Controllers\Web\DirectionInboxController;
 use App\Http\Controllers\Web\PasswordController;
-use App\Http\Controllers\Web\PilotageExportController;
+use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\PublicDemandController;
+use App\Http\Controllers\Web\ScopedPilotageExportController;
 use App\Services\AccessControlService;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +57,8 @@ Route::middleware('agent.auth')->group(function () {
 
     // Portail agent (redirige selon rôle)
     Route::get('/espace', [AgentPortalController::class, 'index']);
+    Route::post('/profil/avatar', [ProfileController::class, 'uploadAvatar']);
+    Route::post('/profil/avatar/supprimer', [ProfileController::class, 'removeAvatar']);
 
     // Accueil
     Route::get('/accueil/inbox', [AccueilInboxController::class, 'index']);
@@ -69,8 +73,8 @@ Route::middleware('agent.auth')->group(function () {
     Route::put('/chef/demandes/{id}/annuler-affectation-agent', [ScopedChefInboxController::class, 'annulerAffectationAgent']);
 
     // Agent
-    Route::get('/agent/inbox', [AgentInboxController::class, 'index']);
-    Route::put('/agent/demandes/{id}/envoyer', [AgentInboxController::class, 'envoyer']);
+    Route::get('/agent/inbox', [ScopedAgentInboxController::class, 'index']);
+    Route::put('/agent/demandes/{id}/envoyer', [ScopedAgentInboxController::class, 'envoyer']);
 
     // Chef de direction
     Route::get('/chef-direction/inbox', [DirectionInboxController::class, 'index']);
@@ -88,7 +92,7 @@ Route::middleware('agent.auth')->group(function () {
         $roleCodes = $access->roleCodes((int) $actor->id_utilisateur);
         $overviewResponse = app(ApiOverviewController::class)->index($request, $access);
 
-        return view('pilotage-ciq', [
+        return view('pilotage-ciq-fixed', [
             'actor'             => $actor,
             'roleCodes'         => $roleCodes,
             'overviewData'      => $overviewResponse->getData(true),
@@ -120,7 +124,7 @@ Route::middleware('agent.auth')->group(function () {
         return app(ApiOverviewController::class)->index($request, $access);
     });
     Route::get('/pilotage/demandes/{id}/detail', [ApiOverviewController::class, 'trackingDetail']);
-    Route::get('/pilotage/export/{section}/{format}', [PilotageExportController::class, 'download']);
+    Route::get('/pilotage/export/{section}/{format}', [ScopedPilotageExportController::class, 'download']);
 
     // Administration
     Route::get('/admin', [AdminDashboardController::class, 'index']);
@@ -130,7 +134,7 @@ Route::middleware('agent.auth')->group(function () {
         Route::post('/avatar', [AdminDashboardController::class, 'uploadAvatar']);
         Route::post('/avatar/remove', [AdminDashboardController::class, 'removeAvatar']);
 
-        Route::get('/utilisateurs', [AdminUsersController::class, 'index']);
+        Route::get('/utilisateurs', [ScopedAdminUsersController::class, 'index']);
         Route::post('/utilisateurs', [AdminUsersController::class, 'storeUser']);
         Route::post('/utilisateurs/{id}/toggle', [AdminUsersController::class, 'toggleUser']);
         Route::post('/utilisateurs/{id}/reset-password', [AdminUsersController::class, 'resetUserPassword']);

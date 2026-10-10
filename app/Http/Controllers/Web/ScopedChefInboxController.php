@@ -8,7 +8,7 @@ use App\Http\Controllers\Web\Concerns\InteractsWithServiceWindow;
 use App\Http\Requests\AssignAgentRequest;
 use App\Http\Requests\CancelAssignmentRequest;
 use App\Http\Requests\ListChefInboxRequest;
-use App\Http\Requests\SendWorkflowResponseRequest;
+use App\Support\SendWorkflowResponseWithAttachmentsRequest;
 use App\Models\Demande;
 use App\Services\AccessControlService;
 use App\Services\DemandWorkflowService;
@@ -271,7 +271,7 @@ class ScopedChefInboxController extends Controller
             ->get(['u.id_utilisateur', 'u.nom', 'u.prenom', 'u.id_service'])
             ->groupBy('id_service');
 
-        return view('workflow.chef-inbox', [
+        return view('workflow.chef-inbox-fixed', [
             'actor' => $actor,
             'search' => $search,
             'pending' => $pending,
@@ -331,7 +331,7 @@ class ScopedChefInboxController extends Controller
         }
     }
 
-    public function reponseDirecte(SendWorkflowResponseRequest $request, int $id): RedirectResponse
+    public function reponseDirecte(SendWorkflowResponseWithAttachmentsRequest $request, int $id): RedirectResponse
     {
         try {
             $actor = $this->access->requireActor($request);

@@ -7,6 +7,7 @@ use App\Http\Requests\ListDirectionInboxRequest;
 use App\Models\Demande;
 use App\Services\AccessControlService;
 use App\Services\StepAlertService;
+use App\Support\ServiceCodeFormatter;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -150,7 +151,7 @@ class DirectionInboxController extends Controller
                 ->groupBy('id_demande');
         }
 
-        return view('workflow.direction-inbox', [
+        return view('workflow.direction-inbox-fixed', [
             'actor' => $actor,
             'demandes' => $demandes,
             'search' => $searchTerm,
@@ -185,7 +186,7 @@ class DirectionInboxController extends Controller
         $code = trim((string) ($service['service_code'] ?? ''));
 
         if ($code !== '') {
-            return $code;
+            return ServiceCodeFormatter::display($code);
         }
 
         return trim((string) ($service['service'] ?? '')) ?: '-';

@@ -483,9 +483,7 @@
             </div>
             <div class="flex items-center gap-3">
                 <a href="/espace" class="hidden sm:inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150">
-                    <svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z" fill="currentColor"/>
-                    </svg>
+                   
                     <span>Mon espace</span>
                 </a>
                 @if ($canViewScopedCiqTables)
@@ -1011,7 +1009,7 @@
             <section id="annexe2-export-area" class="space-y-5 ciq-surface rounded-2xl p-4 sm:p-5">
                 <div class="grid grid-cols-1 gap-5 items-start">
                     <section class="bg-white rounded-2xl border border-neutral-100 overflow-hidden">
-                        
+
                         <div class="overflow-x-auto">
                             <table class="w-full min-w-[760px] border-collapse">
                                 <thead>

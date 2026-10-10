@@ -602,8 +602,8 @@ class AuthAndPublicFlowTest extends TestCase
 
         preg_match('/<section id="direction-kpi-content".*?<\/section>/s', $response->getContent(), $matches);
         $kpiContent = $matches[0] ?? '';
-        $this->assertStringContainsString('CS_SENB', $kpiContent);
-        $this->assertStringNotContainsString('CS_SENB - Etudiants Boursiers', $kpiContent);
+        $this->assertStringContainsString('SENB', $kpiContent);
+        $this->assertStringNotContainsString('CS_SENB', $kpiContent);
 
         $this->withHeader('X-User-Id', (string) $userId)
             ->get('/agent/inbox')
@@ -1324,6 +1324,45 @@ class AuthAndPublicFlowTest extends TestCase
             'model_id' => $userId,
             'id_role' => $ciqRoleId,
         ]);
+    }
+
+    public function test_admin_user_search_filters_before_pagination(): void
+    {
+        $this->seed();
+
+        $adminId = (int) DB::table('utilisateurs')
+            ->where('email', 'admin@anbg.ga')
+            ->value('id_utilisateur');
+
+        for ($index = 1; $index <= 25; $index++) {
+            DB::table('utilisateurs')->insert([
+                'nom' => 'NomPagination'.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+                'prenom' => 'Utilisateur',
+                'email' => 'pagination-'.$index.'@example.com',
+                'password_hash' => bcrypt('Password@123'),
+                'actif' => true,
+                'changement_mdp_requis' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        DB::table('utilisateurs')->insert([
+            'nom' => 'ZzzRecherche',
+            'prenom' => 'Cible',
+            'email' => 'cible.recherche@example.com',
+            'password_hash' => bcrypt('Password@123'),
+            'actif' => true,
+            'changement_mdp_requis' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->withHeader('X-User-Id', (string) $adminId)
+            ->get('/admin/utilisateurs?q=cible.recherche')
+            ->assertOk()
+            ->assertSee('cible.recherche@example.com')
+            ->assertDontSee('pagination-1@example.com');
     }
 
     public function test_admin_can_update_user_by_stable_identifier_without_changing_it(): void

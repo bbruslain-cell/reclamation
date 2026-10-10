@@ -12,13 +12,23 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\Support\ServiceCodeFormatter;
 use RuntimeException;
 use Throwable;
 
 class DemandWorkflowService
 {
-    private const ALLOWED_ATTACHMENT_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png'];
-    private const ALLOWED_ATTACHMENT_MIMES = ['application/pdf', 'image/jpeg', 'image/png'];
+    private const ALLOWED_ATTACHMENT_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'];
+    private const ALLOWED_ATTACHMENT_MIMES = [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ];
+    private const RESPONSE_ATTACHMENT_DIRECTORY = 'reponse_pieces_jointes';
     private const ASSIGNMENT_SERVICE_ASSIGNED = 'service_assigned';
     private const ASSIGNMENT_SERVICE_CANCELLED = 'service_assignment_cancelled';
     private const ASSIGNMENT_AGENT_ASSIGNED = 'agent_assigned';
@@ -586,7 +596,26 @@ class DemandWorkflowService
 
                 $this->ensureAllowedAttachment($file);
 
-                $path = $file->store('pieces_jointes', 'local');
+                try {
+                    $path = $file->store(self::RESPONSE_ATTACHMENT_DIRECTORY, 'local');
+                } catch (Throwable $exception) {
+                    Log::error('Echec stockage piece jointe reponse workflow', [
+                        'id_reponse' => $responseId,
+                        'message' => $exception->getMessage(),
+                    ]);
+
+                    throw new RuntimeException("La pièce jointe n'a pas pu être enregistrée. Veuillez réessayer.");
+                }
+
+                if (! is_string($path) || $path === '') {
+                    Log::error('Echec stockage piece jointe reponse workflow', [
+                        'id_reponse' => $responseId,
+                        'message' => 'Le disque local a refuse l ecriture du fichier.',
+                    ]);
+
+                    throw new RuntimeException("La pièce jointe n'a pas pu être enregistrée. Veuillez réessayer.");
+                }
+
                 $pieceId = DB::table('pieces_jointes')->insertGetId([
                     'nom_fichier' => $this->sanitizeOriginalFilename($file),
                     'chemin_fichier' => $path,
@@ -1001,7 +1030,7 @@ class DemandWorkflowService
             return null;
         }
 
-        return trim(trim(((string) ($service->code ?? '')).' - '.((string) ($service->libelle ?? ''))), ' -');
+        return ServiceCodeFormatter::label($service->code ?? '', $service->libelle ?? '');
     }
 
     private function displayNameFromParts(?string $firstName, ?string $lastName, ?string $fallback = null): string
@@ -1100,7 +1129,7 @@ class DemandWorkflowService
 
         if (!in_array($extension, self::ALLOWED_ATTACHMENT_EXTENSIONS, true)
             || !in_array($mime, self::ALLOWED_ATTACHMENT_MIMES, true)) {
-            throw new RuntimeException('Format de pièce jointe non autorisé. Utilisez PDF, JPG ou PNG.');
+            throw new RuntimeException('Format de pièce jointe non autorisé. Utilisez PDF, JPG, PNG, Word ou Excel.');
         }
     }
 
