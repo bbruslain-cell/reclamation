@@ -240,7 +240,7 @@
                         <tr id="detail-d-{{ $demande->id_demande }}" style="display:none;">
                             <td colspan="7" class="px-4 py-4 bg-neutral-50 border-b border-neutral-100">
                                 @php $pieces = $piecesByDemand->get($demande->id_demande, collect()); @endphp
-                                <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(280px,0.55fr)] gap-4">
+                                <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,0.55fr)]">
 
                                     {{-- Détail demande --}}
                                     <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">

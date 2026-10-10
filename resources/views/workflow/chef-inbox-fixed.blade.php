@@ -357,7 +357,7 @@
                                         'echec_envoi_reponse' => html_entity_decode("Échec d'envoi", ENT_QUOTES, 'UTF-8'),
                                     ];
                                 @endphp
-                                <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(280px,0.55fr)] gap-4">
+                                <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,0.55fr)]">
 
                                     {{-- Détail demande --}}
                                     <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
@@ -670,7 +670,7 @@
                                         'echec_envoi_reponse' => html_entity_decode("Échec d'envoi", ENT_QUOTES, 'UTF-8'),
                                     ];
                                 @endphp
-                                <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(280px,0.55fr)] gap-4">
+                                <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,0.55fr)]">
 
                                     {{-- Détail demande --}}
                                     <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">

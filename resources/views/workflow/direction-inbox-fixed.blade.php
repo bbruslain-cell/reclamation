@@ -413,7 +413,7 @@
                         <tr id="detail-d-{{ $demande->id_demande }}" class="detail-row" style="display:none;">
                             <td colspan="6" class="px-4 py-4 bg-neutral-50 border-b border-neutral-100">
                                 @php $pieces = $piecesByDemand->get($demande->id_demande, collect()); @endphp
-                                <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(280px,0.55fr)] gap-4">
+                                <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,0.55fr)]">
                                     <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
                                         <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2">
                                             <span class="inline-flex items-center gap-1.5"><svg class="icon-svg text-sky" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 2h8l4 4v16H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V7h3.5L13 3.5ZM8 11h8v2H8v-2Zm0 4h8v2H8v-2Z" fill="currentColor"/></svg><span>Détail de la demande</span></span>
