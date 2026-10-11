@@ -119,7 +119,8 @@
                                 @method('put')
                                 <input type="hidden" name="id_direction" value="{{ $service->id_direction }}">
                             </form>
-                            <button form="service-form-{{ $service->id_service }}" type="submit" class="rounded-lg border border-sky-200 px-3 py-1.5 text-xs text-sky transition-colors duration-150 hover:bg-sky-50">
+                            <button form="service-form-{{ $service->id_service }}" type="submit" class="admin-inline-action rounded-lg border border-sky-200 px-3 py-1.5 text-xs text-sky transition-colors duration-150 hover:bg-sky-50">
+                                <i class="fas fa-save text-[10px]"></i>
                                 Mettre à jour
                             </button>
                         </td>
@@ -138,7 +139,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
     (() => {
         const searchInput = document.getElementById('service-filter');
         const directionSelect = document.getElementById('service-direction-filter');

@@ -10,13 +10,13 @@ class AccessControlSeeder extends Seeder
     public function run(): void
     {
         $roles = [
-            ['code' => 'accueil', 'libelle' => 'Accueil - Agent de premiere ligne'],
+            ['code' => 'accueil', 'libelle' => 'Accueil - Agent de première ligne'],
             ['code' => 'chef_service', 'libelle' => 'Chef de service'],
             ['code' => 'agent', 'libelle' => 'Agent'],
             ['code' => 'chef_direction', 'libelle' => 'Chef de direction'],
-            ['code' => 'ciq', 'libelle' => 'Controle interne et qualite'],
-            ['code' => 'dg', 'libelle' => 'Direction generale'],
-            ['code' => 'admin', 'libelle' => 'Administration complete'],
+            ['code' => 'ciq', 'libelle' => 'Contrôle interne et qualité'],
+            ['code' => 'dg', 'libelle' => 'Direction générale'],
+            ['code' => 'admin', 'libelle' => 'Administration complète'],
             ['code' => 'lecture_seule', 'libelle' => 'Lecture seule'],
         ];
 
@@ -35,19 +35,19 @@ class AccessControlSeeder extends Seeder
         }
 
         $permissions = [
-            ['code' => 'demande.view.own', 'libelle' => 'Voir les demandes de son perimetre'],
+            ['code' => 'demande.view.own', 'libelle' => 'Voir les demandes de son périmètre'],
             ['code' => 'demande.view.all', 'libelle' => 'Voir toutes les demandes'],
-            ['code' => 'demande.create', 'libelle' => 'Creer une demande'],
+            ['code' => 'demande.create', 'libelle' => 'Créer une demande'],
             ['code' => 'demande.assign', 'libelle' => 'Affecter une demande'],
-            ['code' => 'demande.assign.agent', 'libelle' => 'Affecter une demande a un agent'],
-            ['code' => 'demande.reply.draft', 'libelle' => 'Rediger une reponse'],
-            ['code' => 'demande.reply.send', 'libelle' => 'Envoyer la reponse finale'],
+            ['code' => 'demande.assign.agent', 'libelle' => 'Affecter une demande à un agent'],
+            ['code' => 'demande.reply.draft', 'libelle' => 'Rédiger une réponse'],
+            ['code' => 'demande.reply.send', 'libelle' => 'Envoyer la réponse finale'],
 
             ['code' => 'dashboard.view', 'libelle' => 'Voir les tableaux de bord'],
-            ['code' => 'dashboard.export', 'libelle' => 'Exporter les donnees'],
-            ['code' => 'audit.view', 'libelle' => 'Voir l historique'],
-            ['code' => 'admin.users.manage', 'libelle' => 'Gerer les utilisateurs'],
-            ['code' => 'admin.parameters.manage', 'libelle' => 'Gerer les parametres'],
+            ['code' => 'dashboard.export', 'libelle' => 'Exporter les données'],
+            ['code' => 'audit.view', 'libelle' => 'Voir l\'historique'],
+            ['code' => 'admin.users.manage', 'libelle' => 'Gérer les utilisateurs'],
+            ['code' => 'admin.parameters.manage', 'libelle' => 'Gérer les paramètres'],
         ];
 
         foreach ($permissions as $permission) {
@@ -128,7 +128,7 @@ class AccessControlSeeder extends Seeder
         DB::table('roles')
             ->where('code', 'direction')
             ->update([
-                'libelle' => 'Ancien role direction',
+                'libelle' => 'Ancien rôle direction',
                 'actif' => false,
                 'updated_at' => now(),
             ]);

@@ -7,7 +7,9 @@ use App\Models\Utilisateur;
 use App\Policies\DemandePolicy;
 use App\Services\AccessControlService;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (is_dir(resource_path('views_fixed'))) {
+            View::getFinder()->prependLocation(resource_path('views_fixed'));
+        }
+
         Gate::policy(Demande::class, DemandePolicy::class);
 
         $access = app(AccessControlService::class);

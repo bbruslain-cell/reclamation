@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <title>Réponses directe des agents | ANBG</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .table-readability thead th {
+            color: #111827 !important;
+            font-weight: 600 !important;
+            font-family: 'Inter', ui-sans-serif, system-ui, sans-serif !important;
+        }
+        .table-readability td,
+        .table-readability td span,
+        .table-readability td p {
+            font-family: 'Inter', ui-sans-serif, system-ui, sans-serif !important;
+        }
+        .table-readability .text-neutral-400,
+        .table-readability .text-neutral-500,
+        .table-readability .text-neutral-600 {
+            color: #1f2937 !important;
+        }
+        i[class*='fa-'] {
+            display: inline-block;
+            width: 1.14em;
+            height: 1.14em;
+            vertical-align: middle;
+            color: currentColor;
+            flex-shrink: 0;
+            font-size: inherit;
+            line-height: 1;
+        }
+        i[class*='fa-']::before {
+            content: '';
+            display: block;
+            width: 100%;
+            height: 100%;
+            background-color: currentColor;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            -webkit-mask-size: contain;
+            mask-size: contain;
+        }
+        .fa-chart-line::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M4 19h16v2H2V4h2v15Zm2.7-4.3 3.5-3.5 2.6 2.6 4.5-5.3 1.5 1.3-5.9 7-2.7-2.7-2.1 2.1-1.4-1.5Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M4 19h16v2H2V4h2v15Zm2.7-4.3 3.5-3.5 2.6 2.6 4.5-5.3 1.5 1.3-5.9 7-2.7-2.7-2.1 2.1-1.4-1.5Z'/%3E%3C/svg%3E"); }
+        .fa-user::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.4 0-8 2.7-8 6v1h16v-1c0-3.3-3.6-6-8-6Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.4 0-8 2.7-8 6v1h16v-1c0-3.3-3.6-6-8-6Z'/%3E%3C/svg%3E\"); }
+        .fa-right-from-bracket::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2H5V5h5V3Zm9.7 9-4.2-4.2-1.4 1.4 1.8 1.8H9v2h6.9l-1.8 1.8 1.4 1.4 4.2-4.2Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2H5V5h5V3Zm9.7 9-4.2-4.2-1.4 1.4 1.8 1.8H9v2h6.9l-1.8 1.8 1.4 1.4 4.2-4.2Z'/%3E%3C/svg%3E\"); }
+        .fa-headset::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 3a8 8 0 0 0-8 8v5a3 3 0 0 0 3 3h2v-7H6v-1a6 6 0 1 1 12 0v1h-3v7h2a3 3 0 0 0 3-3v-5a8 8 0 0 0-8-8Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 3a8 8 0 0 0-8 8v5a3 3 0 0 0 3 3h2v-7H6v-1a6 6 0 1 1 12 0v1h-3v7h2a3 3 0 0 0 3-3v-5a8 8 0 0 0-8-8Z'/%3E%3C/svg%3E\"); }
+        .fa-clock::before, .fa-hourglass-half::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5h-2v6l5 3 1-1.7-4-2.3V7Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5h-2v6l5 3 1-1.7-4-2.3V7Z'/%3E%3C/svg%3E\"); }
+        .fa-pen::before, .fa-pen-to-square::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m16.6 3 4.4 4.4-10 10L6 19l1.6-5 9-11ZM5 21h14v-2H5v2Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m16.6 3 4.4 4.4-10 10L6 19l1.6-5 9-11ZM5 21h14v-2H5v2Z'/%3E%3C/svg%3E\"); }
+        .fa-circle-check::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm-1.2 14.2-4-4 1.4-1.4 2.6 2.6 5-5 1.4 1.4Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm-1.2 14.2-4-4 1.4-1.4 2.6 2.6 5-5 1.4 1.4Z'/%3E%3C/svg%3E\"); }
+        .fa-circle-exclamation::before, .fa-circle-info::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 13h-2v-5h2Zm0-7h-2V6h2Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 13h-2v-5h2Zm0-7h-2V6h2Z'/%3E%3C/svg%3E\"); }
+        .fa-magnifying-glass::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M10 2a8 8 0 1 0 4.9 14.3l4.4 4.4 1.4-1.4-4.4-4.4A8 8 0 0 0 10 2Zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M10 2a8 8 0 1 0 4.9 14.3l4.4 4.4 1.4-1.4-4.4-4.4A8 8 0 0 0 10 2Zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12Z'/%3E%3C/svg%3E\"); }
+        .fa-filter::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 5h18l-7 8v5l-4 2v-7L3 5Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 5h18l-7 8v5l-4 2v-7L3 5Z'/%3E%3C/svg%3E\"); }
+        .fa-inbox::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M5 3h14l3 9v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7l3-9Zm1.4 2L4.1 12H9l1 2h4l1-2h4.9L17.6 5H6.4Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M5 3h14l3 9v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7l3-9Zm1.4 2L4.1 12H9l1 2h4l1-2h4.9L17.6 5H6.4Z'/%3E%3C/svg%3E\"); }
+        .fa-eye::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 5C5.6 5 2 12 2 12s3.6 7 10 7 10-7 10-7-3.6-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 5C5.6 5 2 12 2 12s3.6 7 10 7 10-7 10-7-3.6-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z'/%3E%3C/svg%3E\"); }
+        .fa-eye-slash::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m3.3 2 18.7 18.7-1.4 1.4-4.1-4.1A11.7 11.7 0 0 1 12 19C5.6 19 2 12 2 12a19 19 0 0 1 4.4-5.3L1.9 3.4 3.3 2Zm6.1 6.1A4 4 0 0 0 12 16c.7 0 1.4-.2 2-.5L9.4 8.1ZM12 5c6.4 0 10 7 10 7a18.9 18.9 0 0 1-4.1 5.1l-2.2-2.2A4 4 0 0 0 9.1 8.3L7.5 6.7A10.8 10.8 0 0 1 12 5Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='m3.3 2 18.7 18.7-1.4 1.4-4.1-4.1A11.7 11.7 0 0 1 12 19C5.6 19 2 12 2 12a19 19 0 0 1 4.4-5.3L1.9 3.4 3.3 2Zm6.1 6.1A4 4 0 0 0 12 16c.7 0 1.4-.2 2-.5L9.4 8.1ZM12 5c6.4 0 10 7 10 7a18.9 18.9 0 0 1-4.1 5.1l-2.2-2.2A4 4 0 0 0 9.1 8.3L7.5 6.7A10.8 10.8 0 0 1 12 5Z'/%3E%3C/svg%3E\"); }
+        .fa-file-lines::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M6 2h8l4 4v16H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V7h3.5L13 3.5ZM8 11h8v2H8v-2Zm0 4h8v2H8v-2Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M6 2h8l4 4v16H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V7h3.5L13 3.5ZM8 11h8v2H8v-2Zm0 4h8v2H8v-2Z'/%3E%3C/svg%3E\"); }
+        .fa-paperclip::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M8.5 12.5 13 8a3 3 0 1 1 4.2 4.2l-6 6a5 5 0 1 1-7.1-7.1l6.3-6.3 1.4 1.4-6.3 6.3a3 3 0 1 0 4.2 4.2l6-6a1 1 0 1 0-1.4-1.4l-4.5 4.5-1.4-1.4Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M8.5 12.5 13 8a3 3 0 1 1 4.2 4.2l-6 6a5 5 0 1 1-7.1-7.1l6.3-6.3 1.4 1.4-6.3 6.3a3 3 0 1 0 4.2 4.2l6-6a1 1 0 1 0-1.4-1.4l-4.5 4.5-1.4-1.4Z'/%3E%3C/svg%3E\"); }
+        .fa-cloud-arrow-up::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 11a4 4 0 0 0 1 7Zm6-6V8h-2v4H8l4 4 4-4h-3Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 11a4 4 0 0 0 1 7Zm6-6V8h-2v4H8l4 4 4-4h-3Z'/%3E%3C/svg%3E\"); }
+        .fa-envelope-circle-check::before { -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 6h18v12H3V6Zm2 2v1l7 4 7-4V8l-7 4-7-4Zm11.2 5.8-1.4 1.4-1.3-1.3-1.4 1.4 2.7 2.7 4.8-4.8-1.4-1.4-3.4 3.4Z'/%3E%3C/svg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 6h18v12H3V6Zm2 2v1l7 4 7-4V8l-7 4-7-4Zm11.2 5.8-1.4 1.4-1.3-1.3-1.4 1.4 2.7 2.7 4.8-4.8-1.4-1.4-3.4 3.4Z'/%3E%3C/svg%3E\"); }
+    </style>
+</head>
+
+<body class="bg-neutral-100 font-sans text-navy min-h-screen">
+
+    {{-- ═══════ TOPBAR ═══════ --}}
+    <header class="bg-navy sticky top-0 z-50 shadow-md">
+        <div class="app-page-frame h-14 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-white rounded-lg px-2.5 py-1.5 flex-shrink-0">
+                    <img src="/Logo_anbg.png" alt="ANBG" class="h-9 w-auto object-contain block">
+                </div>
+                <span class="hidden sm:block text-white text-xs font-medium tracking-wider uppercase">AGENCE NATIONALE DES BOURSES DU GABON</span>
+            </div>
+            <div class="flex items-center gap-3">
+                @include('partials.user-profile-menu', ['actor' => $actor])
+            </div>
+        </div>
+    </header>
+
+    {{-- ═══════ HERO ═══════ --}}
+    <section class="bg-navy border-b border-white/10 pb-8 pt-6">
+        <div class="app-page-frame">
+            <div class="flex items-start gap-4">
+
+                <div>
+                    <h1 class="text-white text-xl font-medium leading-snug mb-1">Traitement des agents du service</h1>
+
+                    
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- ═══════ MAIN ═══════ --}}
+    <main class="app-page-frame py-6 space-y-5">
+
+        {{-- Toasts --}}
+        @include('partials.success-flash')
+        @if(session('error'))
+        <div class="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm shadow-card">
+            <svg class="icon-svg text-red-500 mt-0.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 13h-2v-5h2Zm0-7h-2V6h2Z"/></svg>
+            <span>{{ session('error') }}</span>
+        </div>
+        @endif
+        @if($errors->any())
+        <div class="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm shadow-card">
+            <svg class="icon-svg text-red-500 mt-0.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 13h-2v-5h2Zm0-7h-2V6h2Z"/></svg>
+            <div class="space-y-1">
+                @foreach($errors->all() as $error)
+                    <p>{{ $error }}</p>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+        {{-- Barre de recherche --}}
+        <div class="bg-white rounded-xl shadow-card border border-neutral-200 px-5 py-4">
+            <form method="get" class="flex gap-3 items-end">
+                <div class="flex-1 relative">
+                    <svg class="icon-svg absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm pointer-events-none" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 2a8 8 0 1 0 4.9 14.3l4.4 4.4 1.4-1.4-4.4-4.4A8 8 0 0 0 10 2Zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12Z"/></svg>
+                    <input name="search" value="{{ $search }}"
+                        placeholder="Recherche : numéro suivi, objet, usager…"
+                        class="field w-full pl-9 pr-4 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy placeholder-neutral-400 transition-all duration-150">
+                </div>
+                <button type="submit"
+                    class="inline-flex items-center gap-2 bg-navy hover:bg-navy-600 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors duration-150">
+                    <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z"/></svg> Filtrer
+                </button>
+            </form>
+        </div>
+
+        {{-- ══════════════════════════════════════
+             TABLE DEMANDES
+        ══════════════════════════════════════ --}}
+        <div id="agent-live-content"
+            class="space-y-5"
+            data-refresh-url="{{ request()->fullUrl() }}"
+            data-refresh-interval="20000">
+        <div class="bg-white rounded-2xl shadow-card border border-neutral-100 overflow-hidden">
+            <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <svg class="icon-svg text-sky text-sm" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 6h11v2H9V6Zm0 5h11v2H9v-2Zm0 5h11v2H9v-2ZM4.5 7.5A1.5 1.5 0 1 0 4.5 4.5a1.5 1.5 0 0 0 0 3Zm0 5A1.5 1.5 0 1 0 4.5 9.5a1.5 1.5 0 0 0 0 3Zm0 5A1.5 1.5 0 1 0 4.5 14.5a1.5 1.5 0 0 0 0 3Z"/></svg>
+                    <h2 class="text-sm font-medium text-navy">Mes demandes affectées</h2>
+                    <span class="bg-sky-50 text-sky text-xs font-medium px-2 py-0.5 rounded-full border border-sky-100">
+                        {{ $demandes->total() }}
+                    </span>
+                </div>
+                <p class="text-xs text-neutral-400 hidden sm:block">Répondre pour clôturer la demande</p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full table-readability">
+                    <thead>
+                        <tr class="bg-neutral-50 border-b border-neutral-100">
+                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">N° Suivi</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Usager</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Service</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Statut / envoi</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Alerte 16h</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Temps restant 16h</th>
+                            <th class="px-4 py-3 text-left text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-neutral-100">
+                    @forelse($demandes as $demande)
+                        {{-- Ligne principale --}}
+                        <tr class="trow transition-colors duration-100"
+                            data-delivery-id="{{ $demande->id_demande }}"
+                            data-delivery-label="{{ $demande->numero_suivi }}"
+                            data-delivery-state="{{ $demande->delivery_state ?? 'idle' }}">
+                            <td class="px-4 py-3">
+                                <span class="font-mono text-xs font-medium text-navy bg-navy-50 px-2 py-1 rounded">
+                                    {{ $demande->numero_suivi }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-sm font-medium text-navy">
+                                {{ trim(($demande->usager_prenom ?? '').' '.($demande->usager_nom ?? '')) }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="text-xs bg-neutral-100 text-neutral-600 px-2 py-1 rounded-full">
+                                    {{ \App\Support\ServiceCodeFormatter::label($demande->service_code ?? '', $demande->service ?? '') }}
+                                </span>
+                                @if(!empty($demande->commentaire_affectation_agent))
+                                    <span class="mt-1 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Consigne chef</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex flex-col items-start">
+                                    <span class="text-xs text-neutral-500">{{ $demande->statut }}</span>
+                                    @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'badge'])
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                @if($demande->alerte_agent === 'rouge')
+                                    <span class="inline-flex items-center gap-1.5 bg-red-50 text-red-700 border border-red-200 text-xs font-medium px-2.5 py-1 rounded-full">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0"></span> En retard
+                                    </span>
+                                @elseif($demande->alerte_agent === 'orange')
+                                    <span class="inline-flex items-center gap-1.5 bg-gold-50 text-amber-700 border border-amber-200 text-xs font-medium px-2.5 py-1 rounded-full">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0"></span> À risque
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1.5 bg-leaf-50 text-green-700 border border-green-200 text-xs font-medium px-2.5 py-1 rounded-full">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-leaf flex-shrink-0"></span> Dans les délais
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3">
+                                @php
+                                    $windowTone = match ($demande->service_window_tone ?? 'neutral') {
+                                        'red' => 'text-red-600',
+                                        'amber' => 'text-amber-600',
+                                        'green' => 'text-green-700',
+                                        default => 'text-neutral-500',
+                                    };
+                                @endphp
+                                <div class="text-xs">
+                                    <p class="font-medium {{ $windowTone }}">{{ $demande->service_window_label ?? '—' }}</p>
+                                    <p class="text-neutral-400 mt-1">{{ $demande->service_window_hint ?? '' }}</p>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <button type="button"
+                                    class="view-toggle inline-flex items-center gap-1.5 bg-sky-50 hover:bg-sky text-sky hover:text-white border border-sky-200 hover:border-sky text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-150"
+                                    data-target="detail-d-{{ $demande->id_demande }}" aria-expanded="false">
+                                    <span class="toggle-icon"><svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5C5.6 5 2 12 2 12s3.6 7 10 7 10-7 10-7-3.6-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg></span>
+                                    <span>Voir</span>
+                                </button>
+                            </td>
+                        </tr>
+
+                        {{-- Ligne détail --}}
+                        <tr id="detail-d-{{ $demande->id_demande }}" style="display:none;">
+                            <td colspan="7" class="px-4 py-4 bg-neutral-50 border-b border-neutral-100">
+                                @php $pieces = $piecesByDemand->get($demande->id_demande, collect()); @endphp
+                                <div class="grid grid-cols-1 items-start gap-4">
+
+                                    {{-- Détail demande --}}
+                                    <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
+                                        <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2">
+                                            <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 2h8l4 4v16H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V7h3.5L13 3.5ZM8 11h8v2H8v-2Zm0 4h8v2H8v-2Z"/></svg>Détail de la demande
+                                        </h4>
+
+                                        <div>
+                                            <p class="text-xs text-neutral-400 mb-0.5">Objet</p>
+                                            <p class="text-sm font-medium text-navy">{{ $demande->objet }}</p>
+                                        </div>
+
+                                        <div>
+                                            <p class="text-xs text-neutral-400 mb-1">Message complet</p>
+                                            <div data-message-scroll class="min-h-[10rem] bg-neutral-50 border border-neutral-200 rounded-lg p-4 text-[15px] text-neutral-700 leading-7 whitespace-pre-wrap max-h-64 overflow-y-auto">{{ $demande->message }}</div>
+                                        </div>
+
+                                        @include('workflow.partials.assignment-comment', [
+                                            'label' => 'Consigne du chef de service',
+                                            'comment' => $demande->commentaire_affectation_agent ?? '',
+                                        ])
+
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div>
+                                                <p class="text-xs text-neutral-400">Email</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_email ?? '—' }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-neutral-400">Statut usager</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_statut ?? '—' }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-neutral-400">Pays</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_pays ?? '—' }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-neutral-400">Établissement</p>
+                                                <p class="text-sm text-navy">{{ $demande->usager_etablissement ?? '—' }}</p>
+                                            </div>
+                                        </div>
+
+                                        @if($pieces->isNotEmpty())
+                                        <div>
+                                            <p class="text-xs text-neutral-400 mb-1.5">Pièces jointes usager</p>
+                                            <div class="space-y-1.5">
+                                                @foreach($pieces as $piece)
+                                                @include('workflow.partials.attachment-actions', ['piece' => $piece])
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                        @else
+                                        <p class="text-xs text-neutral-400 italic">Aucune pièce jointe usager.</p>
+                                        @endif
+                                    </div>
+
+                                    {{-- Formulaire réponse --}}
+                                    <div class="bg-white border border-neutral-200 rounded-xl p-4">
+                                        <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2 mb-3">
+                                            <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m16.6 3 4.4 4.4-10 10L6 19l1.6-5 9-11ZM5 21h14v-2H5v2Z"/></svg>Rédiger la réponse
+                                        </h4>
+
+
+                                        @include('workflow.partials.delivery-status', ['demande' => $demande, 'variant' => 'panel'])
+
+                                        @if(($demande->delivery_state ?? 'idle') !== 'pending')
+                                        <form method="post" action="/agent/demandes/{{ $demande->id_demande }}/envoyer" enctype="multipart/form-data" class="space-y-3">
+                                            @csrf @method('put')
+
+                                            <div>
+                                                <label class="block text-xs font-medium text-navy mb-1.5">
+                                                    Réponse à l'usager <span class="text-red-500">*</span>
+                                                </label>
+                                                <textarea name="contenu_reponse" required rows="6"
+                                                    placeholder="Rédigez votre réponse finale à l'usager…"
+                                                    class="field w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50 text-navy placeholder-neutral-400 resize-y transition-all duration-150"></textarea>
+                                            </div>
+
+                                            <div>
+                                                <label for="agent-files-{{ $demande->id_demande }}" class="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-neutral-200 hover:border-sky rounded-xl p-4 cursor-pointer transition-colors duration-150 bg-neutral-50 hover:bg-sky-50">
+                                                    <svg class="icon-svg text-neutral-400 text-lg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 11a4 4 0 0 0 1 7Zm6-6V8h-2v4H8l4 4 4-4h-3Z"/></svg>
+                                                    <span class="text-xs font-medium text-neutral-500">Ajouter des pièces jointes</span>
+                                                    <span class="text-[11px] text-neutral-400">PDF, JPG, PNG, Word, Excel — max 4 Mo chacun</span>
+                                                    <input id="agent-files-{{ $demande->id_demande }}" type="file" name="pieces_jointes[]" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,application/pdf,image/jpeg,image/png,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple class="hidden" data-file-feedback>
+                                                </label>
+                                                <span class="file-selection-feedback mt-2 block text-[11px] text-neutral-400">Aucun fichier sélectionné</span>
+                                            </div>
+
+                                            <button type="submit"
+                                                data-submit-loading
+                                                data-loading-label="{{ ($demande->delivery_state ?? 'idle') === 'failed' ? 'Modification en cours...' : 'Envoi en cours...' }}"
+                                                class="w-full flex items-center justify-center gap-2 bg-navy hover:bg-navy-600 text-white text-sm font-medium py-3 rounded-xl transition-colors duration-150">
+                                                <svg class="icon-svg text-xs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 6h18v12H3V6Zm2 2v1l7 4 7-4V8l-7 4-7-4Zm11.2 5.8-1.4 1.4-1.3-1.3-1.4 1.4 2.7 2.7 4.8-4.8-1.4-1.4-3.4 3.4Z"/></svg>
+                                                @if(($demande->delivery_state ?? 'idle') === 'failed')
+                                                    Modifier la réponse et renvoyer
+                                                @else
+                                                Envoyer et clôturer
+                                                @endif
+                                            </button>
+                                        </form>
+                                        @endif
+                                    </div>
+
+                                </div>
+                            </td>
+                        </tr>
+
+                    @empty
+                        <tr>
+                            <td colspan="7" class="px-4 py-14 text-center">
+                                <div class="flex flex-col items-center gap-3 text-neutral-400">
+                                    <div class="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center">
+                                        <svg class="icon-svg text-2xl" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3h14l3 9v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7l3-9Zm1.4 2L4.1 12H9l1 2h4l1-2h4.9L17.6 5H6.4Z"/></svg>
+                                    </div>
+                                    <p class="text-sm font-medium">Aucune demande affectée</p>
+                                    <p class="text-xs text-neutral-400">Vous n'avez pas de demandes en attente de traitement.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            @if($demandes->hasPages())
+            <div class="px-5 py-4 border-t border-neutral-100 bg-neutral-50">
+                {{ $demandes->links() }}
+            </div>
+            @endif
+        </div>
+        </div>
+
+        {{-- Footer --}}
+        <footer class="border-t border-neutral-200 pt-4 pb-2 flex items-center justify-between text-xs text-neutral-400">
+            <span>© {{ date('Y') }} Agence Nationale des Bourses du Gabon</span>
+            <span class="font-medium">Constructeur d'avenir</span>
+        </footer>
+
+    </main>
+
+    <div
+        id="agent-delivery-toast"
+        class="pointer-events-none fixed right-4 top-24 z-50 w-[min(92vw,360px)] transition-all duration-300 ease-out"
+        style="opacity: 0; transform: translateY(8px); visibility: hidden;"
+        aria-live="polite"
+        aria-atomic="true"
+    >
+        <div id="agent-delivery-toast-card" class="flex items-start gap-3 rounded-2xl border bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur">
+            <span id="agent-delivery-toast-icon" class="mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-white"></span>
+            <div>
+                <p id="agent-delivery-toast-title" class="text-sm font-semibold"></p>
+                <p id="agent-delivery-toast-message" class="mt-0.5 text-xs leading-5 text-neutral-500"></p>
+            </div>
+        </div>
+    </div>
+
+<script nonce="{{ $cspNonce ?? '' }}">
+(function () {
+    const eyeSvg = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5C5.6 5 2 12 2 12s3.6 7 10 7 10-7 10-7-3.6-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg>';
+    const eyeOffSvg = '<svg class="icon-svg text-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m3.3 2 18.7 18.7-1.4 1.4-4.1-4.1A11.7 11.7 0 0 1 12 19C5.6 19 2 12 2 12a19 19 0 0 1 4.4-5.3L1.9 3.4 3.3 2Zm6.1 6.1A4 4 0 0 0 12 16c.7 0 1.4-.2 2-.5L9.4 8.1ZM12 5c6.4 0 10 7 10 7a18.9 18.9 0 0 1-4.1 5.1l-2.2-2.2A4 4 0 0 0 9.1 8.3L7.5 6.7A10.8 10.8 0 0 1 12 5Z"/></svg>';
+    const liveContent = document.getElementById('agent-live-content');
+    const deliveryToast = document.getElementById('agent-delivery-toast');
+    const deliveryToastCard = document.getElementById('agent-delivery-toast-card');
+    const deliveryToastIcon = document.getElementById('agent-delivery-toast-icon');
+    const deliveryToastTitle = document.getElementById('agent-delivery-toast-title');
+    const deliveryToastMessage = document.getElementById('agent-delivery-toast-message');
+    let deliveryToastTimeout = null;
+    const deliverySuccessIcon = '<svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-7Z" stroke="currentColor" stroke-width="1.8"/><path d="m6 9 6 4 6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="m10.4 13.1 1.7 1.7 3.4-3.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const deliveryErrorIcon = '<svg class="icon-svg text-base" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 16.8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    const showDeliveryNotification = (kind, title, message) => {
+        if (!deliveryToast || !deliveryToastCard || !deliveryToastIcon || !deliveryToastTitle || !deliveryToastMessage) return;
+
+        if (kind === 'success') {
+            deliveryToastCard.className = 'flex items-start gap-3 rounded-2xl border border-green-200 bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur';
+            deliveryToastIcon.className = 'mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-leaf text-white';
+            deliveryToastIcon.innerHTML = deliverySuccessIcon;
+        } else {
+            deliveryToastCard.className = 'flex items-start gap-3 rounded-2xl border border-red-200 bg-white/95 px-4 py-3 text-navy shadow-[0_18px_55px_rgba(28,32,61,0.18)] backdrop-blur';
+            deliveryToastIcon.className = 'mt-0.5 inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-red-500 text-white';
+            deliveryToastIcon.innerHTML = deliveryErrorIcon;
+        }
+
+        deliveryToastTitle.textContent = title;
+        deliveryToastMessage.textContent = message;
+
+        window.clearTimeout(deliveryToastTimeout);
+        deliveryToast.style.visibility = 'visible';
+        deliveryToast.style.opacity = '1';
+        deliveryToast.style.transform = 'translateY(0)';
+
+        deliveryToastTimeout = window.setTimeout(() => {
+            deliveryToast.style.opacity = '0';
+            deliveryToast.style.transform = 'translateY(8px)';
+            window.setTimeout(() => {
+                if (deliveryToast.style.opacity === '0') {
+                    deliveryToast.style.visibility = 'hidden';
+                }
+            }, 320);
+        }, 4500);
+    };
+    const getDeliveryStateMap = (root) => {
+        const map = new Map();
+        (root?.querySelectorAll('[data-delivery-id][data-delivery-state]') || []).forEach((row) => {
+            map.set(String(row.dataset.deliveryId || ''), {
+                state: String(row.dataset.deliveryState || 'idle'),
+                label: String(row.dataset.deliveryLabel || '').trim(),
+            });
+        });
+
+        return map;
+    };
+    const summarizeDeliveryTransitions = (currentRoot, nextRoot) => {
+        const currentStates = getDeliveryStateMap(currentRoot);
+        const nextStates = getDeliveryStateMap(nextRoot);
+        const delivered = [];
+        const failed = [];
+
+        currentStates.forEach((entry, id) => {
+            if (entry.state !== 'pending') {
+                return;
+            }
+
+            const nextEntry = nextStates.get(id);
+            if (!nextEntry || nextEntry.state === 'sent') {
+                delivered.push(entry.label || id);
+                return;
+            }
+
+            if (nextEntry.state === 'failed') {
+                failed.push(nextEntry.label || entry.label || id);
+            }
+        });
+
+        return { delivered, failed };
+    };
+    const initViewToggles = (root = document) => {
+    root.querySelectorAll('.view-toggle:not([data-toggle-ready])').forEach((btn) => {
+        btn.dataset.toggleReady = '1';
+        btn.addEventListener('click', () => {
+            const row = document.getElementById(btn.dataset.target);
+            if (!row) return;
+            const isOpen = row.style.display !== 'none';
+            row.style.display = isOpen ? 'none' : '';
+            btn.setAttribute('aria-expanded', String(!isOpen));
+            const icon = btn.querySelector('.toggle-icon');
+            const spans = btn.querySelectorAll('span');
+            const label = spans.length > 1 ? spans[1] : null;
+            if (isOpen) {
+                row.querySelectorAll('form').forEach((form) => {
+                    delete form.dataset.refreshDirty;
+                });
+                if (icon) icon.innerHTML = eyeSvg;
+                if (label) label.textContent = 'Voir';
+            } else {
+                if (icon) icon.innerHTML = eyeOffSvg;
+                if (label) label.textContent = 'Masquer';
+            }
+        });
+    });
+    };
+
+    const initFileFeedback = (root = document) => {
+    root.querySelectorAll('input[data-file-feedback]:not([data-file-feedback-ready])').forEach((input) => {
+        input.dataset.fileFeedbackReady = '1';
+        input.addEventListener('change', () => {
+            const feedback = input.closest('div')?.querySelector('.file-selection-feedback');
+            if (!feedback) return;
+            const count = input.files?.length ?? 0;
+            if (count === 0) {
+                feedback.textContent = 'Aucun fichier sélectionné';
+            } else if (count === 1) {
+                feedback.textContent = input.files[0].name;
+            } else {
+                feedback.textContent = `${count} fichiers sélectionnés`;
+            }
+        });
+    });
+    };
+
+    const initFormRefreshLocks = (root = document) => {
+        root.querySelectorAll('form:not([data-refresh-form-ready])').forEach((form) => {
+            form.dataset.refreshFormReady = '1';
+            form.addEventListener('input', () => {
+                form.dataset.refreshDirty = '1';
+            });
+            form.addEventListener('change', () => {
+                form.dataset.refreshDirty = '1';
+            });
+            form.addEventListener('submit', () => {
+                if (liveContent && liveContent.contains(form)) {
+                    liveContent.dataset.refreshLocked = '1';
+                }
+            });
+        });
+    };
+
+    const initAgentInteractions = (root = document) => {
+        initViewToggles(root);
+        initFileFeedback(root);
+        initFormRefreshLocks(root);
+        window.initAnbgSubmitLoading?.(root);
+    };
+
+    const hasFocusedControl = () => {
+        const active = document.activeElement;
+        if (!active || !liveContent || !liveContent.contains(active)) return false;
+
+        return ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName) || active.isContentEditable;
+    };
+
+    const openDetailIds = () => {
+        if (!liveContent) return [];
+
+        return Array.from(liveContent.querySelectorAll('tr[id^="detail-"]'))
+            .filter((row) => row.style.display !== 'none')
+            .map((row) => row.id);
+    };
+
+    const restoreOpenDetails = (ids) => {
+        ids.forEach((id) => {
+            const row = document.getElementById(id);
+            if (!row) return;
+
+            row.style.display = '';
+
+            const btn = Array.from(document.querySelectorAll('.view-toggle'))
+                .find((candidate) => candidate.dataset.target === id);
+            if (!btn) return;
+
+            btn.setAttribute('aria-expanded', 'true');
+            const icon = btn.querySelector('.toggle-icon');
+            const spans = btn.querySelectorAll('span');
+            const label = spans.length > 1 ? spans[1] : null;
+            if (icon) icon.innerHTML = eyeOffSvg;
+            if (label) label.textContent = 'Masquer';
+        });
+    };
+
+    const captureMessageScrollPositions = () => {
+        if (!liveContent) return new Map();
+
+        const positions = new Map();
+        liveContent.querySelectorAll('[data-message-scroll]').forEach((node, index) => {
+            const row = node.closest('.detail-row');
+            const key = row?.id ? `${row.id}:${index}` : `message:${index}`;
+            positions.set(key, node.scrollTop);
+        });
+
+        return positions;
+    };
+
+    const restoreMessageScrollPositions = (positions) => {
+        if (!liveContent || !positions?.size) return;
+
+        liveContent.querySelectorAll('[data-message-scroll]').forEach((node, index) => {
+            const row = node.closest('.detail-row');
+            const key = row?.id ? `${row.id}:${index}` : `message:${index}`;
+            if (positions.has(key)) {
+                node.scrollTop = positions.get(key);
+            }
+        });
+    };
+
+    const hasDirtyForm = () => {
+        if (!liveContent) return false;
+
+        return Array.from(liveContent.querySelectorAll('form')).some((form) => form.dataset.refreshDirty === '1');
+    };
+
+    const shouldSkipRefresh = (isRefreshing) => {
+        if (!liveContent || isRefreshing || document.hidden || liveContent.dataset.refreshLocked === '1') {
+            return true;
+        }
+
+        return hasFocusedControl() || hasDirtyForm();
+    };
+
+    const initAgentAutoRefresh = () => {
+        if (!liveContent || liveContent.dataset.autoRefreshReady === '1') return;
+        liveContent.dataset.autoRefreshReady = '1';
+
+        let isRefreshing = false;
+        const interval = Math.max(Number(liveContent.dataset.refreshInterval || 20000), 10000);
+
+        const refreshContent = async () => {
+            if (shouldSkipRefresh(isRefreshing)) return;
+            isRefreshing = true;
+
+            try {
+                const url = new URL(liveContent.dataset.refreshUrl || window.location.href, window.location.origin);
+                url.searchParams.set('_agent_refresh', Date.now().toString());
+
+                const response = await fetch(url.toString(), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-Agent-Refresh': 'tables',
+                    },
+                    cache: 'no-store',
+                });
+
+                if (!response.ok) return;
+
+                const html = await response.text();
+                const nextDocument = new DOMParser().parseFromString(html, 'text/html');
+                const nextContent = nextDocument.getElementById('agent-live-content');
+                if (!nextContent) return;
+
+                const transitions = summarizeDeliveryTransitions(liveContent, nextContent);
+                const openedDetails = openDetailIds();
+                const messageScrollPositions = captureMessageScrollPositions();
+
+                liveContent.innerHTML = nextContent.innerHTML;
+                initAgentInteractions(liveContent);
+                restoreOpenDetails(openedDetails);
+                restoreMessageScrollPositions(messageScrollPositions);
+
+                if (transitions.delivered.length > 0) {
+                    const firstLabel = transitions.delivered[0];
+                    showDeliveryNotification(
+                        'success',
+                        transitions.delivered.length > 1 ? 'Réponses envoyées' : 'Réponse envoyée',
+                        transitions.delivered.length > 1
+                            ? `${transitions.delivered.length} réponses ont été confirmées par le système.`
+                            : `La demande ${firstLabel} a bien été envoyée à l'usager.`
+                    );
+                }
+
+                if (transitions.failed.length > 0) {
+                    const firstLabel = transitions.failed[0];
+                    showDeliveryNotification(
+                        'error',
+                        "Échec d'envoi",
+                        transitions.failed.length > 1
+                            ? `${transitions.failed.length} envois ont échoués. Une relance est possible.`
+                            : `L'envoi pour la demande ${firstLabel} a échoué. Vous pouvez relancer la réponse.`
+                    );
+                }
+            } catch (error) {
+                console.warn('Rafraîchissement agent interrompu.', error);
+            } finally {
+                isRefreshing = false;
+            }
+        };
+
+        window.setInterval(refreshContent, interval);
+        window.addEventListener('focus', refreshContent);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) refreshContent();
+        });
+    };
+
+    initAgentInteractions(document);
+    initAgentAutoRefresh();
+})();
+</script>
+</body>
+</html>

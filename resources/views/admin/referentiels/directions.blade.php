@@ -90,7 +90,8 @@
                                 @csrf
                                 @method('put')
                             </form>
-                            <button form="direction-form-{{ $direction->id_direction }}" type="submit" class="rounded-lg border border-sky-200 px-3 py-1.5 text-xs text-sky transition-colors duration-150 hover:bg-sky-50">
+                            <button form="direction-form-{{ $direction->id_direction }}" type="submit" class="admin-inline-action rounded-lg border border-sky-200 px-3 py-1.5 text-xs text-sky transition-colors duration-150 hover:bg-sky-50">
+                                <i class="fas fa-save text-[10px]"></i>
                                 Mettre à jour
                             </button>
                         </td>
@@ -109,7 +110,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ $cspNonce ?? '' }}">
     (() => {
         const input = document.getElementById('direction-filter');
         if (!input) return;

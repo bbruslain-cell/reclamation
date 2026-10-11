@@ -75,7 +75,8 @@
                     <option value="{{ $role->code }}">{{ $role->code }}</option>
                 @endforeach
             </select>
-            <button @click="resetFilters" type="button" class="rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100">
+            <button @click="resetFilters" type="button" class="admin-inline-action rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100">
+                <i class="fas fa-rotate-left text-[11px]"></i>
                 Réinitialiser le filtre
             </button>
         </div>
@@ -155,25 +156,29 @@
                                         'id_direction' => $user->id_direction ?? null,
                                         'roles' => $userRoleIds,
                                     ]) }})"
-                                    class="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-600 transition-colors hover:border-sky-100 hover:bg-sky-50 hover:text-navy"
+                                    class="admin-inline-action rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-600 transition-colors hover:border-sky-100 hover:bg-sky-50 hover:text-navy"
                                 >
+                                    <i class="fas fa-pen-to-square text-[11px]"></i>
                                     Modifier
                                 </button>
                                 <form method="post" action="/admin/utilisateurs/{{ $user->id_utilisateur }}/toggle">
                                     @csrf
-                                    <button type="submit" class="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-600 transition-colors hover:border-gold/40 hover:bg-gold-50">
+                                    <button type="submit" class="admin-inline-action rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-600 transition-colors hover:border-gold/40 hover:bg-gold-50">
+                                        <i class="fas fa-power-off text-[11px]"></i>
                                         {{ $user->actif ? 'Désactiver' : 'Réactiver' }}
                                     </button>
                                 </form>
                                 <form method="post" action="/admin/utilisateurs/{{ $user->id_utilisateur }}/reset-password">
                                     @csrf
-                                    <button type="submit" class="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-600 transition-colors hover:border-sky-100 hover:bg-sky-50">
+                                    <button type="submit" class="admin-inline-action rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-600 transition-colors hover:border-sky-100 hover:bg-sky-50">
+                                        <i class="fas fa-key text-[11px]"></i>
                                         Réinitialiser
                                     </button>
                                 </form>
-                                <form method="post" action="/admin/utilisateurs/{{ $user->id_utilisateur }}/delete" onsubmit="return confirm('Supprimer cet utilisateur ?')">
+                                <form method="post" action="/admin/utilisateurs/{{ $user->id_utilisateur }}/delete" data-confirm="Supprimer cet utilisateur ?">
                                     @csrf
-                                    <button type="submit" class="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-50">
+                                    <button type="submit" class="admin-inline-action rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-50">
+                                        <i class="fas fa-trash-can text-[11px]"></i>
                                         Supprimer
                                     </button>
                                 </form>
@@ -289,7 +294,8 @@
                         <button type="button" @click="closeModal" class="rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100">
                             Annuler
                         </button>
-                        <button type="submit" form="user-vue-form" class="rounded-xl bg-navy px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-navy-700">
+                        <button type="submit" form="user-vue-form" class="admin-inline-action rounded-xl bg-navy px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-navy-700">
+                            <i class="fas fa-save text-[11px]"></i>
                             @{{ formData.id_utilisateur ? 'Enregistrer les modifications' : 'Créer l’utilisateur' }}
                         </button>
                     </div>
@@ -301,7 +307,13 @@
 @endsection
 
 @push('scripts')
-<script>
+<script
+    nonce="{{ $cspNonce ?? '' }}"
+    src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"
+    integrity="sha384-6pS1WSZJY7wOk6qQTa9C9U2W1/qzqL7iYoMil7qn9KFeN5fZDAwIExgCd7U5AH+X"
+    crossorigin="anonymous"
+></script>
+<script nonce="{{ $cspNonce ?? '' }}">
     const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
 
     createApp({

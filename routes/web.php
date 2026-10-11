@@ -7,15 +7,18 @@ use App\Http\Controllers\Web\Admin\AdminParamsController;
 use App\Http\Controllers\Web\Admin\AdminReferentielController;
 use App\Http\Controllers\Web\Admin\AdminRolesController;
 use App\Http\Controllers\Web\Admin\AdminUsersController;
-use App\Http\Controllers\Web\AgentInboxController;
+use App\Http\Controllers\Web\Admin\ScopedAdminUsersController;
 use App\Http\Controllers\Web\AgentPortalController;
 use App\Http\Controllers\Web\AttachmentController;
 use App\Http\Controllers\Web\AuthController;
-use App\Http\Controllers\Web\ChefInboxController;
+use App\Http\Controllers\Web\ScopedAgentInboxController;
+use App\Http\Controllers\Web\ScopedChefInboxController;
+use App\Http\Controllers\Web\DemandDeliveryController;
 use App\Http\Controllers\Web\DirectionInboxController;
 use App\Http\Controllers\Web\PasswordController;
-use App\Http\Controllers\Web\PilotageExportController;
+use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\PublicDemandController;
+use App\Http\Controllers\Web\ScopedPilotageExportController;
 use App\Services\AccessControlService;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +31,7 @@ Route::get('/', fn () => redirect('/reclamations/nouvelle'));
 // Formulaire public de réclamation (rate-limited)
 Route::middleware('throttle:20,1')->group(function () {
     Route::get('/reclamations/nouvelle', [PublicDemandController::class, 'create']);
+    Route::get('/reclamations', fn () => redirect('/reclamations/nouvelle'));
     Route::post('/reclamations', [PublicDemandController::class, 'store']);
 });
 
@@ -45,6 +49,7 @@ Route::middleware('agent.auth')->group(function () {
 
     // Pièces jointes
     Route::get('/pieces-jointes/{id}', [AttachmentController::class, 'show']);
+    Route::put('/demandes/{id}/relancer-envoi', [DemandDeliveryController::class, 'retry']);
 
     // Changement de mot de passe (première connexion)
     Route::get('/mot-de-passe/nouveau', [PasswordController::class, 'showChange']);
@@ -52,6 +57,8 @@ Route::middleware('agent.auth')->group(function () {
 
     // Portail agent (redirige selon rôle)
     Route::get('/espace', [AgentPortalController::class, 'index']);
+    Route::post('/profil/avatar', [ProfileController::class, 'uploadAvatar']);
+    Route::post('/profil/avatar/supprimer', [ProfileController::class, 'removeAvatar']);
 
     // Accueil
     Route::get('/accueil/inbox', [AccueilInboxController::class, 'index']);
@@ -60,18 +67,18 @@ Route::middleware('agent.auth')->group(function () {
     Route::put('/accueil/demandes/{id}/annuler-affectation', [AccueilInboxController::class, 'annulerAffectation']);
 
     // Chef de service
-    Route::get('/chef/inbox', [ChefInboxController::class, 'index']);
-    Route::put('/chef/demandes/{id}/affecter-agent', [ChefInboxController::class, 'affecterAgent']);
-    Route::put('/chef/demandes/{id}/reponse-directe', [ChefInboxController::class, 'reponseDirecte']);
-    Route::put('/chef/demandes/{id}/annuler-affectation-agent', [ChefInboxController::class, 'annulerAffectationAgent']);
+    Route::get('/chef/inbox', [ScopedChefInboxController::class, 'index']);
+    Route::put('/chef/demandes/{id}/affecter-agent', [ScopedChefInboxController::class, 'affecterAgent']);
+    Route::put('/chef/demandes/{id}/reponse-directe', [ScopedChefInboxController::class, 'reponseDirecte']);
+    Route::put('/chef/demandes/{id}/annuler-affectation-agent', [ScopedChefInboxController::class, 'annulerAffectationAgent']);
 
     // Agent
-    Route::get('/agent/inbox', [AgentInboxController::class, 'index']);
-    Route::put('/agent/demandes/{id}/envoyer', [AgentInboxController::class, 'envoyer']);
+    Route::get('/agent/inbox', [ScopedAgentInboxController::class, 'index']);
+    Route::put('/agent/demandes/{id}/envoyer', [ScopedAgentInboxController::class, 'envoyer']);
 
     // Chef de direction
     Route::get('/chef-direction/inbox', [DirectionInboxController::class, 'index']);
-    Route::redirect('/direction/inbox', '/chef-direction/inbox');
+    Route::get('/direction/inbox', fn () => redirect('/chef-direction/inbox'));
     Route::put('/chef-direction/demandes/{id}/rediger', [DirectionInboxController::class, 'rediger']);
     Route::put('/direction/demandes/{id}/rediger', [DirectionInboxController::class, 'rediger']);
 
@@ -85,10 +92,27 @@ Route::middleware('agent.auth')->group(function () {
         $roleCodes = $access->roleCodes((int) $actor->id_utilisateur);
         $overviewResponse = app(ApiOverviewController::class)->index($request, $access);
 
-        return view('pilotage-ciq', [
-            'actor'        => $actor,
-            'roleCodes'    => $roleCodes,
-            'overviewData' => $overviewResponse->getData(true),
+        return view('pilotage-ciq-fixed', [
+            'actor'             => $actor,
+            'roleCodes'         => $roleCodes,
+            'overviewData'      => $overviewResponse->getData(true),
+            'canExportPilotage' => $access->hasPermission((int) $actor->id_utilisateur, 'dashboard.export'),
+        ]);
+    });
+    Route::get('/pilotage/dashboard', function (AccessControlService $access, \Illuminate\Http\Request $request) {
+        $actor = $access->resolveActor($request);
+        if (!$actor) {
+            return redirect('/login');
+        }
+        $access->assertPermission((int) $actor->id_utilisateur, 'dashboard.view');
+        $roleCodes = $access->roleCodes((int) $actor->id_utilisateur);
+        $overviewResponse = app(ApiOverviewController::class)->index($request, $access);
+
+        return view('pilotage-dashboard', [
+            'actor'             => $actor,
+            'roleCodes'         => $roleCodes,
+            'overviewData'      => $overviewResponse->getData(true),
+            'canExportPilotage' => $access->hasPermission((int) $actor->id_utilisateur, 'dashboard.export'),
         ]);
     });
     Route::get('/pilotage/data', function (\Illuminate\Http\Request $request, AccessControlService $access) {
@@ -99,7 +123,8 @@ Route::middleware('agent.auth')->group(function () {
         $access->assertPermission((int) $actor->id_utilisateur, 'dashboard.view');
         return app(ApiOverviewController::class)->index($request, $access);
     });
-    Route::get('/pilotage/export/{section}/{format}', [PilotageExportController::class, 'download']);
+    Route::get('/pilotage/demandes/{id}/detail', [ApiOverviewController::class, 'trackingDetail']);
+    Route::get('/pilotage/export/{section}/{format}', [ScopedPilotageExportController::class, 'download']);
 
     // Administration
     Route::get('/admin', [AdminDashboardController::class, 'index']);
@@ -109,7 +134,7 @@ Route::middleware('agent.auth')->group(function () {
         Route::post('/avatar', [AdminDashboardController::class, 'uploadAvatar']);
         Route::post('/avatar/remove', [AdminDashboardController::class, 'removeAvatar']);
 
-        Route::get('/utilisateurs', [AdminUsersController::class, 'index']);
+        Route::get('/utilisateurs', [ScopedAdminUsersController::class, 'index']);
         Route::post('/utilisateurs', [AdminUsersController::class, 'storeUser']);
         Route::post('/utilisateurs/{id}/toggle', [AdminUsersController::class, 'toggleUser']);
         Route::post('/utilisateurs/{id}/reset-password', [AdminUsersController::class, 'resetUserPassword']);

@@ -3,15 +3,18 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Web\Concerns\InteractsWithDeliveryStatus;
 use App\Http\Controllers\Web\Concerns\InteractsWithServiceWindow;
+use App\Http\Requests\ListAgentInboxRequest;
+use App\Http\Requests\SendWorkflowResponseRequest;
 use App\Models\Demande;
 use App\Services\AccessControlService;
 use App\Services\DemandWorkflowService;
 use App\Services\StepAlertService;
 use App\Services\WorkingHoursSlaService;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -20,6 +23,7 @@ use RuntimeException;
 
 class AgentInboxController extends Controller
 {
+    use InteractsWithDeliveryStatus;
     use InteractsWithServiceWindow;
 
     public function __construct(
@@ -30,16 +34,12 @@ class AgentInboxController extends Controller
     ) {
     }
 
-    public function index(Request $request): View
+    public function index(ListAgentInboxRequest $request): View
     {
         $actor = $this->access->requireActor($request);
         Gate::forUser($actor)->authorize('demande.reply.send');
 
-        $filters = $request->validate([
-            'search' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        $search = trim((string) ($filters['search'] ?? ''));
+        $search = $request->searchTerm();
 
         $serviceScope = $actor->id_service ? [(int) $actor->id_service] : null;
         $this->alerts->refreshOpenDemandAlerts($serviceScope);
@@ -49,6 +49,10 @@ class AgentInboxController extends Controller
             ->join('parametres as td', 'td.id_parametre', '=', 'd.id_type_demande')
             ->leftJoin('services as s', 's.id_service', '=', 'd.id_service_courant')
             ->leftJoin('usagers as u', 'u.id_usager', '=', 'd.id_usager')
+            ->leftJoinSub($this->latestActionIdsFor('affectation_agent'), 'last_agent_assignment', function ($join): void {
+                $join->on('last_agent_assignment.id_demande', '=', 'd.id_demande');
+            })
+            ->leftJoin('historique_actions as agent_assignment_action', 'agent_assignment_action.id_action', '=', 'last_agent_assignment.id_action')
             ->where('d.id_agent_traitant', (int) $actor->id_utilisateur)
             ->whereIn('st.code', ['affectee_agent', 'reponse_prete'])
             ->select(
@@ -60,6 +64,9 @@ class AgentInboxController extends Controller
                 'd.date_soumission',
                 'd.date_affectation_accueil',
                 'd.date_affectation_agent',
+                'd.date_demande_envoi_usager',
+                'd.date_envoi_usager',
+                'd.date_echec_envoi_usager',
                 'd.alerte_agent',
                 'st.code as statut_code',
                 'st.libelle as statut',
@@ -72,7 +79,9 @@ class AgentInboxController extends Controller
                 DB::raw("'' as usager_telephone"),
                 'u.statut_usager as usager_statut',
                 'u.pays as usager_pays',
-                'u.etablissement as usager_etablissement'
+                'u.etablissement as usager_etablissement',
+                'agent_assignment_action.commentaire as commentaire_affectation_agent',
+                'agent_assignment_action.date_action as date_commentaire_affectation_agent'
             );
 
         if ($search !== '') {
@@ -88,7 +97,9 @@ class AgentInboxController extends Controller
         $demandes = $query->orderByDesc('d.date_affectation_agent')->paginate(15)->withQueryString();
         $demandes->setCollection(
             $demandes->getCollection()->map(
-                fn ($demande) => $this->withServiceWindowMeta($demande, $this->slaService)
+                fn ($demande) => $this->withDeliveryStatusMeta(
+                    $this->withServiceWindowMeta($demande, $this->slaService)
+                )
             )
         );
         $demandIds = collect($demandes->items())
@@ -121,7 +132,7 @@ class AgentInboxController extends Controller
         ]);
     }
 
-    public function envoyer(Request $request, int $id): RedirectResponse
+    public function envoyer(SendWorkflowResponseRequest $request, int $id): RedirectResponse
     {
         try {
             $actor = $this->access->requireActor($request);
@@ -132,16 +143,10 @@ class AgentInboxController extends Controller
 
             Gate::forUser($actor)->authorize('reply', $demand);
 
-            $payload = $request->validate([
-                'contenu_reponse' => ['required', 'string', 'min:5'],
-                'pieces_jointes' => ['nullable', 'array', 'max:5'],
-                'pieces_jointes.*' => ['nullable', 'file', 'max:4096', 'mimes:pdf,jpg,jpeg,png'],
-            ]);
-
             $draft = $this->workflow->draftResponse(
                 actorId: (int) $actor->id_utilisateur,
                 demandId: $id,
-                content: trim($payload['contenu_reponse']),
+                content: $request->responseContent(),
                 typeCode: 'finale'
             );
 
@@ -157,13 +162,21 @@ class AgentInboxController extends Controller
                 demandId: $id
             );
 
-            return redirect()->back()->with('success', 'Réponse envoyée et demande cloturée.');
+            return redirect()->back()->with('success', 'Réponse mise en file. La demande sera clôturée après confirmation d\'envoi.');
         } catch (AuthorizationException $e) {
-            return redirect()->back()->with('erreur', $e->getMessage());
+            return redirect()->back()->with('error', $e->getMessage());
         } catch (ValidationException $e) {
             throw $e;
         } catch (RuntimeException $e) {
-            return redirect()->back()->with('erreur', $e->getMessage());
+            return redirect()->back()->with('error', $e->getMessage());
         }
+    }
+
+    private function latestActionIdsFor(string $typeAction): Builder
+    {
+        return DB::table('historique_actions')
+            ->select('id_demande', DB::raw('MAX(id_action) as id_action'))
+            ->where('type_action', $typeAction)
+            ->groupBy('id_demande');
     }
 }

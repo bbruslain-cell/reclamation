@@ -14,8 +14,11 @@ class Utilisateur extends Authenticatable
     use HasRoles;
 
     protected $table = 'utilisateurs';
+
     protected $primaryKey = 'id_utilisateur';
+
     protected $guarded = [];
+
     protected $hidden = ['password_hash', 'remember_token'];
 
     protected $casts = [
@@ -23,6 +26,7 @@ class Utilisateur extends Authenticatable
         'changement_mdp_requis' => 'boolean',
         'derniere_connexion' => 'datetime',
         'bloque_jusqua' => 'datetime',
+        'session_version' => 'integer',
     ];
 
     protected string $guard_name = 'web';

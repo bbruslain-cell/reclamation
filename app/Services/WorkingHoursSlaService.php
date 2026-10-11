@@ -15,7 +15,7 @@ class WorkingHoursSlaService
         ?CarbonInterface $endAt,
         int $configSlaId
     ): float {
-        return $this->calculateElapsedBusinessHours($startAt, $endAt, $configSlaId);
+        return $this->calculateElapsedWorkedHours($startAt, $endAt, $configSlaId);
     }
 
     public function calculateElapsedBusinessHours(
@@ -44,14 +44,46 @@ class WorkingHoursSlaService
         );
     }
 
-    public function classifyAlert(float $elapsedHours, int $maxHours = 72): string
+    public function businessDayWorkedHours(int $configSlaId): float
     {
-        // Seuils validés : vert <24h ouvrées, orange 24h–72h, rouge >72h
-        if ($elapsedHours > $maxHours) {
+        $windows = DB::table('sla_jours_ouvres')
+            ->where('id_config_sla', $configSlaId)
+            ->where('actif', true)
+            ->get(['heure_debut', 'heure_fin']);
+
+        if ($windows->isEmpty()) {
+            return 8.0;
+        }
+
+        $durations = $windows
+            ->map(function (object $window): float {
+                $start = CarbonImmutable::parse($window->heure_debut);
+                $end = CarbonImmutable::parse($window->heure_fin);
+
+                return max(0, $start->diffInMinutes($end)) / 60;
+            })
+            ->filter(fn (float $hours): bool => $hours > 0)
+            ->values();
+
+        if ($durations->isEmpty()) {
+            return 8.0;
+        }
+
+        return round((float) $durations->avg(), 2);
+    }
+
+    public function classifyAlert(float $elapsedHours, int $maxHours = 24, ?float $warningHours = null): string
+    {
+        $deadline = max(1.0, (float) $maxHours);
+        $warning = $warningHours !== null
+            ? max(0.0, min((float) $warningHours, $deadline))
+            : round($deadline / 2, 2);
+
+        if ($elapsedHours > $deadline) {
             return 'en_retard';
         }
 
-        if ($elapsedHours >= 24) {
+        if ($elapsedHours >= $warning) {
             return 'a_risque';
         }
 
@@ -93,16 +125,20 @@ class WorkingHoursSlaService
         $holidayRecords = DB::table('sla_jours_feries')
             ->where('id_config_sla', $configSlaId)
             ->where('date_ferie', '<=', $end->toDateString())
-            ->where(function($q) use ($start) {
-                $q->whereNull('date_fin')->orWhere('date_fin', '>=', $start->toDateString());
+            ->where(function ($query) use ($start) {
+                $query
+                    ->whereNull('date_fin')
+                    ->orWhere('date_fin', '>=', $start->toDateString());
             })
             ->get();
 
-        $holidays = collect([]);
-        foreach ($holidayRecords as $hr) {
-            $currentDate = CarbonImmutable::parse($hr->date_ferie);
-            $endHoliday = $hr->date_fin ? CarbonImmutable::parse($hr->date_fin) : $currentDate;
-            
+        $holidays = collect();
+        foreach ($holidayRecords as $holidayRecord) {
+            $currentDate = CarbonImmutable::parse($holidayRecord->date_ferie);
+            $endHoliday = $holidayRecord->date_fin
+                ? CarbonImmutable::parse($holidayRecord->date_fin)
+                : $currentDate;
+
             while ($currentDate->lessThanOrEqualTo($endHoliday)) {
                 $holidays->put($currentDate->toDateString(), true);
                 $currentDate = $currentDate->addDay();
@@ -128,6 +164,7 @@ class WorkingHoursSlaService
 
                 if ($segmentEnd->greaterThan($segmentStart)) {
                     $segmentMinutes = (float) $segmentStart->diffInMinutes($segmentEnd);
+
                     if (!$convertToBusinessHours) {
                         $minutes += $segmentMinutes;
                     } else {

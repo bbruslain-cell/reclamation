@@ -68,7 +68,7 @@ class AdminDashboardController extends BaseAdminController
         $this->assertCanManageAdmin($actor);
 
         $request->validate([
-            'avatar' => ['required', 'image', 'max:2048'],
+            'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         $current = DB::table('utilisateurs')->where('id_utilisateur', $actor->id_utilisateur)->value('avatar_path');
