@@ -464,7 +464,7 @@
                             @php
                                 $pieces = $piecesByDemand->get($demande->id_demande, collect());
                             @endphp
-                            <div class="grid max-w-[calc(100vw_-_2rem)] grid-cols-1 items-start gap-4 sm:max-w-none lg:grid-cols-[minmax(0,2fr)_minmax(280px,0.55fr)]">
+                            <div class="grid max-w-[calc(100vw_-_2rem)] grid-cols-1 items-start gap-4 sm:max-w-none">
 
                                 <!-- Colonne gauche : détail demande -->
                                 <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
@@ -760,7 +760,7 @@
                                     'echec_envoi_reponse' => 'Échec d\'envoi',
                                 ];
                             @endphp
-                            <div class="grid max-w-[calc(100vw_-_2rem)] grid-cols-1 items-start gap-4 sm:max-w-none lg:grid-cols-[minmax(0,2fr)_minmax(280px,0.55fr)]">
+                            <div class="grid max-w-[calc(100vw_-_2rem)] grid-cols-1 items-start gap-4 sm:max-w-none">
                                 <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
                                     <h4 class="text-xs font-medium text-neutral-500 uppercase tracking-wider border-b border-neutral-100 pb-2">
                                         <svg class="icon-svg text-sky mr-1.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
