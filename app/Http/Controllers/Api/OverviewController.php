@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePublicDemandRequest;
 use App\Services\AccessControlService;
 use App\Services\StepAlertService;
 use App\Services\WorkingHoursSlaService;
@@ -11,6 +12,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
@@ -286,20 +288,45 @@ class OverviewController extends Controller
                 'total' => (int) $row->total,
             ]);
 
-        $demandsByCountry = (clone $baseDemands)
+        $countryLabelsByKey = collect(StorePublicDemandRequest::countries())
+            ->mapWithKeys(fn (string $country) => [$this->normalizeRankingKey($country) => $country]);
+
+        $countryBuckets = (clone $baseDemands)
             ->whereNotNull('u.pays')
             ->whereRaw("TRIM(u.pays) <> ''")
             ->selectRaw('TRIM(u.pays) as pays, COUNT(*) as total_demandes')
             ->groupByRaw('TRIM(u.pays)')
             ->orderByDesc('total_demandes')
-            ->limit(12)
             ->get()
+            ->reduce(function (array $carry, object $row) use ($countryLabelsByKey): array {
+                $key = $this->normalizeRankingKey((string) $row->pays);
+                if ($key === '') {
+                    return $carry;
+                }
+
+                $label = (string) ($countryLabelsByKey->get($key) ?? trim((string) $row->pays));
+                if (! isset($carry[$key])) {
+                    $carry[$key] = [
+                        'pays' => $label,
+                        'total_demandes' => 0,
+                    ];
+                }
+
+                $carry[$key]['total_demandes'] += (int) $row->total_demandes;
+
+                return $carry;
+            }, []);
+
+        $demandsByCountry = collect($countryBuckets)
+            ->sortByDesc('total_demandes')
             ->values()
+            ->take(12)
             ->map(fn ($row, int $index) => [
                 'rang' => $index + 1,
-                'pays' => (string) $row->pays,
-                'total_demandes' => (int) $row->total_demandes,
+                'pays' => (string) $row['pays'],
+                'total_demandes' => (int) $row['total_demandes'],
             ]);
+        $countryDemandTotal = (int) collect($countryBuckets)->sum('total_demandes');
 
         $demandsByEstablishment = (clone $baseDemands)
             ->whereNotNull('u.etablissement')
@@ -315,6 +342,10 @@ class OverviewController extends Controller
                 'etablissement' => (string) $row->etablissement,
                 'total_demandes' => (int) $row->total_demandes,
             ]);
+        $establishmentDemandTotal = (int) (clone $baseDemands)
+            ->whereNotNull('u.etablissement')
+            ->whereRaw("TRIM(u.etablissement) <> ''")
+            ->count();
 
         $typePerformance = (clone $baseDemands)
             ->select(
@@ -1429,6 +1460,10 @@ class OverviewController extends Controller
             'par_type' => $byType,
             'demandes_par_pays' => $demandsByCountry,
             'demandes_par_etablissement' => $demandsByEstablishment,
+            'totaux_origine' => [
+                'pays' => $countryDemandTotal,
+                'etablissements' => $establishmentDemandTotal,
+            ],
             'performance_types' => $typePerformance,
             'evolution_par_type' => $evolutionByType,
             'evolution_temporelle' => $evolutionTemporelle,
@@ -1859,7 +1894,7 @@ class OverviewController extends Controller
             'envoi_reponse' => $normalized === '' || $normalized === 'Envoi final à l\'usager'
                 ? "Envoi final à l'usager"
                 : $normalized,
-            'echec_envoi_reponse' => "Echec d'envoi a l'usager. Verifiez le serveur mail puis relancez l'envoi.",
+            'echec_envoi_reponse' => "Echec d'envoi à l'usager. Verifiez le serveur mail puis relancez l'envoi.",
             default => $comment,
         };
     }
@@ -2127,6 +2162,17 @@ class OverviewController extends Controller
         $formatted = rtrim(rtrim($formatted, '0'), ',');
 
         return $formatted.' h';
+    }
+
+    private function normalizeRankingKey(string $value): string
+    {
+        return Str::of($value)
+            ->replace(['’', '`', '´'], "'")
+            ->ascii()
+            ->lower()
+            ->replaceMatches('/[^a-z0-9]+/', ' ')
+            ->squish()
+            ->value();
     }
 
     private function humanDemandStatusLabel(string $statusCode, string $fallback = ''): string

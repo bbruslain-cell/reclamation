@@ -136,6 +136,17 @@
 
             return number_format((float) $value, 1, ',', ' ').' h';
         };
+        $formatDateTime = function ($value) {
+            if (empty($value)) {
+                return '-';
+            }
+
+            try {
+                return \Carbon\Carbon::parse($value)->format('d/m/Y H:i');
+            } catch (\Throwable $exception) {
+                return '-';
+            }
+        };
         $filtersActifs = collect([
             $search !== '' ? 'Recherche active' : null,
             request('statut_code') ? 'Statut filtré' : null,
@@ -478,23 +489,23 @@
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3">
                                                 <p class="text-[11px] text-neutral-400 uppercase tracking-wide">Soumission</p>
-                                                <p class="mt-1 text-sm text-navy">{{ $demande->date_soumission ?? '-' }}</p>
+                                                <p class="mt-1 text-sm text-navy">{{ $formatDateTime($demande->date_soumission ?? null) }}</p>
                                             </div>
                                             <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3">
                                                 <p class="text-[11px] text-neutral-400 uppercase tracking-wide">Affectation accueil</p>
-                                                <p class="mt-1 text-sm text-navy">{{ $demande->date_affectation_accueil ?? '-' }}</p>
+                                                <p class="mt-1 text-sm text-navy">{{ $formatDateTime($demande->date_affectation_accueil ?? null) }}</p>
                                             </div>
                                             <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3">
                                                 <p class="text-[11px] text-neutral-400 uppercase tracking-wide">Affectation agent</p>
-                                                <p class="mt-1 text-sm text-navy">{{ $demande->date_affectation_agent ?? '-' }}</p>
+                                                <p class="mt-1 text-sm text-navy">{{ $formatDateTime($demande->date_affectation_agent ?? null) }}</p>
                                             </div>
                                             <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3">
                                                 <p class="text-[11px] text-neutral-400 uppercase tracking-wide">Envoi usager</p>
-                                                <p class="mt-1 text-sm text-navy">{{ $demande->date_envoi_usager ?? '-' }}</p>
+                                                <p class="mt-1 text-sm text-navy">{{ $formatDateTime($demande->date_envoi_usager ?? null) }}</p>
                                             </div>
                                             <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3">
                                                 <p class="text-[11px] text-neutral-400 uppercase tracking-wide">Clôture</p>
-                                                <p class="mt-1 text-sm text-navy">{{ $demande->date_cloture ?? '-' }}</p>
+                                                <p class="mt-1 text-sm text-navy">{{ $formatDateTime($demande->date_cloture ?? null) }}</p>
                                             </div>
                                             <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-3">
                                                 <p class="text-[11px] text-neutral-400 uppercase tracking-wide">Alerte chef / agent</p>

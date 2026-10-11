@@ -54,8 +54,8 @@
             </button>
         </div>
 
-        <form method="get" action="/admin/utilisateurs" class="grid gap-3 border-b border-neutral-200 bg-neutral-50/80 px-5 py-4 md:grid-cols-[minmax(0,1fr)_220px_220px_auto_auto]">
-            <div class="relative">
+        <form method="get" action="/admin/utilisateurs" class="flex flex-col gap-3 border-b border-neutral-200 bg-neutral-50/80 px-5 py-4">
+            <div class="relative w-full">
                 <i class="fas fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-neutral-400"></i>
                 <input
                     name="q"
@@ -65,26 +65,28 @@
                     class="field w-full rounded-xl border border-neutral-200 bg-white py-2.5 pl-9 pr-3 text-sm text-navy placeholder-neutral-400"
                 >
             </div>
-            <select name="service" class="field w-full appearance-none rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-navy">
-                <option value="">Tous les services</option>
-                @foreach($services as $service)
-                    <option value="{{ $service->code }}" @selected(($filters['service'] ?? '') === $service->code)>{{ \App\Support\ServiceCodeFormatter::display($service->code) }}</option>
-                @endforeach
-            </select>
-            <select name="role" class="field w-full appearance-none rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-navy">
-                <option value="">Tous les roles</option>
-                @foreach($roles as $role)
-                    <option value="{{ $role->code }}" @selected(($filters['role'] ?? '') === $role->code)>{{ $role->code }}</option>
-                @endforeach
-            </select>
-            <button type="submit" class="admin-inline-action rounded-xl bg-navy px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-navy-700">
-                <i class="fas fa-magnifying-glass text-[11px]"></i>
-                Rechercher
-            </button>
-            <a href="/admin/utilisateurs" class="admin-inline-action inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100">
-                <i class="fas fa-rotate-left text-[11px]"></i>
-                Réinitialiser le filtre
-            </a>
+            <div class="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] lg:items-center">
+                <select name="service" class="field w-full appearance-none rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-navy">
+                    <option value="">Tous les services</option>
+                    @foreach($services as $service)
+                        <option value="{{ $service->code }}" @selected(($filters['service'] ?? '') === $service->code)>{{ \App\Support\ServiceCodeFormatter::display($service->code) }}</option>
+                    @endforeach
+                </select>
+                <select name="role" class="field w-full appearance-none rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-navy">
+                    <option value="">Tous les roles</option>
+                    @foreach($roles as $role)
+                        <option value="{{ $role->code }}" @selected(($filters['role'] ?? '') === $role->code)>{{ $role->code }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" class="admin-inline-action w-full rounded-xl bg-navy px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-navy-700 lg:w-auto">
+                    <i class="fas fa-magnifying-glass text-[11px]"></i>
+                    Rechercher
+                </button>
+                <a href="/admin/utilisateurs" class="admin-inline-action inline-flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 lg:w-auto">
+                    <i class="fas fa-rotate-left text-[11px]"></i>
+                    Réinitialiser le filtre
+                </a>
+            </div>
         </form>
 
         <div class="overflow-x-auto">

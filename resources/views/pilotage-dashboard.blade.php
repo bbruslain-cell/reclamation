@@ -181,7 +181,7 @@
         })
         ->filter(fn (array $row) => $row['label'] !== '-' && $row['total_demandes'] > 0)
         ->values();
-    $countryDemandTotal = (int) $countryDemandRows->sum('total_demandes');
+    $countryDemandTotal = (int) data_get($overviewData, 'totaux_origine.pays', $countryDemandRows->sum('total_demandes'));
 
     $establishmentDemandRows = collect($overviewData['demandes_par_etablissement'] ?? [])
         ->map(function ($row, int $index) use ($rankingPalette) {
@@ -193,7 +193,7 @@
         })
         ->filter(fn (array $row) => $row['label'] !== '-' && $row['total_demandes'] > 0)
         ->values();
-    $establishmentDemandTotal = (int) $establishmentDemandRows->sum('total_demandes');
+    $establishmentDemandTotal = (int) data_get($overviewData, 'totaux_origine.etablissements', $establishmentDemandRows->sum('total_demandes'));
 
     $evolutionTemporelle = $overviewData['evolution_temporelle'] ?? [];
     $reclamationEvolutionLabels = collect(data_get($evolutionTemporelle, 'labels', []))->values();
@@ -1502,6 +1502,7 @@
                 const serviceSla = normalizeSlaRows(data?.kpi_services, 'service');
                 const countryDemand = normalizeDemandRankingRows(data?.demandes_par_pays, 'pays');
                 const establishmentDemand = normalizeDemandRankingRows(data?.demandes_par_etablissement, 'etablissement');
+                const originTotals = data?.totaux_origine || {};
                 const evolution = normalizeReclamationEvolution(data);
 
                 setDashboardValue('total-reclamations', dashboardNumberFormatter.format(totalReclamations));
@@ -1516,8 +1517,8 @@
                     ? evolution.nonCloturees
                     : evolution.recues.map((value, index) => Math.max(0, dashboardNumber(value) - dashboardNumber(evolution.cloturees[index] || 0)))
                 ).reduce((sum, value) => sum + dashboardNumber(value), 0)));
-                setDashboardValue('country-demand-total', dashboardNumberFormatter.format(countryDemand.reduce((sum, row) => sum + dashboardNumber(row.total_demandes), 0)));
-                setDashboardValue('establishment-demand-total', dashboardNumberFormatter.format(establishmentDemand.reduce((sum, row) => sum + dashboardNumber(row.total_demandes), 0)));
+                setDashboardValue('country-demand-total', dashboardNumberFormatter.format(dashboardNumber(originTotals.pays ?? countryDemand.reduce((sum, row) => sum + dashboardNumber(row.total_demandes), 0))));
+                setDashboardValue('establishment-demand-total', dashboardNumberFormatter.format(dashboardNumber(originTotals.etablissements ?? establishmentDemand.reduce((sum, row) => sum + dashboardNumber(row.total_demandes), 0))));
 
                 renderDirectionDemandChart(directionDemand);
                 renderHorizontalDashboardChart(
